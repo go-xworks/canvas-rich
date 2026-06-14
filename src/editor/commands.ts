@@ -224,6 +224,18 @@ export const SELF_FINALIZING: ReadonlySet<string> = new Set([
 export const VIEW_ONLY: ReadonlySet<string> = new Set(['find.open', 'doc.print']);
 
 /**
+ * 只读安全命令集合（readOnly 下命令总线放行）：不改文档、纯只读/选择/导出。
+ * = VIEW_ONLY（find.open/doc.print）∪ {select.all, doc.export}。
+ * 词/行导航（{@link NAV_AFFINITY} 的 nav.*）同样只移动选区不改文档，由装配层守卫单独按
+ * `id in NAV_AFFINITY` 放行（不并入本集合，避免与 affinity 收尾职责耦合）。
+ * 其余命令（mark/block/align/indent/history/insert/delete/template/view 切换…）均视为变更，
+ * readOnly 下一律拦截。注意 view.web/word、theme.toggle、shaper.toggle 虽不改文档，
+ * 但属「编辑器视图操作」，readOnly（只读呈现）下按现 demo 选项语义不主动暴露，故归入被拦截集。
+ * @public
+ */
+export const READONLY_SAFE: ReadonlySet<string> = new Set(['find.open', 'doc.print', 'select.all', 'doc.export']);
+
+/**
  * 导航命令 → 光标 affinity 的收尾映射。命中本表的命令仅移动选区（不改文档），
  * 派发方以 afterNav(affinity)（光标跟随 + 重绘，不重排）收尾、不追加 afterEdit。
  * affinity 消歧软换行边界：词左/行首落点贴目标行行首（after），词右/行尾贴所在行行尾（before）。

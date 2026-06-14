@@ -96,4 +96,37 @@ describe('createEmitter', () => {
     const evts: EditorEvent[] = ['doc:changed', 'selection:changed', 'view:changed'];
     for (const ev of evts) expect(() => bus.emit(ev)).not.toThrow();
   });
+
+  it('off 退订已订阅回调（等效 unsub）', () => {
+    const bus = createEmitter();
+    const fn = vi.fn();
+    bus.on('doc:changed', fn);
+    bus.emit('doc:changed');
+    bus.off('doc:changed', fn);
+    bus.emit('doc:changed');
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it('off 未订阅回调为 no-op（不抛、不影响其它订阅者）', () => {
+    const bus = createEmitter();
+    const a = vi.fn();
+    const never = vi.fn();
+    bus.on('selection:changed', a);
+    expect(() => bus.off('selection:changed', never)).not.toThrow();
+    bus.emit('selection:changed');
+    expect(a).toHaveBeenCalledTimes(1); // off(never) 不动其它监听器
+    expect(never).not.toHaveBeenCalled();
+  });
+
+  it('off 仅退订指定回调与指定事件', () => {
+    const bus = createEmitter();
+    const a = vi.fn();
+    const b = vi.fn();
+    bus.on('doc:changed', a);
+    bus.on('doc:changed', b);
+    bus.off('doc:changed', a);
+    bus.emit('doc:changed');
+    expect(a).not.toHaveBeenCalled();
+    expect(b).toHaveBeenCalledTimes(1);
+  });
 });

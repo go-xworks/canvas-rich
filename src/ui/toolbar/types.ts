@@ -7,7 +7,7 @@
 /**
  * 命令参数（与 editor/commands.CommandArg 同形）：带值控件经 ctx.exec(id, arg) 透传载荷。
  * 在 ui 层就地声明以维持 ui→editor 无类型反向依赖（值域一致：字符串/数字/null/表格维度）。
- * @public
+ * @internal
  */
 export type ToolbarCommandArg =
   | string | number | null
@@ -15,7 +15,7 @@ export type ToolbarCommandArg =
 
 /**
  * 工具栏的当前可视状态快照，用于驱动按钮 active/disabled 与块类型/方向回填。
- * @public
+ * @internal
  */
 export interface ToolbarState {
   marks: Record<string, boolean>;
@@ -38,7 +38,7 @@ export interface ToolbarState {
 
 /**
  * 已创建工具栏的句柄：用最新状态刷新按钮可视态；运行时追加 item；销毁解绑。
- * @public
+ * @internal
  */
 export interface Toolbar {
   /** 用最新状态快照刷新全部已挂载控件的可视态。 */
@@ -49,12 +49,12 @@ export interface Toolbar {
   destroy(): void;
 }
 
-/** 控件落点的页签键。`trailing` = 不属任何 ribbon、常驻页签栏右端（导出钮）。 @public */
+/** 控件落点的页签键。`trailing` = 不属任何 ribbon、常驻页签栏右端（导出钮）。 @internal */
 export type ToolbarTab = 'start' | 'insert' | 'view' | 'trailing';
 
 /**
  * 控件类型字符串字面量联合（kind → Renderer 的判别键）。
- * @public
+ * @internal
  */
 export type ItemKind =
   | 'icon-button'
@@ -66,7 +66,7 @@ export type ItemKind =
   | 'template-dropdown'
   | 'num-input';
 
-/** 全部 item 共有的落位 + 标识字段。 @public */
+/** 全部 item 共有的落位 + 标识字段。 @internal */
 export interface ItemBase {
   /** 全局唯一控件 id。 */
   id: string;
@@ -79,7 +79,7 @@ export interface ItemBase {
 /**
  * 图标命令钮：mark/align/list/block 快捷钮 + 所有插入钮 + 撤销/重做。
  * active 走 setOn（蓝 wash）；disabled 走原生 el.disabled（勿用 setOn，否则画成蓝 wash 改视觉）。
- * @public
+ * @internal
  */
 export interface IconButtonItem extends ItemBase {
   kind: 'icon-button';
@@ -96,7 +96,7 @@ export interface IconButtonItem extends ItemBase {
 /**
  * 文字命令钮（带文案）：导入/导出/视图/整形器/主题。
  * dynamic 返回整段 html（icon + span），refresh 顺序钉死：先 dynamic 设 innerHTML 再 active 设 class。
- * @public
+ * @internal
  */
 export interface TextButtonItem extends ItemBase {
   kind: 'text-button';
@@ -113,7 +113,7 @@ export interface TextButtonItem extends ItemBase {
 /**
  * 文本标签下拉：字体族/字号/块类型/行距。触发钮显示当前值，labelOf 回填。
  * withIcons=true（块类型）走带 icon 的项渲染。
- * @public
+ * @internal
  */
 export interface LabelDropdownItem extends ItemBase {
   kind: 'label-dropdown';
@@ -130,7 +130,7 @@ export interface LabelDropdownItem extends ItemBase {
 
 /**
  * 颜色下拉：文字色/高亮。触发钮带 chevron（withChevron 默认 true，绝不可设 false）。
- * @public
+ * @internal
  */
 export interface ColorDropdownItem extends ItemBase {
   kind: 'color-dropdown';
@@ -143,7 +143,7 @@ export interface ColorDropdownItem extends ItemBase {
 
 /**
  * 网格下拉：表格（8×10，withChevron=false）。无 refresh。
- * @public
+ * @internal
  */
 export interface GridDropdownItem extends ItemBase {
   kind: 'grid-dropdown';
@@ -155,7 +155,7 @@ export interface GridDropdownItem extends ItemBase {
 
 /**
  * 菜单下拉：形状（shapes 图标，withChevron=false）。无 refresh。
- * @public
+ * @internal
  */
 export interface MenuDropdownItem extends ItemBase {
   kind: 'menu-dropdown';
@@ -169,7 +169,7 @@ export interface MenuDropdownItem extends ItemBase {
 
 /**
  * 模板下拉：运行时按 templateNames() 重建项，末项「设为模板…」。无 refresh，双监听两段式时序。
- * @public
+ * @internal
  */
 export interface TemplateDropdownItem extends ItemBase {
   kind: 'template-dropdown';
@@ -179,7 +179,7 @@ export interface TemplateDropdownItem extends ItemBase {
 
 /**
  * 紧凑数字输入：段前/段后/字距。聚焦守卫；回车/失焦提交。
- * @public
+ * @internal
  */
 export interface NumInputItem extends ItemBase {
   kind: 'num-input';
@@ -190,7 +190,7 @@ export interface NumInputItem extends ItemBase {
   valueOf(s: ToolbarState): number;
 }
 
-/** 全部声明式控件的判别联合。 @public */
+/** 全部声明式控件的判别联合。 @internal */
 export type ToolbarItem =
   | IconButtonItem
   | TextButtonItem
@@ -201,13 +201,13 @@ export type ToolbarItem =
   | TemplateDropdownItem
   | NumInputItem;
 
-/** 单组的一行控件。 @public */
+/** 单组的一行控件。 @internal */
 export type ItemRow = ToolbarItem[];
 
 /**
  * 功能组规格：tab 下的一个组，含组名小字与两行控件布局。
  * rows 顺序逐字照搬源两行布局——任何串行改变视觉换行。
- * @public
+ * @internal
  */
 export interface GroupSpec {
   tab: ToolbarTab;
@@ -218,7 +218,7 @@ export interface GroupSpec {
 
 /**
  * 渲染上下文：核心透传给 renderer 的依赖（不再把 40 方法胖接口直接喂给核心）。
- * @public
+ * @internal
  */
 export interface ToolbarContext {
   /** 派发命名命令（含带参）：item 的点击/选值经此进入统一命令总线。 */
@@ -239,7 +239,7 @@ export interface ToolbarContext {
 
 /**
  * 已挂载控件：DOM 元素 + 可选刷新回调（无 active/label/value 的纯命令钮不实现）+ 可选 dispose。
- * @public
+ * @internal
  */
 export interface MountedItem {
   el: HTMLElement;
@@ -249,6 +249,6 @@ export interface MountedItem {
 
 /**
  * 渲染器签名：item + ctx → 已挂载控件。kind → Renderer 经穷举映射 RENDERERS 分发。
- * @public
+ * @internal
  */
 export type Renderer<I extends ToolbarItem = ToolbarItem> = (item: I, ctx: ToolbarContext) => MountedItem;

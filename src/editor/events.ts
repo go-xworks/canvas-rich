@@ -24,6 +24,8 @@ export type Unsub = () => void;
 export interface Emitter {
   /** 订阅某事件，返回退订句柄。同一回调重复订阅按 Set 去重。 */
   on(ev: EditorEvent, fn: () => void): Unsub;
+  /** 退订某事件的指定回调（未订阅则 no-op）；与 on 返回的 unsub 等效但意图自解释。 */
+  off(ev: EditorEvent, fn: () => void): void;
   /** 同步广播某事件：快照遍历当前监听器（容忍回调内退订/再订阅）。 */
   emit(ev: EditorEvent): void;
 }
@@ -43,6 +45,9 @@ export function createEmitter(): Emitter {
     on(ev, fn) {
       map[ev].add(fn);
       return () => map[ev].delete(fn);
+    },
+    off(ev, fn) {
+      map[ev].delete(fn);
     },
     emit(ev) {
       for (const fn of [...map[ev]]) fn();

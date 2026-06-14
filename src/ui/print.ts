@@ -54,7 +54,7 @@ const escTitle = (s: string): string =>
  * 纯函数（node 可测）；iframe 装载与 print() 编排见 {@link printDoc}。
  * @param doc 文档树
  * @param title 打印文档标题（系统对话框/PDF 文件名提示；转义后入 <title>）
- * @public
+ * @internal
  */
 export function buildPrintHtml(doc: Doc, title = '文档'): string {
   return '<!doctype html>\n<html lang="zh">\n<head>\n<meta charset="utf-8" />\n'
@@ -120,7 +120,7 @@ async function firePrint(frame: HTMLIFrameElement): Promise<void> {
  * 打印结束（afterprint）或兜底超时后自动移除 iframe；重复调用先回收上一帧。
  * @param doc 文档树
  * @param title 打印文档标题（默认「文档」）
- * @public
+ * @internal
  */
 export function printDoc(doc: Doc, title?: string): void {
   removeActiveFrame();

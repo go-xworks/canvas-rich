@@ -1,4 +1,0 @@
-/* Tailwind v4：分层导入但「不」导入 preflight，避免全局 reset 污染既有 chrome / IME textarea / 图片覆盖层。 */
-@layer theme, base, components, utilities;
-@import "tailwindcss/theme.css" layer(theme);
-@import "tailwindcss/utilities.css" layer(utilities);

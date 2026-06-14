@@ -26,7 +26,7 @@ import { OverlayBox, OverlayKind, InlineOverlayBox } from '../text/doc-layout';
 
 /**
  * 覆盖层向装配层回调的句柄：表格编辑、测量高度、单元格聚焦/失焦。
- * @public
+ * @internal
  */
 export interface OverlayCallbacks {
   onTableEdit(block: Block): void;
@@ -216,7 +216,7 @@ interface Entry {
 
 /**
  * 覆盖层管理器句柄：按帧将原子块 DOM 与布局盒同步对齐。
- * @public
+ * @internal
  */
 export interface OverlayManager {
   /**
@@ -231,6 +231,8 @@ export interface OverlayManager {
    * @param scale - 同 {@link OverlayManager.sync}：布局比例（deviceDpr × zoom）。
    */
   syncInline(boxes: InlineOverlayBox[], srcOf: (box: InlineOverlayBox) => string, scrollY: number, scale: number): void;
+  /** 销毁覆盖层管理器：移除 head 注入样式与定位层（含全部缓存的原子块 DOM）。 */
+  destroy(): void;
 }
 
 const CSS = `
@@ -371,7 +373,7 @@ function drawShape(ctx: CanvasRenderingContext2D, kind: ShapeKind, w: number, h:
 
 /**
  * 创建覆盖层管理器：注入样式与定位层，按稳定 block id 缓存/复用原子块 DOM。
- * @public
+ * @internal
  */
 export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): OverlayManager {
   const style = document.createElement('style'); style.textContent = CSS; document.head.appendChild(style);
@@ -1082,6 +1084,15 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
         s.display = '';
       }
       for (const [key, ent] of inlineMap) if (!seen.has(key)) { ent.el.remove(); inlineMap.delete(key); }
+    },
+    destroy() {
+      // clip 含 layer 与全部原子块 DOM；clip 虽在 host(=editorEl) 子树内（随外壳一并回收），
+      // 仍显式移除以与 head 样式成对清理。head 注入的 <style> 是全局门户，必须显式回收。
+      for (const [, entry] of map) removeEntry(entry); // 焦点状态清理（避免 tableFocused 卡死）
+      map.clear();
+      inlineMap.clear();
+      clip.remove();
+      style.remove();
     },
   };
 }

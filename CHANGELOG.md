@@ -7,8 +7,21 @@
 
 ## [Unreleased]
 
+### Changed
+- **改为库模式**：从单体 Vite 应用重构为「可被 `import` 的核心库 + 消费它的示例」结构，对标
+  ProseMirror / CodeMirror6 / Lexical / TipTap。`src/` 是唯一发布物的输入，`examples/` 是消费库的示例站点
+  （Vite root，仅 `<div id="app">` + 调 `createEditor`）。
+  - 新增公共入口 `src/index.ts`、工厂 `editor/create-editor.ts`（`createEditor(target, options)` → 实例句柄）、
+    程序化外壳 `editor/editor-shell.ts`（在容器内自建 DOM 外壳，作用域 `.rte-shell` class）。
+  - `package.json` 改为可发布库：移除 `private`，加 `main`/`module`/`types`/`exports`/`files`/`sideEffects`。
+  - 库构建走 `vite.lib.config.ts`（`build.lib` entry=`src/index.ts`，`external` katex/harfbuzzjs/bidi-js，
+    `cssCodeSplit:false` → 单一 `dist/style.css`）；d.ts 走 `tsconfig.build.json`（`tsc --emitDeclarationOnly`）。
+  - 删除根 `index.html` 与 `src/main.ts`（逻辑迁入 `create-editor.ts`，演示迁入 `examples/main.ts`）。
+  - 脚本：`dev`=起示例、`build`=库构建+d.ts、`build:demo`=示例站点、`preview`/`typecheck`/`test` 不变。
+
 ### Added
-- 暂无。
+- **`作为库使用`** 文档（README）：`import { createEditor } from 'canvas-rich'` + `'canvas-rich/style.css'` 最小示例，
+  含 external 运行时资源（katex CSS / HarfBuzz 字体 / wasm）与多实例主题全局局限说明。
 
 ## [0.1.0] - 2026-06-12
 

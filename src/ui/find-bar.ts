@@ -5,7 +5,7 @@
 import { RichDoc } from '../model/rich-document';
 import { findMatches, FindMatch } from '../model/find';
 
-/** 查找条的装配层注入面：模型 + 三类收尾回调。 @public */
+/** 查找条的装配层注入面：模型 + 三类收尾回调。 @internal */
 export interface FindBarDeps {
   /** 文档编辑模型（匹配读 doc，替换走单次撤销原语）。 */
   rd: RichDoc;
@@ -21,7 +21,7 @@ export interface FindBarDeps {
   printDoc: () => void;
 }
 
-/** 查找条句柄：开关 + 命中查询（渲染帧画高亮）+ 文档变更后的命中重算。 @public */
+/** 查找条句柄：开关 + 命中查询（渲染帧画高亮）+ 文档变更后的命中重算。 @internal */
 export interface FindBar {
   /** 打开查找条（可带初始查询，如当前选区文本），聚焦查询输入框并立即匹配。 */
   open(initialQuery?: string): void;
@@ -50,7 +50,7 @@ const BTN_CLS = 'px-1.5 h-[24px] rounded border-0 bg-transparent text-[12px] tex
 
 /**
  * 创建挂到 host（编辑器容器）右上角的查找/替换浮条，返回 {@link FindBar} 句柄。
- * @public
+ * @internal
  */
 export function createFindBar(host: HTMLElement, deps: FindBarDeps): FindBar {
   const bar = document.createElement('div');

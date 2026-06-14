@@ -58,7 +58,7 @@ const shapeMenuItems = SHAPE_DEFS.map(([value, iconName, label]) => ({ value, ic
 /**
  * 声明式控件清单：54 控件按 tab→group→两行布局描述。rows 顺序逐字照搬源文件，禁止串行。
  * 新增功能 = 往对应 group.rows 加一条描述符。
- * @public
+ * @internal
  */
 export const TOOLBAR_GROUPS: GroupSpec[] = [
   // ============ 开始页签 ============

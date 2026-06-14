@@ -89,7 +89,7 @@ export function hasIcon(name: string): boolean {
  * 返回一个内联 Lucide 图标的 SVG 字符串（描边随 currentColor）。
  * @param name 图标名（见 PATHS 键）
  * @param size 像素边长，默认 18
- * @public
+ * @internal
  */
 export function icon(name: string, size = 18): string {
   const d = PATHS[name] ?? '';

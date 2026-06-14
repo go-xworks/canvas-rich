@@ -3,12 +3,12 @@
 // 分层：纯 DOM 控件，不依赖 model。
 import { icon } from './icons';
 
-/** 图片弹层句柄：弹出并解析为图片 src（取消返回 null）。 @public */
-export interface ImageDialog { open(): Promise<string | null>; }
+/** 图片弹层句柄：弹出并解析为图片 src（取消返回 null）；销毁（移除 body 门户节点）。 @internal */
+export interface ImageDialog { open(): Promise<string | null>; destroy(): void; }
 
 /**
  * 创建挂到 document.body 的单例图片插入弹层。
- * @public
+ * @internal
  */
 export function createImageDialog(): ImageDialog {
   const scrim = document.createElement('div');
@@ -110,6 +110,10 @@ export function createImageDialog(): ImageDialog {
         scrim.classList.remove('hidden'); scrim.classList.add('flex');
         requestAnimationFrame(() => urlInput.focus());
       });
+    },
+    destroy() {
+      close(null); // 解决可能挂起的 open（避免悬空 Promise）
+      scrim.remove();
     },
   };
 }

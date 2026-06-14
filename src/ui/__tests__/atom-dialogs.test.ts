@@ -28,9 +28,9 @@ function harness(doc: Doc): Harness {
   const log = { afterEdit: 0, announces: [] as string[], focus: 0 };
   const dialogs = createAtomDialogs({
     rd,
-    promptDialog: { ask: async (opts) => { promptCalls.push(opts); return prompts.length ? prompts.shift()! : null; } },
-    imageDialog: { open: async () => imageSrc },
-    signatureDialog: { open: async () => signatureSrc },
+    promptDialog: { ask: async (opts) => { promptCalls.push(opts); return prompts.length ? prompts.shift()! : null; }, destroy: () => {} },
+    imageDialog: { open: async () => imageSrc, destroy: () => {} },
+    signatureDialog: { open: async () => signatureSrc, destroy: () => {} },
     afterEdit: () => { log.afterEdit++; },
     announce: (m) => { log.announces.push(m); },
     focusEditor: () => { log.focus++; },

@@ -3,7 +3,7 @@
 // 与具体控件结构解耦——任何调用 attachTooltip 的元素都会自动获得提示。
 // 分层：纯 DOM 控件，不依赖 model。
 
-/** 一条提示的内容：名称、可选快捷键、可选一句话用法说明。 @public */
+/** 一条提示的内容：名称、可选快捷键、可选一句话用法说明。 @internal */
 export interface TooltipSpec {
   title: string;
   shortcut?: string;
@@ -12,7 +12,7 @@ export interface TooltipSpec {
 
 /**
  * 给元素附加 tooltip 数据（由全局提示层读取展示），并同步原生 `title` 作为无障碍/兜底。
- * @public
+ * @internal
  */
 export function attachTooltip(el: HTMLElement, spec: TooltipSpec): void {
   el.dataset.tipTitle = spec.title;
@@ -26,7 +26,7 @@ let installed = false;
 /**
  * 安装全局悬停提示层（幂等）：委托监听 document，悬停带 `data-tip-title` 的元素延时后显示浮层。
  * @param delay 悬停到显示的延时（ms），默认 350。
- * @public
+ * @internal
  */
 export function installTooltips(delay = 350): void {
   if (installed || typeof document === 'undefined') return;

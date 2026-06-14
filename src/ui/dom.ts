@@ -5,7 +5,7 @@
  * 取 id 对应的 DOM 元素并断言存在；取不到立即抛出带 id 的错误。
  * @param id 元素 id（不含 `#`）
  * @returns 命中的元素（按调用方声明的具体子类型返回）
- * @public
+ * @internal
  */
 export function mustEl<T extends HTMLElement = HTMLElement>(id: string): T {
   const el = document.getElementById(id);

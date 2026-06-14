@@ -3,17 +3,17 @@
 
 /**
  * 右键菜单项：可执行项（含禁用/勾选/快捷键提示）或分隔线。
- * @public
+ * @internal
  */
 export type MenuItem =
   | { label: string; action: () => void; disabled?: boolean; active?: boolean; key?: string }
   | { separator: true };
 
 /**
- * 右键菜单句柄：在坐标处弹出、隐藏、查询开合状态。
- * @public
+ * 右键菜单句柄：在坐标处弹出、隐藏、查询开合状态、销毁（移除 body 门户节点 + document/window 监听）。
+ * @internal
  */
-export interface ContextMenu { show(x: number, y: number, items: MenuItem[]): void; hide(): void; isOpen(): boolean }
+export interface ContextMenu { show(x: number, y: number, items: MenuItem[]): void; hide(): void; isOpen(): boolean; destroy(): void }
 
 const MENU = 'fixed min-w-[184px] bg-[var(--rte-overlay-bg)] border border-[var(--rte-overlay-border)] rounded-lg p-1 ' +
   'shadow-[var(--rte-shadow)] text-[13px] font-sans text-[var(--rte-text)] z-[60] hidden';
@@ -23,7 +23,7 @@ const ITEM_OFF = 'opacity-40 cursor-default';
 
 /**
  * 创建挂到 document.body 的右键菜单，自动处理外点/Esc/失焦关闭与边界翻转定位。
- * @public
+ * @internal
  */
 export function createContextMenu(): ContextMenu {
   const menu = document.createElement('div'); menu.className = MENU; document.body.appendChild(menu);
@@ -31,12 +31,21 @@ export function createContextMenu(): ContextMenu {
   const hide = () => menu.classList.add('hidden');
   const isOpen = () => !menu.classList.contains('hidden');
 
-  document.addEventListener('mousedown', (e) => { if (isOpen() && !menu.contains(e.target as Node)) hide(); }, true);
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') hide(); });
+  // 命名监听器（destroy 时精确解绑；mousedown 用捕获期，移除须带同样的 useCapture=true）
+  const onDocMouseDown = (e: MouseEvent) => { if (isOpen() && !menu.contains(e.target as Node)) hide(); };
+  const onDocKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape') hide(); };
+  document.addEventListener('mousedown', onDocMouseDown, true);
+  document.addEventListener('keydown', onDocKeyDown);
   window.addEventListener('blur', hide);
 
   return {
     isOpen, hide,
+    destroy() {
+      document.removeEventListener('mousedown', onDocMouseDown, true);
+      document.removeEventListener('keydown', onDocKeyDown);
+      window.removeEventListener('blur', hide);
+      menu.remove();
+    },
     show(x, y, items) {
       menu.innerHTML = '';
       for (const it of items) {

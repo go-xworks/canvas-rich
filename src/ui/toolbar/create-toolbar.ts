@@ -14,7 +14,7 @@ import type {
 /**
  * 装配层注入工具栏的最小命令面：派发命名命令 + 回焦 + 模板名拉取。
  * 取代旧 ToolbarHandlers 胖接口（40 方法）；与 editor/commands.CommandContext 结构兼容（取其子集）。
- * @public
+ * @internal
  */
 export interface ToolbarDeps {
   /** 派发命名命令（经统一命令总线 → editor/commands）。 */
@@ -38,7 +38,7 @@ let docClickBound = false;
  * @param host - 工具栏宿主元素（其 className/innerHTML 会被接管）
  * @param deps - 装配层注入的命令面（exec/focusEditor/templateNames）
  * @param manifest - 声明式控件清单（默认 TOOLBAR_GROUPS，可注入自定义清单）
- * @public
+ * @internal
  */
 export function createToolbar(
   host: HTMLElement, deps: ToolbarDeps, manifest: GroupSpec[] = TOOLBAR_GROUPS,

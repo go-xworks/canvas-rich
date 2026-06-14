@@ -9,7 +9,7 @@ import type { ToolbarState } from './toolbar';
 
 /**
  * buildToolbarState 的视图环境入参：不来自文档本身的展示态（整形器名/主题/视图模式）。
- * @public
+ * @internal
  */
 export interface ToolbarViewEnv {
   shaperShort: string;
@@ -20,7 +20,7 @@ export interface ToolbarViewEnv {
 /**
  * 焦点块的工具栏「块类型」下拉值：heading 拼上级别（`heading1`..`heading6`，级别夹回 1..6），
  * 其余块直接返回块类型名。
- * @public
+ * @internal
  */
 export function blockValueOf(rd: RichDoc): string {
   const b = rd.focusBlock();
@@ -31,7 +31,7 @@ export function blockValueOf(rd: RichDoc): string {
 /**
  * 当前生效字号（字符串）：有 fontSize 行内 mark 取其值，否则回退焦点块主题默认字号（取整）。
  * @returns 字号像素值的字符串形式（如 `"16"`）
- * @public
+ * @internal
  */
 export function activeFontSize(rd: RichDoc, resolver: StyleResolver): string {
   const fs = rd.activeMarks().find((m) => m.type === 'fontSize');
@@ -41,18 +41,18 @@ export function activeFontSize(rd: RichDoc, resolver: StyleResolver): string {
 
 /**
  * 当前生效字体族的命名值：有 fontFamily 行内 mark 取其命名值，否则 `'default'`（随块主题）。
- * @public
+ * @internal
  */
 export function activeFontFamily(rd: RichDoc): string {
   return rd.activeMarks().find((m) => m.type === 'fontFamily')?.attrs?.fontFamily ?? 'default';
 }
 
-/** 当前生效文字色 hex：有 color 行内 mark 取其 attrs.color，否则 null（无显式色，按主题默认）。@public */
+/** 当前生效文字色 hex：有 color 行内 mark 取其 attrs.color，否则 null（无显式色，按主题默认）。@internal */
 export function activeColor(rd: RichDoc): string | null {
   return rd.activeMarks().find((m) => m.type === 'color')?.attrs?.color ?? null;
 }
 
-/** 当前生效高亮色 hex：有 highlight 行内 mark 取其 attrs.color，否则 null。@public */
+/** 当前生效高亮色 hex：有 highlight 行内 mark 取其 attrs.color，否则 null。@internal */
 export function activeHighlight(rd: RichDoc): string | null {
   return rd.activeMarks().find((m) => m.type === 'highlight')?.attrs?.color ?? null;
 }
@@ -60,7 +60,7 @@ export function activeHighlight(rd: RichDoc): string | null {
 /**
  * 从文档当前选区/焦点块只读构建工具栏状态快照（不改文档、不触发重排）。
  * @param view - 展示态环境（整形器名/主题/视图模式），由装配层传入
- * @public
+ * @internal
  */
 export function buildToolbarState(rd: RichDoc, resolver: StyleResolver, view: ToolbarViewEnv): ToolbarState {
   const blk = rd.focusBlock();
@@ -101,7 +101,7 @@ const SCALAR_KEYS = Object.keys(SCALAR_KEY_SET) as Exclude<keyof ToolbarState, '
 /**
  * 两份工具栏状态快照是否等价：标量字段逐一 `===`；marks 为对象需逐键比较（键集 + 布尔值）。
  * 供装配层 refresh 前的脏检查 —— 等价则跳过 DOM 更新。
- * @public
+ * @internal
  */
 export function isToolbarStateEqual(a: ToolbarState, b: ToolbarState): boolean {
   for (const k of SCALAR_KEYS) if (a[k] !== b[k]) return false;

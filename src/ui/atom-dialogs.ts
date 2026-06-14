@@ -11,7 +11,7 @@ import type { PromptDialog } from './prompt';
 import type { ImageDialog } from './image-dialog';
 import type { SignatureDialog } from './signature-dialog';
 
-/** 媒体 src 弹层支持的原子种类（音频/视频/内嵌网页）。@public */
+/** 媒体 src 弹层支持的原子种类（音频/视频/内嵌网页）。@internal */
 export type MediaSrcKind = 'audio' | 'video' | 'iframe';
 
 // 媒体 src 弹层配置表：插入与双击「再编辑」共用同一份文案/占位/写回方法（配置驱动，消除逐 kind 重复样板）。
@@ -23,7 +23,7 @@ const MEDIA_SRC_CONFIG: Record<MediaSrcKind, { label: string; placeholder: strin
 
 /**
  * 弹层族的注入依赖：文档句柄、三类弹层、编辑后回调、无障碍播报与焦点交还。
- * @public
+ * @internal
  */
 export interface AtomDialogDeps {
   rd: RichDoc;
@@ -40,7 +40,7 @@ export interface AtomDialogDeps {
 
 /**
  * 原子块弹层族句柄：insert* 一族 + 双击再编辑 editAtom。
- * @public
+ * @internal
  */
 export interface AtomDialogs {
   insertImage(): Promise<void>;
@@ -60,7 +60,7 @@ export interface AtomDialogs {
 /**
  * 组装原子块弹层族：每个动作 = 弹层取值 → 写回文档（进撤销栈）→ afterEdit + 播报 → 焦点交还。
  * 取消（弹层返回 null/空）不写文档，但仍交还焦点。
- * @public
+ * @internal
  */
 export function createAtomDialogs(deps: AtomDialogDeps): AtomDialogs {
   const { rd, promptDialog, imageDialog, signatureDialog, afterEdit, announce, focusEditor } = deps;

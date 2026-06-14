@@ -4,8 +4,8 @@
 // 分层：纯 DOM 控件，不依赖 model。
 import { icon } from './icons';
 
-/** 签名弹层句柄：弹出画板并解析为签名 PNG dataURL（取消/空白返回 null）。 @public */
-export interface SignatureDialog { open(): Promise<string | null>; }
+/** 签名弹层句柄：弹出画板并解析为签名 PNG dataURL（取消/空白返回 null）；销毁（移除 body 门户节点）。 @internal */
+export interface SignatureDialog { open(): Promise<string | null>; destroy(): void; }
 
 // 画板逻辑尺寸（CSS px）；内部按 dpr 放大物理像素，保手绘笔迹清晰不糊。
 const PAD_W = 420;
@@ -16,7 +16,7 @@ const LINE_W = 2.4;
 
 /**
  * 创建挂到 document.body 的单例签名画板弹层。
- * @public
+ * @internal
  */
 export function createSignatureDialog(): SignatureDialog {
   const scrim = document.createElement('div');
@@ -136,6 +136,10 @@ export function createSignatureDialog(): SignatureDialog {
         // rAF：scrim 可见后画板已具实际 CSS 宽度，再据其初始化物理像素，避免 0 宽。
         requestAnimationFrame(() => reset());
       });
+    },
+    destroy() {
+      close(null); // 解决可能挂起的 open（避免悬空 Promise）
+      scrim.remove();
     },
   };
 }

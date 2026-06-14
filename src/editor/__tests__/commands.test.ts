@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { keyCombo, keymap, commands, SELF_FINALIZING, VIEW_ONLY, INDENT_STEP } from '../commands';
+import { keyCombo, keymap, commands, SELF_FINALIZING, VIEW_ONLY, READONLY_SAFE, NAV_AFFINITY, INDENT_STEP } from '../commands';
 import { RichDoc } from '../../model/rich-document';
 import { Doc, para, text } from '../../model/schema';
 import { makeCtx } from './make-ctx';
@@ -226,5 +226,42 @@ describe('VIEW_ONLY 集合一致性（只读视图命令：派发方不追加任
     commands['find.open'](ctx);
     commands['doc.print'](ctx);
     expect(ctx.calls).toEqual(['openFind', 'printDoc']);
+  });
+});
+
+describe('READONLY_SAFE — 只读命令总线放行集合（dispatch 守卫据此放行）', () => {
+  it('恰含 VIEW_ONLY ∪ {select.all, doc.export}', () => {
+    expect([...READONLY_SAFE].sort()).toEqual(['doc.export', 'doc.print', 'find.open', 'select.all']);
+  });
+
+  it('包含全部 VIEW_ONLY 命令（查找/打印）', () => {
+    for (const id of VIEW_ONLY) expect(READONLY_SAFE.has(id)).toBe(true);
+  });
+
+  it('不含任何变更命令（mark/block/align/history/insert/delete/template）', () => {
+    const mutating = [
+      'mark.bold', 'mark.italic', 'mark.underline', 'block.h1', 'block.bullet',
+      'align.center', 'history.undo', 'history.redo', 'indent.inc', 'list.indent',
+      'insert.image', 'insert.table', 'insert.toc', 'delete.wordBack', 'delete.toLineStart',
+      'template.apply', 'link.toggle', 'format.clear', 'view.word', 'theme.toggle',
+    ];
+    for (const id of mutating) expect(READONLY_SAFE.has(id)).toBe(false);
+  });
+
+  it('NAV_AFFINITY（词/行导航）不并入 READONLY_SAFE（守卫另按 id in NAV_AFFINITY 放行）', () => {
+    for (const id of Object.keys(NAV_AFFINITY)) expect(READONLY_SAFE.has(id)).toBe(false);
+  });
+
+  it('readOnly 放行判定 = READONLY_SAFE.has(id) || (id in NAV_AFFINITY)；覆盖只读应放行的全部命令', () => {
+    const allowed = (id: string) => READONLY_SAFE.has(id) || (id in NAV_AFFINITY);
+    // 只读下应放行：查找/打印/全选/导出 + 词左右/行首尾导航
+    for (const id of ['find.open', 'doc.print', 'select.all', 'doc.export',
+      'nav.wordLeft', 'nav.wordRight', 'nav.lineStart', 'nav.lineEnd']) {
+      expect(allowed(id)).toBe(true);
+    }
+    // 只读下应拦截：代表性变更命令
+    for (const id of ['mark.bold', 'history.undo', 'block.h1', 'delete.wordBack', 'insert.image']) {
+      expect(allowed(id)).toBe(false);
+    }
   });
 });

@@ -5,17 +5,17 @@
  */
 import type { Pos } from '../model/rich-document';
 
-/** 手柄命中区边长（CSS px）。 @public */
+/** 手柄命中区边长（CSS px）。 @internal */
 export const HANDLE_HIT_PX = 44;
-/** 手柄可视圆点直径（CSS px）。 @public */
+/** 手柄可视圆点直径（CSS px）。 @internal */
 export const HANDLE_DOT_PX = 14;
 /** 拖动手柄时命中点的纵向上移量（CSS px）：手指落在行下方的圆点上，折回其标注的文本行。 */
 const HANDLE_HIT_Y_OFFSET = 24;
 
-/** 选区一端的手柄锚点几何（CSS px，相对 editor 容器；x 为光标线、top/bottom 为行界）。 @public */
+/** 选区一端的手柄锚点几何（CSS px，相对 editor 容器；x 为光标线、top/bottom 为行界）。 @internal */
 export interface HandleAnchor { x: number; top: number; bottom: number }
 
-/** sync 输入：可见性 + 选区两端几何与文档位置（start ≤ end，已规范化）。 @public */
+/** sync 输入：可见性 + 选区两端几何与文档位置（start ≤ end，已规范化）。 @internal */
 export interface SelectionHandleState {
   visible: boolean;
   start: HandleAnchor | null;
@@ -24,7 +24,7 @@ export interface SelectionHandleState {
   endPos: Pos;
 }
 
-/** 选区手柄的装配层依赖。 @public */
+/** 选区手柄的装配层依赖。 @internal */
 export interface SelectionHandlesDeps {
   /** 屏幕 client 坐标 → 文档位置（拖动手柄时命中）。 */
   posAtClient(clientX: number, clientY: number): Pos;
@@ -32,7 +32,7 @@ export interface SelectionHandlesDeps {
   onDrag(anchor: Pos, focus: Pos): void;
 }
 
-/** 选区手柄控制器：渲染帧 sync 跟随布局，dragging() 供装配层在拖动中保持可见。 @public */
+/** 选区手柄控制器：渲染帧 sync 跟随布局，dragging() 供装配层在拖动中保持可见。 @internal */
 export interface SelectionHandles {
   /** 渲染帧同步：定位/显隐两手柄（visible=false 或几何缺失时隐藏）。 */
   sync(state: SelectionHandleState): void;
@@ -40,7 +40,7 @@ export interface SelectionHandles {
   dragging(): boolean;
 }
 
-/** 创建触屏选区手柄对（DOM 圆点 + 44px 透明命中区），挂到 editor 容器。 @public */
+/** 创建触屏选区手柄对（DOM 圆点 + 44px 透明命中区），挂到 editor 容器。 @internal */
 export function createSelectionHandles(container: HTMLElement, deps: SelectionHandlesDeps): SelectionHandles {
   let last: SelectionHandleState | null = null;
   let drag: { which: 'start' | 'end'; fixed: Pos } | null = null;

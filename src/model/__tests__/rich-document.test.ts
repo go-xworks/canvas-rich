@@ -259,3 +259,34 @@ describe('段落排版 setter（块级，进撤销栈）', () => {
     expect(rd.doc.blocks[0].attrs.align).toBe('justify');
   });
 });
+
+describe('setDoc — 取得所有权但不就地改写消费者源对象（与 replaceDoc 一致克隆）', () => {
+  it('setDoc 后编辑不改写传入的源 Doc（深拷贝隔离）', () => {
+    const rd = rdOf(para([text('orig')]));
+    const source: Doc = doc(para([text('hello')]));
+    rd.setDoc(source);
+    rd.setSel(rd.docEnd());
+    rd.insertText(' world');
+    // 内部已改写
+    expect(blockText(rd.doc.blocks[0])).toBe('hello world');
+    // 源对象不受影响（克隆隔离），可安全复用
+    expect(blockText(source.blocks[0])).toBe('hello');
+    expect(rd.doc).not.toBe(source);
+    expect(rd.doc.blocks[0]).not.toBe(source.blocks[0]);
+  });
+
+  it('setDoc 光标置文末、进撤销栈（undo 回原文档）', () => {
+    const rd = rdOf(para([text('A')]));
+    rd.setDoc(doc(para([text('xyz')])));
+    expect(rd.focus).toEqual({ block: 0, offset: 3 });
+    rd.undo();
+    expect(blockText(rd.doc.blocks[0])).toBe('A');
+  });
+
+  it('setDoc 空文档回退为单空段落', () => {
+    const rd = rdOf(para([text('A')]));
+    rd.setDoc({ blocks: [] });
+    expect(rd.doc.blocks).toHaveLength(1);
+    expect(rd.doc.blocks[0].type).toBe('paragraph');
+  });
+});

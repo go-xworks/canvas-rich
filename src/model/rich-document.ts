@@ -1031,10 +1031,15 @@ export class RichDoc {
     this.anchor = this.focus = { block: nb, offset: 0 };
   }
 
-  /** 整文档替换（如导入 Markdown/HTML）：进撤销栈，光标置文末。空文档回退为单空段落。 @public */
+  /**
+   * 整文档替换（如导入 Markdown/HTML）：进撤销栈，光标置文末。空文档回退为单空段落。
+   * 深拷贝传入文档（与 {@link replaceDoc} 一致）——取得文档所有权但**不就地改写消费者源对象**，
+   * 故消费者传入 `initialDoc`/`setDoc` 的 Doc 可安全复用。
+   * @public
+   */
   setDoc(doc: Doc): void {
     this.snapshot();
-    this.doc = doc.blocks.length ? doc : { blocks: [mkBlock('paragraph', [])] };
+    this.doc = doc.blocks.length ? cloneDoc(doc) : { blocks: [mkBlock('paragraph', [])] };
     this.anchor = this.focus = this.docEnd();
     this.storedMarks = null;
   }

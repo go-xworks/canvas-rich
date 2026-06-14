@@ -6,7 +6,7 @@ import { docStats } from '../model/doc-stats';
 
 /**
  * 状态栏的交互回调：缩放步进与复位由装配层实现（clamp / 重排 / 重栅都在装配层）。
- * @public
+ * @internal
  */
 export interface StatusBarHooks {
   /** 缩放步进：deltaPct 为百分比增量（如 +10 / -10）。 */
@@ -17,7 +17,7 @@ export interface StatusBarHooks {
 
 /**
  * 状态栏句柄：以最新文档、缩放百分比与视图模式名刷新展示。
- * @public
+ * @internal
  */
 export interface StatusBar {
   /** 刷新状态栏。zoom 为缩放百分比（如 100 表示 100%）；view 为视图模式标签（网页/页面）。 */
@@ -35,7 +35,7 @@ const ZBTN = 'w-[20px] h-[20px] rounded bg-transparent border-0 appearance-none 
 
 /**
  * 创建底部状态栏：挂入 host，显示段落数 / 字数 / 缩放（可交互步进与复位）/ 视图模式。
- * @public
+ * @internal
  */
 export function createStatusBar(host: HTMLElement, hooks: StatusBarHooks): StatusBar {
   const bar = document.createElement('div');

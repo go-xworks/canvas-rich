@@ -13,18 +13,61 @@
 
 ## 运行
 
+本仓库分两层：`src/` 是**可被 import 的核心库**（唯一发布物输入），`examples/` 是消费库的**示例站点**
+（Vite root，仅 `<div id="app">` + 调 `createEditor`）。
+
 ```bash
 cd rich-text-engine
 npm install
-npm run dev      # http://localhost:5173
-npm run build    # tsc + vite build
-npm test         # vitest（1039 个单测，1019 通过 + 20 跳过）
+npm run dev        # 起示例站点（examples/，http://localhost:5173）
+npm run build      # 构建库：dist/index.js + dist/style.css + dist/index.d.ts（库模式 + d.ts）
+npm run build:demo # 构建示例站点（dist-demo/）
+npm run preview    # 预览示例站点
+npm run typecheck  # tsc --noEmit
+npm test           # vitest（1039 个单测，1019 通过 + 20 跳过）
 ```
+
+## 作为库使用
+
+核心库对标 ProseMirror / CodeMirror6 / Lexical / TipTap：给一个容器，库自建 DOM 外壳，
+工厂 `createEditor(target, options)` 返回命令式实例句柄。
+
+```ts
+import { createEditor, createDemoDoc } from 'canvas-rich';
+import 'canvas-rich/style.css';        // 库外壳 + chrome 样式（必需）
+import 'katex/dist/katex.min.css';     // 公式样式（库 external katex，由消费者引）
+
+const app = document.getElementById('app')!;   // 需自带尺寸（如 position:fixed;inset:0）
+const editor = createEditor(app, {
+  initialDoc: createDemoDoc(),  // 或 initialHTML / initialMarkdown；都缺省时用空段落或草稿
+  theme: 'light',               // 'light' | 'dark'（注意：主题为进程级全局，多实例共享，见下）
+  viewMode: 'web',              // 'web' 连续滚动 | 'word' A4 分页
+  shaper: 'canvas',             // 'canvas' 系统字体（含 CJK）| 'harfbuzz' 真整形（异步就绪前回退 canvas）
+  readOnly: false,
+  persistDraft: false,          // localStorage 草稿；多实例同页务必 false（草稿 key 全局，会互相覆写）
+  chrome: { toolbar: true, outline: true, statusBar: true, contextMenu: true, findBar: true },
+});
+
+editor.exec('mark.bold');                 // 派发命名命令（等价工具栏/键盘三路总线）
+editor.on('doc:changed', () => console.log(editor.getMarkdown()));
+const html = editor.getHTML();            // 拿内容：getDoc / getHTML / getMarkdown
+editor.setMarkdown('# Hello');            // 灌内容：setDoc / setHTML / setMarkdown
+editor.destroy();                         // 彻底销毁：停 RAF、断监听、移除外壳 DOM 与 body/head 门户（右键菜单/弹层/导出面板/ARIA 镜像/样式）
+```
+
+**运行时资源（external，消费者自备）**：库 `external` 了 `katex` / `harfbuzzjs` / `bidi-js`——
+- `katex`：自行 `import 'katex/dist/katex.min.css'`（公式样式）。
+- HarfBuzz 字体：`shaper:'harfbuzz'` 时从 `/fonts/*.ttf`（绝对路径，服务根）加载 `Roboto-*` / `NotoSans{Arabic,Hebrew}-Regular`；
+  消费者需在自己的静态资源根提供这些字体（本仓库样张见 `public/fonts/`）。`shaper:'canvas'` 无此依赖。
+- `harfbuzzjs` 的 wasm 走 `import.meta.url` 相对路径，消费者打包器需保留该资源（勿 inline/改写其路径）。
+
+**已知局限**：`model/palette.ts` 的主题色板 `C` 是模块级可变全局——**同页多实例无法各自独立主题**，
+`setTheme` / `theme` 选项影响全页所有实例（最后调用胜出）。per-instance 主题是后续独立重构。
 
 ## 能力
 
 - **默认亮色（白底）主题**：统一主题令牌——canvas 渲染色集中在 `model/palette.ts` 的 `C`，
-  DOM 外壳色集中在 `index.html` 的 `--rte-*` CSS 变量；改一处即可换肤（暗色模式预留）。文本对比度过 WCAG AA。
+  DOM 外壳色集中在 `src/styles/shell.css` 的 `--rte-*` CSS 变量；改一处即可换肤（暗色模式预留）。文本对比度过 WCAG AA。
 - **工具栏 = JitWord 风分页签 Ribbon**（真 DOM/CSS，**Lucide 内联线性图标**）：页签 **开始 / 插入 / 视图**（active 蓝下划线）、
   功能组**细竖线分隔 + 组名小字 + 两行紧凑**；开始(历史/字体/段落)、插入(媒体/引用/模板)、视图(整形器)；导出常驻右上。
   active 用浅蓝 wash + 蓝前景，按钮**实时反映选区状态**；**悬停提示**(`ui/tooltip.ts`)显示「名称 + 快捷键 + 用法说明」。

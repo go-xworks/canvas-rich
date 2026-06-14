@@ -13,18 +13,19 @@ const CSS = `
 `;
 
 /**
- * 无障碍树句柄：刷新语义镜像、播报 live 区域语义事件。
- * @public
+ * 无障碍树句柄：刷新语义镜像、播报 live 区域语义事件、销毁（移除 head 样式 + body 镜像/live 节点）。
+ * @internal
  */
 export interface AriaTree {
   update(doc: Doc): void;
   announce(msg: string): void;
+  destroy(): void;
 }
 
 /**
  * 构建平行 ARIA 无障碍树：隐藏 canvas、标注 IME，挂接离屏语义镜像与 live 播报区。
  * 不变量：live 区域初始为空，update 仅在 HTML 变化时重写镜像（避免无意义播报）。
- * @public
+ * @internal
  */
 export function createAriaTree(canvas: HTMLElement, ime: HTMLElement): AriaTree {
   const style = document.createElement('style'); style.textContent = CSS; document.head.appendChild(style);
@@ -56,6 +57,11 @@ export function createAriaTree(canvas: HTMLElement, ime: HTMLElement): AriaTree 
       // 先清空再写，确保相同/重复消息也被重新播报
       live.textContent = '';
       window.setTimeout(() => { live.textContent = msg; }, 30);
+    },
+    destroy() {
+      style.remove();
+      mirror.remove();
+      live.remove();
     },
   };
 }

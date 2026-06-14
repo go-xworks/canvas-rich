@@ -2,7 +2,7 @@
 // 亮色主题（--rte-* 变量）、Promise 返回、Enter 确认 / Esc 取消 / 点遮罩关闭、role=dialog 可达。
 // 分层：纯 DOM 控件，不依赖 model。
 
-/** ask 的参数：标题、默认值、占位、确定按钮文案、是否多行（LaTeX 等）。 @public */
+/** ask 的参数：标题、默认值、占位、确定按钮文案、是否多行（LaTeX 等）。 @internal */
 export interface PromptOptions {
   title: string;
   value?: string;
@@ -11,14 +11,15 @@ export interface PromptOptions {
   multiline?: boolean;
 }
 
-/** 输入弹层句柄：弹出并解析为用户输入（取消返回 null）。 @public */
+/** 输入弹层句柄：弹出并解析为用户输入（取消返回 null）；销毁（移除 body 门户节点）。 @internal */
 export interface PromptDialog {
   ask(opts: PromptOptions): Promise<string | null>;
+  destroy(): void;
 }
 
 /**
  * 创建挂到 document.body 的单例输入弹层，返回可重复调用的 ask()。
- * @public
+ * @internal
  */
 export function createPromptDialog(): PromptDialog {
   const scrim = document.createElement('div');
@@ -94,6 +95,10 @@ export function createPromptDialog(): PromptDialog {
         // rAF：在工具栏 wrap 的同步 focusEditor 之后再抢焦点；选中默认值便于直接覆盖
         requestAnimationFrame(() => { f.focus(); if (f.value) f.select(); });
       });
+    },
+    destroy() {
+      close(null); // 解决可能挂起的 ask（避免悬空 Promise）
+      scrim.remove();
     },
   };
 }

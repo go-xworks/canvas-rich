@@ -10,14 +10,14 @@ const TAB_ON = 'bg-[var(--rte-active-bg)]! text-[var(--rte-active-fg)]!';
 const ACT = 'px-3 py-1.5 rounded-md border border-[var(--rte-overlay-border)] bg-transparent text-[var(--rte-chrome-fg)] text-[13px] cursor-pointer appearance-none hover:bg-[var(--rte-chrome-hover)]';
 
 /**
- * 导出面板句柄：以指定文档打开面板并渲染当前格式。
- * @public
+ * 导出面板句柄：以指定文档打开面板并渲染当前格式；销毁（移除 body 门户节点 + document 监听）。
+ * @internal
  */
-export interface OutputPanel { open(doc: Doc): void }
+export interface OutputPanel { open(doc: Doc): void; destroy(): void }
 
 /**
  * 创建模态导出面板（HTML/Markdown/JSON 切换 + 复制 + 关闭），关闭时回调 onClosed。
- * @public
+ * @internal
  */
 export function createOutputPanel(onClosed: () => void): OutputPanel {
   const wrap = document.createElement('div');
@@ -55,9 +55,14 @@ export function createOutputPanel(onClosed: () => void): OutputPanel {
   header.append(tabs.html, tabs.md, tabs.json, sp, copyBtn, closeBtn);
 
   wrap.addEventListener('mousedown', (e) => { if (e.target === wrap) close(); });
-  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !wrap.classList.contains('hidden')) close(); });
+  const onDocKeyDown = (e: KeyboardEvent) => { if (e.key === 'Escape' && !wrap.classList.contains('hidden')) close(); };
+  document.addEventListener('keydown', onDocKeyDown);
 
   return {
     open(doc: Doc) { curDoc = doc; render(); syncTabs(); wrap.classList.remove('hidden'); wrap.classList.add('flex'); ta.scrollTop = 0; },
+    destroy() {
+      document.removeEventListener('keydown', onDocKeyDown);
+      wrap.remove();
+    },
   };
 }

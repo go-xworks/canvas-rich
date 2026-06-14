@@ -6,14 +6,14 @@ import { scanToc } from '../model/toc';
 
 /**
  * 大纲面板句柄：以最新文档刷新 heading 列表。
- * @public
+ * @internal
  */
 export interface Outline { update(doc: Doc): void }
 
 /**
  * 大纲面板回调集合。
  * onJump：点击某条目时回调其 heading 块下标，宿主据此移动光标 / 滚入视口。
- * @public
+ * @internal
  */
 export interface OutlineHooks { onJump(blockIndex: number): void }
 
@@ -24,7 +24,7 @@ const EMPTY = 'px-2 py-2 text-[12px] text-[var(--rte-muted)]';
  * 创建大纲面板：挂入 host，扫描文档 heading 渲染可点击列表。
  * 列表按标题 level 左缩进；点击条目调用 onJump(blockIndex)。
  * 注意：只读扫描（scanToc(doc, false)），不给 heading 补 id，避免在面板刷新时产生文档副作用。
- * @public
+ * @internal
  */
 export function createOutline(host: HTMLElement, hooks: OutlineHooks): Outline {
   const list = document.createElement('div');

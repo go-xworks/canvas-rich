@@ -1,0 +1,23 @@
+/* 库样式入口（库化自洽）。由 editor/create-editor.ts 经 import 带出，
+   经 vite 库模式 cssCodeSplit:false 合并为单一 dist/style.css；
+   消费者 import 'canvas-rich/style.css' 即得外壳布局 + chrome 样式。
+
+   组成：
+   1. tailwind utilities —— 工具栏/状态栏/弹层等 chrome 用到的 utility class，
+      由 tailwindcss/vite 插件按 src 实际用到的 class 编译进来（v4 自动内容扫描，按需产出）；
+      不导入 preflight reset，以免污染宿主页面 / IME textarea / 覆盖层。
+   2. shell.css —— DOM 外壳布局（rte-shell 作用域 class，视觉/布局逐字等价旧外壳）。
+
+   overlays.ts/aria.ts 的 rte-星 样式是运行时 head 注入（在 JS bundle 内），不在本文件，消费者无需另引。
+   katex 样式不在此（库 external katex）：消费者自行引 katex.min.css（见 README）。 */
+
+@layer theme, base, components, utilities;
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+/* 显式声明内容来源：tailwind v4 默认从 CSS/项目根自动扫描，但示例 dev 的 Vite root 指向 examples/，
+   自动扫描够不到 ../src 的 ui 层 utility class。用 @source 锚定库源码（相对本文件 = src/styles/），
+   保证 dev（root=examples）与库构建（root=仓库根）两种 root 下都扫到 src/ui 等的 utility，生成对应 css。 */
+@source '../**/*.{ts,tsx,html}';
+
+@import './shell.css';

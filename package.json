@@ -1,9 +1,24 @@
 {
   "name": "canvas-rich",
   "version": "0.1.0",
-  "private": true,
   "description": "GPU 自绘的 canvas 富文本编辑内核：字形 → 图集 → GPU 贴图四边形，不依赖 DOM 排版。A GPU-rendered rich text editor engine on HTML canvas (WebGL2/WebGPU).",
   "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./style.css": "./dist/style.css"
+  },
+  "files": [
+    "dist"
+  ],
   "license": "MIT",
   "author": "go-xworks",
   "homepage": "https://github.com/go-xworks/canvas-rich#readme",
@@ -33,9 +48,10 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "vite build --config vite.lib.config.ts && tsc -p tsconfig.build.json",
+    "build:demo": "vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.examples.json",
     "test": "vitest run",
     "test:watch": "vitest"
   },
