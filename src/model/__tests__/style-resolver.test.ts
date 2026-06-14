@@ -102,3 +102,103 @@ describe('resolveFontFamily', () => {
     expect(resolveFontFamily('Comic Sans MS')).toBe('Comic Sans MS');
   });
 });
+
+// 段落排版：attrs 覆盖块主题默认（indent/spaceBefore/spaceAfter 用 attrs ?? theme），
+// 以及 lineHeight/letterSpacing 的默认与夹值。
+describe('resolveBlock: attrs 覆盖块主题默认（indent/spaceBefore/spaceAfter）', () => {
+  it('未设置 attrs 时回退块主题默认（段落 indent=0, spaceBefore/After=4）', () => {
+    const rb = R.resolveBlock(para([]));
+    expect(rb.indent).toBe(0);
+    expect(rb.spaceBefore).toBe(4);
+    expect(rb.spaceAfter).toBe(4);
+  });
+
+  it('attrs.indent/spaceBefore/spaceAfter 覆盖主题默认', () => {
+    const rb = R.resolveBlock(para([], { indent: 48, spaceBefore: 12, spaceAfter: 20 }));
+    expect(rb.indent).toBe(48);
+    expect(rb.spaceBefore).toBe(12);
+    expect(rb.spaceAfter).toBe(20);
+  });
+
+  it('attrs 覆盖列表项主题缩进（bullet 默认 indent=30 → 0）', () => {
+    const def = R.resolveBlock(block('bullet_item', []));
+    expect(def.indent).toBe(30); // 主题默认
+    const overridden = R.resolveBlock(block('bullet_item', [], { indent: 0 }));
+    expect(overridden.indent).toBe(0); // attrs 覆盖
+  });
+
+  it('attrs=0 是显式覆盖（?? 不会被当作未设置）', () => {
+    const rb = R.resolveBlock(block('bullet_item', [], { spaceBefore: 0 }));
+    expect(rb.spaceBefore).toBe(0); // 0 ?? theme = 0，覆盖生效
+  });
+
+  // 注入防线：attrs 可来自草稿/模板持久化通道，负数/非有限数/非 number 一律回退主题值——
+  // 负间距破坏 lines top 单调（visibleLineRange 二分前提），字符串/NaN 会传染 contentHeight。
+  it('负值回退主题默认（守住块间距 ≥0 的布局单调不变量）', () => {
+    const rb = R.resolveBlock(para([], { indent: -50, spaceBefore: -200, spaceAfter: -1 }));
+    expect(rb.indent).toBe(0);
+    expect(rb.spaceBefore).toBe(4);
+    expect(rb.spaceAfter).toBe(4);
+  });
+
+  it('非 number（字符串注入）回退主题默认，不产 NaN', () => {
+    const rb = R.resolveBlock(para([], {
+      spaceBefore: '10px' as unknown as number,
+      spaceAfter: '8' as unknown as number,
+      indent: '12' as unknown as number,
+    }));
+    expect(rb.spaceBefore).toBe(4);
+    expect(rb.spaceAfter).toBe(4);
+    expect(rb.indent).toBe(0);
+    expect(Number.isFinite(rb.spaceBefore + rb.spaceAfter + rb.indent)).toBe(true);
+  });
+
+  it('NaN/Infinity 回退主题默认', () => {
+    expect(R.resolveBlock(para([], { spaceBefore: NaN })).spaceBefore).toBe(4);
+    expect(R.resolveBlock(para([], { spaceAfter: Infinity })).spaceAfter).toBe(4);
+    expect(R.resolveBlock(para([], { indent: -Infinity })).indent).toBe(0);
+  });
+});
+
+describe('resolveBlock: lineHeight / letterSpacing', () => {
+  it('默认 lineHeight=1, letterSpacing=0', () => {
+    const rb = R.resolveBlock(para([]));
+    expect(rb.lineHeight).toBe(1);
+    expect(rb.letterSpacing).toBe(0);
+  });
+
+  it('attrs.lineHeight 透传（1.5 / 2）', () => {
+    expect(R.resolveBlock(para([], { lineHeight: 1.5 })).lineHeight).toBe(1.5);
+    expect(R.resolveBlock(para([], { lineHeight: 2 })).lineHeight).toBe(2);
+  });
+
+  it('非法/非正 lineHeight 夹回 1', () => {
+    expect(R.resolveBlock(para([], { lineHeight: 0 })).lineHeight).toBe(1);
+    expect(R.resolveBlock(para([], { lineHeight: -1 })).lineHeight).toBe(1);
+    expect(R.resolveBlock(para([], { lineHeight: NaN })).lineHeight).toBe(1);
+  });
+
+  it('非有限 lineHeight/letterSpacing（Infinity）夹回默认（typeof 收窄回归）', () => {
+    expect(R.resolveBlock(para([], { lineHeight: Infinity })).lineHeight).toBe(1);
+    expect(R.resolveBlock(para([], { letterSpacing: Infinity })).letterSpacing).toBe(0);
+    expect(R.resolveBlock(para([], { letterSpacing: -Infinity })).letterSpacing).toBe(0);
+  });
+
+  it('attrs.letterSpacing 透传（含 0）', () => {
+    expect(R.resolveBlock(para([], { letterSpacing: 2 })).letterSpacing).toBe(2);
+    expect(R.resolveBlock(para([], { letterSpacing: 0 })).letterSpacing).toBe(0);
+  });
+
+  it('非有限 letterSpacing 夹回 0', () => {
+    expect(R.resolveBlock(para([], { letterSpacing: NaN })).letterSpacing).toBe(0);
+  });
+});
+
+describe('resolveBlock: align 透传（含 justify/distribute）', () => {
+  it('默认 left；attrs 透传 justify/distribute', () => {
+    expect(R.resolveBlock(para([])).align).toBe('left');
+    expect(R.resolveBlock(para([], { align: 'justify' })).align).toBe('justify');
+    expect(R.resolveBlock(para([], { align: 'distribute' })).align).toBe('distribute');
+  });
+});
+

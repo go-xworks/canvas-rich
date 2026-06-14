@@ -14,6 +14,22 @@ function push(buf: Float32Array, o: number, x: number, y: number, u: number, v: 
   return o + 8;
 }
 
+/** 一段相邻同页的 quads（quad 下标区间），分批 draw 的最小单位。 @internal */
+export interface PageRun { page: number; start: number; count: number }
+
+// 把按绘制顺序排列的 quads 切成「相邻同页」的 run：严格保序、不重排，
+// 两后端按 run 绑定对应页纹理后用 (start,count) 区间分批 draw —— z 序与 AA 混色顺序不变。
+/** 将 Quad 列表按相邻同页切段（保序），供两后端分批绑定页纹理绘制。 @internal */
+export function buildPageRuns(quads: Quad[]): PageRun[] {
+  const runs: PageRun[] = [];
+  for (let i = 0; i < quads.length; i++) {
+    const last = runs.length > 0 ? runs[runs.length - 1] : null;
+    if (last && last.page === quads[i].page) last.count++;
+    else runs.push({ page: quads[i].page, start: i, count: 1 });
+  }
+  return runs;
+}
+
 // 把每个 Quad 展开成 6 顶点×8 float。复用 reuse 缓冲，不够大则按 1.5× 扩容。
 // 返回 { buf, used }：buf 可能是新扩容的（调用方应回写保存），used 为写入的 float 数；
 // 上传时取 buf.subarray(0, used)，顶点数 = used / FLOATS_PER_VERT。

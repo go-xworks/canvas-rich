@@ -199,3 +199,63 @@ describe('undo / redo', () => {
     expect(docText(rd)).toEqual(['hello']);
   });
 });
+
+// 段落排版块级 setter：覆盖选区每块的 attrs，进撤销栈（snapshot），可 undo。
+describe('段落排版 setter（块级，进撤销栈）', () => {
+  it('setLineHeight 设置选区各块行距，undo 还原', () => {
+    const rd = rdOf(para([text('a')]), para([text('b')]));
+    rd.selectAll();
+    rd.setLineHeight(1.5);
+    expect(rd.doc.blocks.map((b) => b.attrs.lineHeight)).toEqual([1.5, 1.5]);
+    rd.undo();
+    expect(rd.doc.blocks.map((b) => b.attrs.lineHeight)).toEqual([undefined, undefined]);
+  });
+
+  it('setSpaceBefore / setSpaceAfter 夹到 ≥0', () => {
+    const rd = rdOf(para([text('a')]));
+    rd.setSel({ block: 0, offset: 0 });
+    rd.setSpaceBefore(12); rd.setSpaceAfter(20);
+    expect(rd.doc.blocks[0].attrs.spaceBefore).toBe(12);
+    expect(rd.doc.blocks[0].attrs.spaceAfter).toBe(20);
+    rd.setSpaceBefore(-5);
+    expect(rd.doc.blocks[0].attrs.spaceBefore).toBe(0);
+  });
+
+  it('setIndent 设置左缩进，夹到 ≥0', () => {
+    const rd = rdOf(para([text('a')]));
+    rd.setSel({ block: 0, offset: 0 });
+    rd.setIndent(48);
+    expect(rd.doc.blocks[0].attrs.indent).toBe(48);
+    rd.setIndent(-10);
+    expect(rd.doc.blocks[0].attrs.indent).toBe(0);
+  });
+
+  it('adjustIndent 以当前缩进为基线增减，夹到 ≥0', () => {
+    const rd = rdOf(para([text('a')], { indent: 10 }), para([text('b')]));
+    rd.selectAll();
+    rd.adjustIndent(24);
+    expect(rd.doc.blocks.map((b) => b.attrs.indent)).toEqual([34, 24]); // 第二块从 0 起
+    rd.adjustIndent(-100);
+    expect(rd.doc.blocks.map((b) => b.attrs.indent)).toEqual([0, 0]);
+  });
+
+  it('setLetterSpacing 设置字间距（≥0）', () => {
+    const rd = rdOf(para([text('a')]));
+    rd.setSel({ block: 0, offset: 0 });
+    rd.setLetterSpacing(3);
+    expect(rd.doc.blocks[0].attrs.letterSpacing).toBe(3);
+    rd.setLetterSpacing(-1);
+    expect(rd.doc.blocks[0].attrs.letterSpacing).toBe(0);
+  });
+
+  it('setAlign 支持 justify / distribute，undo 还原', () => {
+    const rd = rdOf(para([text('a')]));
+    rd.setSel({ block: 0, offset: 0 });
+    rd.setAlign('justify');
+    expect(rd.doc.blocks[0].attrs.align).toBe('justify');
+    rd.setAlign('distribute');
+    expect(rd.doc.blocks[0].attrs.align).toBe('distribute');
+    rd.undo();
+    expect(rd.doc.blocks[0].attrs.align).toBe('justify');
+  });
+});

@@ -39,7 +39,8 @@ export interface StyledChar {
 /** 单个字形在图集中的纹理坐标与度量（设备像素），栅格化产物。 @public */
 export interface GlyphInfo {
   u0: number; v0: number; u1: number; v1: number; // 纹理 uv（0..1）
-  w: number; h: number;       // 位图尺寸（设备 px）
+  page: number;               // 所在图集页号（empty 字形恒 0 占位；渲染按页分批绑定纹理）
+  w: number; h: number;       // 位图尺寸（设备 px）。巨字形夹紧光栅时仍存全尺寸，由 GPU 放大
   bearingX: number;           // 笔位到位图左边（向右为正）
   bearingY: number;           // 基线到位图顶边（向上为正）
   advance: number;            // 笔位前进量

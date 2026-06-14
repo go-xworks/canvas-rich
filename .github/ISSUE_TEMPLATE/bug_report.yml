@@ -1,0 +1,59 @@
+name: 🐛 Bug 报告
+description: 报告一个可复现的问题
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢反馈！请尽量提供可复现的信息。安全漏洞请勿在此公开，见 SECURITY.md。
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: 问题描述
+      description: 实际发生了什么？期望是什么？
+      placeholder: 在表格单元格增删后，光标跳到了上一个块……
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 一步步如何触发
+      placeholder: |
+        1. 插入一个表格
+        2. 点击某单元格
+        3. 点「删除行」
+        4. 观察光标位置
+    validations:
+      required: true
+  - type: input
+    id: commit
+    attributes:
+      label: 版本 / 提交 SHA
+      placeholder: main @ abc1234
+    validations:
+      required: false
+  - type: dropdown
+    id: backend
+    attributes:
+      label: 渲染后端
+      options:
+        - 不确定
+        - WebGPU
+        - WebGL2
+    validations:
+      required: false
+  - type: input
+    id: env
+    attributes:
+      label: 环境
+      description: 浏览器 / 操作系统 / 设备（含是否触屏）
+      placeholder: Chrome 124 / macOS 15 / 桌面
+    validations:
+      required: false
+  - type: textarea
+    id: extra
+    attributes:
+      label: 截图 / 控制台日志 / 其他
+    validations:
+      required: false

@@ -1,7 +1,7 @@
-import { Renderer, Quad } from './renderer';
-import { FLOATS_PER_VERT, VERTS_PER_QUAD, buildQuadMesh } from './quad-mesh';
+import { Renderer, Quad, AtlasRect } from './renderer';
+import { FLOATS_PER_VERT, VERTS_PER_QUAD, buildQuadMesh, buildPageRuns } from './quad-mesh';
 
-// render 层的 WebGL2 后端实现：编译着色器、管理 VAO/纹理并批量绘制四边形。
+// render 层的 WebGL2 后端实现：编译着色器、管理 VAO/多页图集纹理并按相邻同页分批绘制四边形。
 
 const VERT = `#version 300 es
 precision highp float;
@@ -36,7 +36,7 @@ export class WebGL2Renderer implements Renderer {
   private prog: WebGLProgram;
   private vao: WebGLVertexArrayObject;
   private vbo: WebGLBuffer;
-  private tex: WebGLTexture;
+  private tex: (WebGLTexture | null)[] = []; // 每图集页一张纹理，惰性创建
   private uRes: WebGLUniformLocation;
   private cpu = new Float32Array(0);
   private w = 1; private h = 1;
@@ -62,13 +62,6 @@ export class WebGL2Renderer implements Renderer {
     gl.vertexAttribPointer(2, 4, gl.FLOAT, false, stride, 16);
     gl.bindVertexArray(null);
 
-    this.tex = gl.createTexture()!;
-    gl.bindTexture(gl.TEXTURE_2D, this.tex);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
@@ -82,14 +75,38 @@ export class WebGL2Renderer implements Renderer {
     this.gl.viewport(0, 0, this.w, this.h);
   }
 
-  /** 把字形/白块图集上传到 GPU 纹理。 @public */
-  uploadAtlas(source: TexImageSource): void {
+  /** 上传一页字形/白块图集：首次（或省略 rect）整页 texImage2D，其后仅脏矩形 texSubImage2D 子区上传。 @public */
+  uploadAtlasPage(page: number, source: TexImageSource, rect?: AtlasRect): void {
     const gl = this.gl;
-    gl.bindTexture(gl.TEXTURE_2D, this.tex);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
+    let t = this.tex[page];
+    const fresh = !t;
+    if (!t) t = this.tex[page] = this.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, t);
+    if (fresh || !rect) {
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, source);
+      return;
+    }
+    // WebGL2 对 DOM 源支持 unpack 子区：ROW_LENGTH/SKIP_PIXELS/SKIP_ROWS 选出源画布上的脏矩形
+    const srcW = (source as { width: number }).width;
+    gl.pixelStorei(gl.UNPACK_ROW_LENGTH, srcW);
+    gl.pixelStorei(gl.UNPACK_SKIP_PIXELS, rect.x);
+    gl.pixelStorei(gl.UNPACK_SKIP_ROWS, rect.y);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, rect.x, rect.y, rect.w, rect.h, gl.RGBA, gl.UNSIGNED_BYTE, source);
+    gl.pixelStorei(gl.UNPACK_ROW_LENGTH, 0);
+    gl.pixelStorei(gl.UNPACK_SKIP_PIXELS, 0);
+    gl.pixelStorei(gl.UNPACK_SKIP_ROWS, 0);
   }
 
-  /** 清屏并将一批四边形展开为顶点后一次性绘制。 @public */
+  /** 销毁页号 ≥ keep 的图集纹理（图集 setDpr 收缩页数后回收显存）。 @public */
+  dropAtlasPages(keep: number): void {
+    for (let i = keep; i < this.tex.length; i++) {
+      const t = this.tex[i];
+      if (t) this.gl.deleteTexture(t);
+    }
+    if (this.tex.length > keep) this.tex.length = Math.max(0, keep);
+  }
+
+  /** 清屏并将一批四边形展开为顶点，一次上传后按相邻同页分批绘制（严格保序）。 @public */
   render(quads: Quad[], clear: [number, number, number, number]): void {
     const gl = this.gl;
     const { buf, used } = buildQuadMesh(quads, this.cpu);
@@ -102,13 +119,30 @@ export class WebGL2Renderer implements Renderer {
     gl.useProgram(this.prog);
     gl.uniform2f(this.uRes, this.w, this.h);
     gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, this.tex);
 
     gl.bindVertexArray(this.vao);
     gl.bindBuffer(gl.ARRAY_BUFFER, this.vbo);
     gl.bufferData(gl.ARRAY_BUFFER, buf.subarray(0, used), gl.DYNAMIC_DRAW);
-    gl.drawArrays(gl.TRIANGLES, 0, quads.length * VERTS_PER_QUAD);
+    // 按相邻同页切 run、严格保序分批 draw：不跨段重排，z 序与 AA 混色顺序与单纹理时代一致
+    for (const run of buildPageRuns(quads)) {
+      gl.bindTexture(gl.TEXTURE_2D, this.tex[run.page] ?? (this.tex[run.page] = this.createTexture()));
+      gl.drawArrays(gl.TRIANGLES, run.start * VERTS_PER_QUAD, run.count * VERTS_PER_QUAD);
+    }
     gl.bindVertexArray(null);
+  }
+
+  // 建一张图集页纹理（采样参数与单页时代一致）；内容由 uploadAtlasPage 填充。
+  // 防御：render 先于上传遇到未知页时也建纹理并清成 1×1 透明，避免采样不完整纹理。
+  private createTexture(): WebGLTexture {
+    const gl = this.gl;
+    const t = gl.createTexture()!;
+    gl.bindTexture(gl.TEXTURE_2D, t);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
+    return t;
   }
 
   private link(vs: string, fs: string): WebGLProgram {

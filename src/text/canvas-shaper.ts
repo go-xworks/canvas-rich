@@ -1,9 +1,9 @@
+// text 层 · 基线整形器实现（Shaper 接口）：逐字符经字形图集用浏览器 measureText/fillText 光栅。
+// 优点：覆盖系统所有字体（含 CJK/emoji）；缺点：无字距(kerning)、无连字、无复杂文字整形。
 import { StyledChar, Style } from '../types';
 import { GlyphAtlas, FontMetrics } from './glyph-atlas';
 import { Shaper, ShapedChar } from './shaper';
 
-// 基线整形器：逐字符用浏览器 measureText/fillText（即原有行为）。
-// 优点：覆盖系统所有字体（含 CJK/emoji）；缺点：无字距(kerning)、无连字、无复杂文字整形。
 /** 基线整形器：逐字符用浏览器 measureText/fillText，无字距/连字，覆盖系统所有字体。 @public */
 export class CanvasShaper implements Shaper {
   readonly name = 'Canvas (system font · 逐字符)';

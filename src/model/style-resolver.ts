@@ -1,4 +1,4 @@
-import { Block, Mark, getMark, hasMarkType } from './schema';
+import { Block, BlockAlign, Mark, getMark, hasMarkType } from './schema';
 import { FONT_UI, FONT_MONO } from './palette';
 import { Style } from '../types';
 import { C, RGBA, parseHex } from './palette';
@@ -8,7 +8,7 @@ import { meta } from './block-specs';
 // 分层位置：model 层，把块规格 + 行内 marks 解析为渲染层可直接消费的样式。
 
 /**
- * 一段连续 run 解析后的最终样式：基础 style 叠加下划线/删除线/高亮颜色。
+ * 一段连续 run 解析后的最终样式：基础 style 叠加下划线/删除线/高亮。
  * baselineShift：上/下标的基线偏移（em 比例，正=上移即上标、负=下移即下标、0=无），
  * 由布局层乘以行内字号施加到 baselineY。
  * @public
@@ -21,12 +21,24 @@ export const SUBSUP_SCALE = 0.8;
 export const SUPERSCRIPT_SHIFT = 0.35;
 /** 下标基线下移比例（与上标对称）。 @public */
 export const SUBSCRIPT_SHIFT = -0.35;
-/** 块级解析结果：基础样式 + 对齐/缩进/间距/标记/背景。 @public */
+/**
+ * fontSize mark 的字号上限（逻辑 px）：防粘贴/JSON 导入注入天文字号。
+ * 配合字形图集的巨字形夹紧光栅，正常文档触不到该上限。
+ * @public
+ */
+export const MAX_FONT_SIZE = 400;
+/**
+ * 块级解析结果：基础样式 + 对齐/缩进/间距/标记/背景 + 段落排版。
+ * lineHeight：行距倍数（≥0，默认 1）；letterSpacing：字间距（逻辑 px，默认 0）。
+ * indent/spaceBefore/spaceAfter 用 attrs ?? theme 覆盖优先级解析。
+ * @public
+ */
 export interface ResolvedBlock {
   base: Style;
-  align: 'left' | 'center' | 'right';
+  align: BlockAlign;
   indent: number; spaceBefore: number; spaceAfter: number;
   marker: string | null; ordered: boolean; background: RGBA | null;
+  lineHeight: number; letterSpacing: number;
 }
 
 /**
@@ -50,10 +62,35 @@ export function resolveFontFamily(name: string): string {
 
 /** 样式解析器：把块规格与行内 marks 解析为渲染层样式。 @public */
 export class StyleResolver {
-  /** 解析块级主题为对齐/缩进/间距/标记/背景的 ResolvedBlock。 @public */
+  /**
+   * 解析块级主题为对齐/缩进/间距/标记/背景 + 段落排版的 ResolvedBlock。
+   * 覆盖优先级：indent/spaceBefore/spaceAfter 用 `attrs ?? theme`（attrs 显式设置则覆盖主题默认）；
+   * lineHeight 默认 1、letterSpacing 默认 0，非法/负值夹回默认。
+   * @public
+   */
   resolveBlock(b: Block): ResolvedBlock {
-    const t = meta(b.type).theme(b.attrs);
-    return { base: t.base, align: b.attrs.align ?? 'left', indent: t.indent, spaceBefore: t.spaceBefore, spaceAfter: t.spaceAfter, marker: t.marker, ordered: t.ordered, background: t.background };
+    const a = b.attrs;
+    const t = meta(b.type).theme(a);
+    // typeof 收窄替代 as 断言：attrs 可能来自导入/持久化，运行时不保证是 number。
+    const lh = a.lineHeight;
+    const lineHeight = typeof lh === 'number' && Number.isFinite(lh) && lh > 0 ? lh : 1;
+    const ls = a.letterSpacing;
+    const letterSpacing = typeof ls === 'number' && Number.isFinite(ls) ? ls : 0;
+    // indent/spaceBefore/spaceAfter 同源同款收窄（非有限数/负值/非 number 回退主题值）：
+    // RichDoc setter 已 clamp ≥0，但 attrs 可经草稿/模板等持久化通道注入——负间距会破坏
+    // lines top/bottom 随文档序单调的布局不变量（visibleLineRange 二分剔除的前提），
+    // 字符串则 NaN 传染到 contentHeight/clampScroll 致整屏渲染崩坏。
+    const nonNegNum = (v: unknown, fallback: number): number =>
+      typeof v === 'number' && Number.isFinite(v) && v >= 0 ? v : fallback;
+    return {
+      base: t.base,
+      align: a.align ?? 'left',
+      indent: nonNegNum(a.indent, t.indent),
+      spaceBefore: nonNegNum(a.spaceBefore, t.spaceBefore),
+      spaceAfter: nonNegNum(a.spaceAfter, t.spaceAfter),
+      marker: t.marker, ordered: t.ordered, background: t.background,
+      lineHeight, letterSpacing,
+    };
   }
 
   /**
@@ -76,7 +113,7 @@ export class StyleResolver {
     const ff = getMark(marks, 'fontFamily');
     if (ff?.attrs?.fontFamily) style.fontFamily = resolveFontFamily(ff.attrs.fontFamily);
     const fs = getMark(marks, 'fontSize');
-    if (fs?.attrs?.size) { const n = parseFloat(fs.attrs.size); if (Number.isFinite(n) && n > 0) style.fontSize = n; }
+    if (fs?.attrs?.size) { const n = parseFloat(fs.attrs.size); if (Number.isFinite(n) && n > 0) style.fontSize = Math.min(n, MAX_FONT_SIZE); }
     const hl = getMark(marks, 'highlight');
     if (hl) { const c = hl.attrs?.color ? parseHex(hl.attrs.color, [1, 0.85, 0.25, 1]) : [1, 0.85, 0.25, 1]; highlight = [c[0], c[1], c[2], 0.4]; }
     const color = getMark(marks, 'color');

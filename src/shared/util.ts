@@ -6,11 +6,15 @@
  * @internal
  */
 
-/** 空操作函数（占位回调，避免重复创建闭包）。 @internal */
-export const NOOP = (): void => {};
-
 /**
  * 把数值夹到闭区间 `[lo, hi]`。
+ *
+ * 前置：调用方保证 `lo <= hi`（本仓所有调用点均满足，如 `clamp(x, 0, count-1)`）；
+ * 若 `lo > hi` 则返回 `lo`（先与下界比较）。`NaN` 透传不夹（比较恒为 false）。
+ * 全仓最高频的边界守卫：位置 clamp、列/行号 clamp、尺寸 clamp 共用。
+ * @param v - 待夹的值
+ * @param lo - 下界（含）
+ * @param hi - 上界（含）
  * @returns `v < lo ? lo : v > hi ? hi : v`
  * @public
  */

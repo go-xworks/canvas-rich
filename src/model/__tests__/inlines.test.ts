@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   normalizeInlines,
+  normalizeCellInlines,
   sliceInlines,
   insertText,
   deleteRange,
@@ -8,8 +9,9 @@ import {
   applyMark,
   rangeHasMark,
   marksAt,
+  inlineAtomSrcAt,
 } from '../inlines';
-import { text, Inline } from '../schema';
+import { text, inlineAtom, Inline } from '../schema';
 
 // 把 Inline[] 摘成易断言形式：每段 -> [text, "type1,type2,..."]（marks 类型集合，逗号连接）
 const summary = (inls: Inline[]): [string, string][] =>
@@ -47,6 +49,22 @@ describe('normalizeInlines', () => {
     expect(out.length).toBe(1);
     expect(out[0].text).toBe('ab');
     expect(out[0].marks.map((m) => m.type).sort()).toEqual(['bold', 'italic']);
+  });
+});
+
+describe('normalizeCellInlines（td 不承载行内原子，集群3）', () => {
+  it('剔除行内原子并合并被其隔开的同 marks 文本段', () => {
+    const out = normalizeCellInlines([text('a'), inlineAtom('image', { src: 'x.png' }), text('b')]);
+    expect(summary(out)).toEqual([['ab', '']]);
+  });
+
+  it('仅含原子的序列归一化为单个空段（承载光标）', () => {
+    expect(summary(normalizeCellInlines([inlineAtom('image', { src: 'x.png' })]))).toEqual([['', '']]);
+  });
+
+  it('文本段的 marks 原样保留（仅过滤原子，不动文本）', () => {
+    const out = normalizeCellInlines([text('a', bold), inlineAtom('image', {}), text('b', bold)]);
+    expect(summary(out)).toEqual([['ab', 'bold']]);
   });
 });
 
@@ -173,5 +191,29 @@ describe('marksAt（打字继承）', () => {
   it('offset=0（块首）以右侧段 marks 为主', () => {
     const inls = [text('ab', bold), text('cd')];
     expect(marksAt(inls, 0).map((m) => m.type)).toEqual(['bold']);
+  });
+});
+
+describe('inlineAtomSrcAt（行内原子 src 查询，main.ts 覆盖层映射下沉）', () => {
+  it('offset 恰为行内原子起始 → 返回其 src', () => {
+    const inls: Inline[] = [text('ab'), inlineAtom('image', { src: 'data:img' }), text('cd')];
+    expect(inlineAtomSrcAt(inls, 2)).toBe('data:img');
+  });
+
+  it('offset 落在文本段上（即使后面存在原子）→ 空串', () => {
+    const inls: Inline[] = [text('ab'), inlineAtom('image', { src: 'data:img' })];
+    expect(inlineAtomSrcAt(inls, 0)).toBe('');
+    expect(inlineAtomSrcAt(inls, 1)).toBe('');
+    expect(inlineAtomSrcAt(inls, 3)).toBe(''); // 原子之后（序列末尾）
+  });
+
+  it('原子 src 缺省 → 空串兜底', () => {
+    const inls: Inline[] = [inlineAtom('image', {})];
+    expect(inlineAtomSrcAt(inls, 0)).toBe('');
+  });
+
+  it('块首原子（offset 0）命中', () => {
+    const inls: Inline[] = [inlineAtom('image', { src: 'u' }), text('x')];
+    expect(inlineAtomSrcAt(inls, 0)).toBe('u');
   });
 });

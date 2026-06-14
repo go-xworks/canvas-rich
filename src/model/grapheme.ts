@@ -1,17 +1,9 @@
 // 按 grapheme cluster 切分（emoji/组合字符不被劈开）。光标移动/删除以此为最小单位。
 // 分层位置：model 层的文本计量基元，供编辑/选区按字符簇推进。
+import { createSegmenter } from './segmenter';
 
-// Intl.Segmenter 未必在当前 TS lib 中，给出最小本地类型（避免 any）。
-interface GraphemeSegmenter { segment(input: string): Iterable<{ segment: string }>; }
-interface SegmenterCtor {
-  new (locales?: string | string[], options?: { granularity?: 'grapheme' | 'word' | 'sentence' }): GraphemeSegmenter;
-}
-
-/** UAX#29 字符簇切分器；环境不支持 Intl.Segmenter 时为 null，splitGraphemes 回退到码位切分。 @internal */
-const SegmenterImpl = (Intl as unknown as { Segmenter?: SegmenterCtor }).Segmenter;
-const segmenter: GraphemeSegmenter | null = SegmenterImpl
-  ? new SegmenterImpl(undefined, { granularity: 'grapheme' })
-  : null;
+/** UAX#29 字符簇切分器（最小类型声明共享自 ./segmenter）；环境不支持 Intl.Segmenter 时为 null，splitGraphemes 回退到码位切分。 @internal */
+const segmenter = createSegmenter('grapheme');
 
 /**
  * 切分为 grapheme cluster 数组；优先 Intl.Segmenter，缺失时回退到码位切分。

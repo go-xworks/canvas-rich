@@ -1,8 +1,9 @@
 /// <reference types="@webgpu/types" />
-import { Renderer, Quad } from './renderer';
-import { FLOATS_PER_VERT, VERTS_PER_QUAD, buildQuadMesh } from './quad-mesh';
+import { Renderer, Quad, AtlasRect } from './renderer';
+import { FLOATS_PER_VERT, VERTS_PER_QUAD, buildQuadMesh, buildPageRuns } from './quad-mesh';
 
-// render 层的 WebGPU 后端实现：管理 device/pipeline/纹理并批量绘制四边形，作为首选后端。
+// render 层的 WebGPU 后端实现：管理 device/pipeline 与多页图集纹理（每页一张纹理 +
+// 对应 bindGroup，uniform/sampler 共享），同一 renderPass 内按相邻同页分批 draw，作为首选后端。
 
 // WGSL：顶点把设备 px → clip，片元用图集 alpha 当覆盖率（与 WebGL2 版一致）。
 const WGSL = `
@@ -37,12 +38,15 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
 }
 `;
 
+// 一页图集的 GPU 侧资源：纹理 + 引用它的 bindGroup（uniform/sampler 共享，仅 view 不同）。
+interface PageTexture { tex: GPUTexture; bindGroup: GPUBindGroup; w: number; h: number }
 
 /** Renderer 的 WebGPU 实现，作为首选后端（构造经 async create）。 @public */
 export class WebGPURenderer implements Renderer {
+  /** 设备丢失信号（GPU 进程崩溃/驱动重置/后台回收）：装配层据此重建渲染器 + 整页重传图集。 @public */
+  readonly lost: Promise<void>;
   private device: GPUDevice;
   private context: GPUCanvasContext;
-  private format: GPUTextureFormat;
   private pipeline: GPURenderPipeline;
   private sampler: GPUSampler;
   private uniformBuf: GPUBuffer;
@@ -51,28 +55,28 @@ export class WebGPURenderer implements Renderer {
   private vboFloats = 0;       // 当前 vbo 容量（以 float 计）
   private cpu = new Float32Array(0);
 
-  private tex: GPUTexture | null = null;
-  private texW = 0;
-  private texH = 0;
-  private bindGroup: GPUBindGroup | null = null;
+  private pagesTex: (PageTexture | null)[] = []; // 每图集页一张纹理 + bindGroup，惰性创建
 
   private w = 1;
   private h = 1;
 
+  // 注：canvas format（getPreferredCanvasFormat）仅在 create() 内配置 context 与 pipeline 时消费，
+  // 实例无需留存（曾有只写不读的 private format 字段，已清理）。
   private constructor(
     device: GPUDevice,
     context: GPUCanvasContext,
-    format: GPUTextureFormat,
     pipeline: GPURenderPipeline,
     sampler: GPUSampler,
     uniformBuf: GPUBuffer,
   ) {
     this.device = device;
     this.context = context;
-    this.format = format;
     this.pipeline = pipeline;
     this.sampler = sampler;
     this.uniformBuf = uniformBuf;
+    // device.lost 在设备生命周期内至多 resolve 一次；destroy 触发的丢失同样上报，
+    // 装配层重建路径对“主动销毁”天然免疫（本仓不主动 destroy device）。
+    this.lost = device.lost.then(() => undefined);
   }
 
   /** 异步初始化 adapter/device/pipeline 等资源并返回实例；不可用时抛错。 @public */
@@ -132,7 +136,7 @@ export class WebGPURenderer implements Renderer {
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
 
-    return new WebGPURenderer(device, context, format, pipeline, sampler, uniformBuf);
+    return new WebGPURenderer(device, context, pipeline, sampler, uniformBuf);
   }
 
   /** 更新分辨率 uniform 所用的宽高（画布像素尺寸由 canvas 自身决定，下限 1px）。 @public */
@@ -142,43 +146,55 @@ export class WebGPURenderer implements Renderer {
     this.h = Math.max(1, h);
   }
 
-  /** 上传图集到纹理；尺寸变化时重建纹理与 bindGroup，否则复用。 @public */
-  uploadAtlas(source: TexImageSource): void {
+  /** 上传一页图集：首次（或尺寸变化、省略 rect）整页拷贝，其后仅脏矩形子区 copyExternalImageToTexture。 @public */
+  uploadAtlasPage(page: number, source: TexImageSource, rect?: AtlasRect): void {
     const device = this.device;
     const width = (source as { width: number }).width;
     const height = (source as { height: number }).height;
 
-    // 首次或尺寸变化时（重新）创建纹理与 bindGroup，否则复用。
-    if (!this.tex || this.texW !== width || this.texH !== height) {
-      this.tex?.destroy();
-      this.tex = device.createTexture({
+    // 首次或尺寸变化时（重新）创建该页纹理与 bindGroup，否则复用。
+    let pt = this.pagesTex[page];
+    let full = !rect;
+    if (!pt || pt.w !== width || pt.h !== height) {
+      pt?.tex.destroy();
+      const tex = device.createTexture({
         size: { width, height },
         format: 'rgba8unorm',
         usage: GPUTextureUsage.TEXTURE_BINDING
           | GPUTextureUsage.COPY_DST
           | GPUTextureUsage.RENDER_ATTACHMENT,
       });
-      this.texW = width;
-      this.texH = height;
-      this.bindGroup = device.createBindGroup({
-        layout: this.pipeline.getBindGroupLayout(0),
-        entries: [
-          { binding: 0, resource: { buffer: this.uniformBuf } },
-          { binding: 1, resource: this.tex.createView() },
-          { binding: 2, resource: this.sampler },
-        ],
-      });
+      pt = this.pagesTex[page] = { tex, bindGroup: this.createBindGroup(tex), w: width, h: height };
+      full = true; // 新建纹理无旧内容，必须整页打底
     }
 
     // copyExternalImageToTexture：图集左上对应纹理 (0,0)，与 WebGL2（未翻转 Y）一致。
-    device.queue.copyExternalImageToTexture(
-      { source: source as GPUCopyExternalImageSource },
-      { texture: this.tex },
-      { width, height },
-    );
+    if (full) {
+      device.queue.copyExternalImageToTexture(
+        { source: source as GPUCopyExternalImageSource },
+        { texture: pt.tex },
+        { width, height },
+      );
+    } else {
+      const r = rect!;
+      device.queue.copyExternalImageToTexture(
+        { source: source as GPUCopyExternalImageSource, origin: { x: r.x, y: r.y } },
+        { texture: pt.tex, origin: { x: r.x, y: r.y } },
+        { width: r.w, height: r.h },
+      );
+    }
   }
 
-  /** 编码一个渲染 pass：clear 后将一批四边形展开为顶点并绘制。 @public */
+  /** 销毁页号 ≥ keep 的图集纹理与 bindGroup（图集 setDpr 收缩页数后回收显存）。 @public */
+  dropAtlasPages(keep: number): void {
+    for (let i = keep; i < this.pagesTex.length; i++) {
+      this.pagesTex[i]?.tex.destroy();
+      this.pagesTex[i] = null;
+    }
+    if (this.pagesTex.length > keep) this.pagesTex.length = Math.max(0, keep);
+  }
+
+  /** 编码一个渲染 pass：clear 后将一批四边形展开为顶点，按相邻同页分批 setBindGroup + draw（严格保序）。 @public */
   render(quads: Quad[], clear: [number, number, number, number]): void {
     const device = this.device;
 
@@ -215,14 +231,31 @@ export class WebGPURenderer implements Renderer {
     });
 
     // quads 为空也已执行一次 clear；有内容才绘制。
-    if (vertexCount > 0 && this.vbo && this.bindGroup) {
+    if (vertexCount > 0 && this.vbo) {
       pass.setPipeline(this.pipeline);
-      pass.setBindGroup(0, this.bindGroup);
       pass.setVertexBuffer(0, this.vbo);
-      pass.draw(vertexCount);
+      // 按相邻同页切 run、严格保序分批 draw：不跨段重排，z 序与 AA 混色顺序与单纹理时代一致
+      for (const run of buildPageRuns(quads)) {
+        const pt = this.pagesTex[run.page];
+        if (!pt) continue; // 该页尚未上传（防御：正常流程 takeDirtyPages 先于 render）
+        pass.setBindGroup(0, pt.bindGroup);
+        pass.draw(run.count * VERTS_PER_QUAD, 1, run.start * VERTS_PER_QUAD);
+      }
     }
 
     pass.end();
     device.queue.submit([encoder.finish()]);
+  }
+
+  // 为一页纹理建 bindGroup：uniform/sampler 共享，仅纹理 view 不同。
+  private createBindGroup(tex: GPUTexture): GPUBindGroup {
+    return this.device.createBindGroup({
+      layout: this.pipeline.getBindGroupLayout(0),
+      entries: [
+        { binding: 0, resource: { buffer: this.uniformBuf } },
+        { binding: 1, resource: tex.createView() },
+        { binding: 2, resource: this.sampler },
+      ],
+    });
   }
 }

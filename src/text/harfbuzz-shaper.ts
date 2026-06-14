@@ -1,3 +1,6 @@
+// text 层 · HarfBuzz 整形器实现（Shaper 接口）：用真实字体二进制做 HarfBuzz 整形（连字/字距/复杂文字），
+// 输出 glyphId + advance/offset，再经 glyphToPath/glyphExtents 把字形轮廓光栅进字形图集。
+// 字体回退：Latin→Roboto，希伯来→Noto Hebrew，阿拉伯→Noto Arabic（见 fallbacks）；CJK/emoji 待扩展。
 import type * as HB from 'harfbuzzjs';
 import { StyledChar, Style, GlyphInfo } from '../types';
 import { GlyphAtlas, FontMetrics } from './glyph-atlas';
@@ -6,7 +9,7 @@ import { Shaper, ShapedChar } from './shaper';
 interface FontEntry { tag: string; font: HB.Font; upem: number }
 
 const EMPTY = (advance: number): GlyphInfo =>
-  ({ u0: 0, v0: 0, u1: 0, v1: 0, w: 0, h: 0, bearingX: 0, bearingY: 0, advance, empty: true });
+  ({ u0: 0, v0: 0, u1: 0, v1: 0, page: 0, w: 0, h: 0, bearingX: 0, bearingY: 0, advance, empty: true });
 
 // 脚本范围判定（用于字体回退选择）
 function isArabicCp(cp: number): boolean {
@@ -15,9 +18,6 @@ function isArabicCp(cp: number): boolean {
 }
 function isHebrewCp(cp: number): boolean { return (cp >= 0x0590 && cp <= 0x05FF) || (cp >= 0xFB1D && cp <= 0xFB4F); }
 
-// text 分层的整形器实现：用真实字体二进制做 HarfBuzz 整形（连字/字距/复杂文字），
-// 输出 glyphId + advance/offset，再经 glyphToPath/glyphExtents 把字形轮廓光栅进图集。
-// 字体回退：Latin→Roboto，希伯来→Noto Hebrew，阿拉伯→Noto Arabic（见 fallbacks）；CJK/emoji 待扩展。
 /** 基于 HarfBuzz 的多语言整形器，输出字形度量并将轮廓光栅进图集。 @public */
 export class HarfBuzzShaper implements Shaper {
   readonly name = 'HarfBuzz (多语言 · 真整形)';
@@ -62,6 +62,16 @@ export class HarfBuzzShaper implements Shaper {
       load('/fonts/NotoSansHebrew-Regular.ttf', 'he'),
     ]);
     return new HarfBuzzShaper(hb, atlas, dpr, regular, bold, arabic, hebrew);
+  }
+
+  /**
+   * 更新渲染比例（有效 dpr = 设备 dpr × 功能性缩放）：清字体度量缓存。
+   * 字形图集键含 px（`hb:tag:gid:px`），随比例变化自然失效；旧位图由图集 setDpr 复位清除。 @public
+   */
+  setDpr(scale: number): void {
+    if (scale === this.dpr) return;
+    this.dpr = scale;
+    this.metricsCache.clear();
   }
 
   private pick(style: Style): FontEntry { return style.bold ? this.bold : this.regular; }

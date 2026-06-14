@@ -1,12 +1,41 @@
 {
-  "name": "rich-text-engine",
+  "name": "canvas-rich",
+  "version": "0.1.0",
   "private": true,
-  "version": "0.0.1",
+  "description": "GPU 自绘的 canvas 富文本编辑内核：字形 → 图集 → GPU 贴图四边形，不依赖 DOM 排版。A GPU-rendered rich text editor engine on HTML canvas (WebGL2/WebGPU).",
   "type": "module",
+  "license": "MIT",
+  "author": "go-xworks",
+  "homepage": "https://github.com/go-xworks/canvas-rich#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/go-xworks/canvas-rich.git"
+  },
+  "bugs": {
+    "url": "https://github.com/go-xworks/canvas-rich/issues"
+  },
+  "keywords": [
+    "rich-text-editor",
+    "canvas",
+    "webgl",
+    "webgpu",
+    "gpu",
+    "text-rendering",
+    "glyph-atlas",
+    "harfbuzz",
+    "bidi",
+    "typescript",
+    "editor",
+    "wysiwyg"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
   },

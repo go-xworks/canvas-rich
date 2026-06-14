@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔐 安全漏洞
+    url: https://github.com/go-xworks/canvas-rich/security/advisories/new
+    about: 安全问题请私密报告，勿公开提交 Issue（见 SECURITY.md）。
+  - name: 💬 提问 / 讨论
+    url: https://github.com/go-xworks/canvas-rich/discussions
+    about: 使用问题、用法疑问请到 Discussions。

@@ -1,0 +1,78 @@
+/* DOM 外壳样式（自 index.html 的内联 <style> 外置，main.ts 入口 import，构建后随 bundle 产出外链 css）。
+   CSP：外置后 index.html 不再含内联 <style>，宿主可启用不带 style-src 'unsafe-inline' 的严格 CSP 运行核心。 */
+
+/* 亮色主题令牌（DOM 外壳单一来源；canvas 渲染色见 model/palette.ts）。
+   亮色为默认 :root；暗色见下方 html[data-theme="dark"]。主题切换 = 设 documentElement.dataset.theme + applyCanvasTheme。 */
+:root {
+  --rte-canvas: #ffffff;
+  --rte-chrome-bg: #fbfbfc;
+  --rte-chrome-fg: #3c4150;
+  --rte-chrome-border: #e8e9ec;
+  --rte-chrome-hover: #f0f1f3;
+  --rte-active-bg: #eef2ff;
+  --rte-active-fg: #2563eb;
+  --rte-accent: #2563eb;
+  --rte-overlay-bg: #ffffff;
+  --rte-overlay-border: #e3e5e9;
+  --rte-code-bg: #f4f5f7;
+  --rte-code-text: #2d3138;
+  --rte-text: #1f2430;
+  --rte-muted: #6b7280;
+  --rte-scrim: rgba(31, 35, 41, 0.45);
+  --rte-shadow: 0 8px 24px rgba(15, 17, 23, 0.10);
+}
+/* 暗色主题令牌（DOM 外壳：工具栏/面板/弹层/覆盖层）。深底 #1a1b22，与 model/palette.ts 的 DARK 令牌成对。 */
+html[data-theme="dark"] {
+  --rte-canvas: #1a1b22;
+  --rte-chrome-bg: #1f2027;
+  --rte-chrome-fg: #c6cdd9;
+  --rte-chrome-border: #30323c;
+  --rte-chrome-hover: #2a2c35;
+  --rte-active-bg: #243049;
+  --rte-active-fg: #73a8fd;
+  --rte-accent: #73a8fd;
+  --rte-overlay-bg: #24252e;
+  --rte-overlay-border: #353742;
+  --rte-code-bg: #262832;
+  --rte-code-text: #c6cdd9;
+  --rte-text: #e2e5ec;
+  --rte-muted: #9aa0ae;
+  --rte-scrim: rgba(0, 0, 0, 0.55);
+  --rte-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--rte-canvas); }
+#app { position: fixed; inset: 0; display: flex; flex-direction: column; }
+#toolbar { flex: 0 0 auto; }
+/* 中部横向区：左大纲面板 | 中编辑器。min-height:0 让其内部可正确 flex 收缩。 */
+#body { flex: 1 1 auto; display: flex; flex-direction: row; min-height: 0; }
+#editor { flex: 1 1 auto; position: relative; min-width: 0; min-height: 0; background: var(--rte-canvas); }
+/* 左大纲面板：固定宽，可折叠（.collapsed → 宽 0 隐藏内容）。 */
+#left-panel {
+  flex: 0 0 auto; width: 240px; min-height: 0; overflow: hidden;
+  background: var(--rte-chrome-bg); display: flex; flex-direction: column;
+  border-right: 1px solid var(--rte-chrome-border);
+}
+#left-panel.collapsed { width: 0; border: 0; }
+#left-panel.collapsed > * { display: none; }
+.panel-head {
+  flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between;
+  gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--rte-chrome-border);
+  font: 12px/1.2 system-ui, sans-serif; color: var(--rte-muted);
+}
+.panel-collapse {
+  appearance: none; border: 0; background: transparent; cursor: pointer;
+  color: var(--rte-muted); font-size: 14px; line-height: 1; padding: 2px 6px; border-radius: 4px;
+}
+.panel-collapse:hover { background: var(--rte-chrome-hover); }
+.panel-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: auto; }
+#status-bar { flex: 0 0 auto; }
+/* touch-action:none：触摸语义全部自管（单指平移/长按选词/双指捏合，见 main.ts 触屏分流），
+   浏览器手势不得中途 pointercancel 接管 */
+canvas { display: block; width: 100%; height: 100%; outline: none; cursor: text; touch-action: none; }
+/* 隐藏输入代理：承接键盘 + 输入法(IME) */
+#ime {
+  position: fixed; top: 0; left: 0; width: 1px; height: 1px;
+  opacity: 0; border: 0; padding: 0; margin: 0; resize: none;
+  overflow: hidden; white-space: pre; z-index: -1; color: transparent;
+  background: transparent;
+}
