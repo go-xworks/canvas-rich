@@ -81,13 +81,11 @@ shared/   跨层纯工具
 ```
 
 设计要点：**统一命令总线**（键盘 / 工具栏 / 右键三路同 id 派发）、**类型化事件发射器**（Observer）、
-**插件化注册表**（块行为 / 块导出 / 工具栏贡献项各只注册一处）。详见 [`CONVENTIONS.zh-CN.md`](CONVENTIONS.zh-CN.md)。
+**插件化注册表**（块行为 / 块导出 / 工具栏贡献项各只注册一处）。
 
 ## 贡献
 
-欢迎 Issue 与 PR，请先阅读 [`CONTRIBUTING.zh-CN.md`](CONTRIBUTING.zh-CN.md)（开发、三门验证、提交规范）、
-[`CONVENTIONS.zh-CN.md`](CONVENTIONS.zh-CN.md)（工程约定）。
-安全问题请按 [`SECURITY.zh-CN.md`](SECURITY.zh-CN.md) 私密报告。变更记录见 [`CHANGELOG.zh-CN.md`](CHANGELOG.zh-CN.md)。
+欢迎 Issue 与 PR。安全问题请按 [`SECURITY.zh-CN.md`](SECURITY.zh-CN.md) 私密报告。变更记录见 [`CHANGELOG.zh-CN.md`](CHANGELOG.zh-CN.md)。
 
 ## 许可
 

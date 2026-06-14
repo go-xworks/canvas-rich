@@ -30,7 +30,7 @@
 
 ## Checklist（检查清单）
 
-- [ ] Follows [`CONVENTIONS.md`](../CONVENTIONS.md) (kebab-case file names / TSDoc / no `any` / layering)（遵循 `CONVENTIONS.md`：kebab 文件名 / TSDoc / 禁 `any` / 分层）
+- [ ] Follows project conventions: kebab-case file names / TSDoc / no `any` / layering（遵循约定：kebab 文件名 / TSDoc / 禁 `any` / 分层）
 - [ ] Commit messages follow Conventional Commits（提交信息符合 Conventional Commits）
 - [ ] Updated `README.md` / `CHANGELOG.md` as needed（按需更新了 `README.md` / `CHANGELOG.md`）
 

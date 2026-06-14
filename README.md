@@ -78,13 +78,11 @@ ui/       toolbar (declarative contribution manifest), overlays, panels, popover
 shared/   cross-layer pure utilities
 ```
 
-Design highlights: a **unified command bus** (keyboard / toolbar / context menu all dispatch the same ids), a **typed event emitter** (Observer), and a **plugin registry** (block behaviors / block exporters / toolbar contributions each registered in exactly one place). See [`CONVENTIONS.md`](CONVENTIONS.md) for details.
+Design highlights: a **unified command bus** (keyboard / toolbar / context menu all dispatch the same ids), a **typed event emitter** (Observer), and a **plugin registry** (block behaviors / block exporters / toolbar contributions each registered in exactly one place).
 
 ## Contributing
 
-Issues and PRs are welcome. Please first read [`CONTRIBUTING.md`](CONTRIBUTING.md) (development, pre-commit checks, commit conventions),
-and [`CONVENTIONS.md`](CONVENTIONS.md) (engineering conventions).
-Report security issues privately per [`SECURITY.md`](SECURITY.md). See [`CHANGELOG.md`](CHANGELOG.md) for the change log.
+Issues and PRs are welcome. Report security issues privately per [`SECURITY.md`](SECURITY.md). See [`CHANGELOG.md`](CHANGELOG.md) for the change log.
 
 ## License
 
