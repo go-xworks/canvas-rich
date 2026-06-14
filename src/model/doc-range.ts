@@ -1,6 +1,15 @@
 // 文档区间切片（model 层纯函数）：把 [from,to] 选区切出为独立 Doc 片段，
 // 是剪贴板富文本复制（editor/clipboard → toHtml）与片段插入（RichDoc.insertFragment）的数据源。
-import { Doc, Block, block as mkBlock, blockTextLen, cloneBlockAttrs, cloneInline, cloneDoc, isAtomBlock } from './schema';
+import {
+  Doc,
+  Block,
+  block as mkBlock,
+  blockTextLen,
+  cloneBlockAttrs,
+  cloneInline,
+  cloneDoc,
+  isAtomBlock,
+} from './schema';
 import { sliceInlines } from './inlines';
 import { Pos, comparePos } from './rich-document';
 
@@ -12,7 +21,11 @@ import { Pos, comparePos } from './rich-document';
  * @public
  */
 export function sliceDocRange(doc: Doc, from: Pos, to: Pos): Doc {
-  if (comparePos(from, to) > 0) { const t = from; from = to; to = t; }
+  if (comparePos(from, to) > 0) {
+    const t = from;
+    from = to;
+    to = t;
+  }
   const blocks: Block[] = [];
   const lastBi = Math.min(to.block, doc.blocks.length - 1);
   for (let bi = Math.max(0, from.block); bi <= lastBi; bi++) {

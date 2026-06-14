@@ -1,7 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
-  StyleResolver, resolveFontFamily, FONT_FAMILY_STACKS,
-  SUBSUP_SCALE, SUPERSCRIPT_SHIFT, SUBSCRIPT_SHIFT,
+  StyleResolver,
+  resolveFontFamily,
+  FONT_FAMILY_STACKS,
+  SUBSUP_SCALE,
+  SUPERSCRIPT_SHIFT,
+  SUBSCRIPT_SHIFT,
 } from '../style-resolver';
 import { block, para, Mark } from '../schema';
 import { FONT_UI } from '../palette';
@@ -142,11 +146,13 @@ describe('resolveBlock: attrs 覆盖块主题默认（indent/spaceBefore/spaceAf
   });
 
   it('非 number（字符串注入）回退主题默认，不产 NaN', () => {
-    const rb = R.resolveBlock(para([], {
-      spaceBefore: '10px' as unknown as number,
-      spaceAfter: '8' as unknown as number,
-      indent: '12' as unknown as number,
-    }));
+    const rb = R.resolveBlock(
+      para([], {
+        spaceBefore: '10px' as unknown as number,
+        spaceAfter: '8' as unknown as number,
+        indent: '12' as unknown as number,
+      }),
+    );
     expect(rb.spaceBefore).toBe(4);
     expect(rb.spaceAfter).toBe(4);
     expect(rb.indent).toBe(0);
@@ -201,4 +207,3 @@ describe('resolveBlock: align 透传（含 justify/distribute）', () => {
     expect(R.resolveBlock(para([], { align: 'distribute' })).align).toBe('distribute');
   });
 });
-

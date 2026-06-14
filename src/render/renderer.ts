@@ -4,14 +4,28 @@
 
 /** 一个待绘制的纹理四边形（位置、uv、顶点色、所在图集页），渲染层的最小绘制单元。 @public */
 export interface Quad {
-  x: number; y: number; w: number; h: number;      // 设备 px，左上角 + 尺寸
-  u0: number; v0: number; u1: number; v1: number;  // 纹理 uv
-  r: number; g: number; b: number; a: number;      // 顶点色 0..1
-  page: number;                                    // 图集页号（纯色矩形固定 0 —— 白块恒在 page 0）
+  x: number;
+  y: number;
+  w: number;
+  h: number; // 设备 px，左上角 + 尺寸
+  u0: number;
+  v0: number;
+  u1: number;
+  v1: number; // 纹理 uv
+  r: number;
+  g: number;
+  b: number;
+  a: number; // 顶点色 0..1
+  page: number; // 图集页号（纯色矩形固定 0 —— 白块恒在 page 0）
 }
 
 /** 图集页内的轴对齐矩形（设备 px，左上原点），脏区子上传的区域描述。 @public */
-export interface AtlasRect { x: number; y: number; w: number; h: number }
+export interface AtlasRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
 
 /**
  * 后端无关的渲染器契约：负责尺寸、多页图集上传与四边形批量绘制。

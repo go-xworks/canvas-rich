@@ -12,7 +12,11 @@ import { parseHtml } from './import';
  * 命令式剪贴板接口：供右键菜单等主动触发复制/剪切/粘贴。
  * @public
  */
-export interface Clipboard { copy(): Promise<void>; cut(): Promise<void>; paste(): Promise<void> }
+export interface Clipboard {
+  copy(): Promise<void>;
+  cut(): Promise<void>;
+  paste(): Promise<void>;
+}
 
 /**
  * 在 IME 文本域上挂接 copy/cut/paste 事件，并返回命令式剪贴板接口。
@@ -31,7 +35,12 @@ export function setupClipboard(ime: HTMLTextAreaElement, rd: RichDoc, afterEdit:
   const pasteText = (t: string) => {
     if (!t) return;
     rd.breakUndoCoalescing();
-    t.replace(/\r\n?/g, '\n').split('\n').forEach((seg, i) => { if (i > 0) rd.enter(); if (seg) rd.insertText(seg); });
+    t.replace(/\r\n?/g, '\n')
+      .split('\n')
+      .forEach((seg, i) => {
+        if (i > 0) rd.enter();
+        if (seg) rd.insertText(seg);
+      });
     rd.breakUndoCoalescing();
     afterEdit();
   };
@@ -43,7 +52,10 @@ export function setupClipboard(ime: HTMLTextAreaElement, rd: RichDoc, afterEdit:
   // 剪贴板里的图片文件 → 以 data URL 插入
   const pasteImage = (file: File): void => {
     const reader = new FileReader();
-    reader.onload = () => { rd.insertImage(String(reader.result)); afterEdit(); };
+    reader.onload = () => {
+      rd.insertImage(String(reader.result));
+      afterEdit();
+    };
     reader.readAsDataURL(file);
   };
   // copy/cut 共用：双格式写入剪贴板事件（无选区返回 false 放行默认行为）。
@@ -56,15 +68,28 @@ export function setupClipboard(ime: HTMLTextAreaElement, rd: RichDoc, afterEdit:
     return true;
   };
 
-  ime.addEventListener('copy', (e) => { writeSelection(e); });
-  ime.addEventListener('cut', (e) => { if (writeSelection(e)) { rd.backspace(); afterEdit(); } });
+  ime.addEventListener('copy', (e) => {
+    writeSelection(e);
+  });
+  ime.addEventListener('cut', (e) => {
+    if (writeSelection(e)) {
+      rd.backspace();
+      afterEdit();
+    }
+  });
   ime.addEventListener('paste', (e) => {
     e.preventDefault();
     const img = [...(e.clipboardData?.items ?? [])].find((it) => it.type.startsWith('image/'));
     const file = img?.getAsFile();
-    if (file) { pasteImage(file); return; } // 优先图片（截图/复制的图）
+    if (file) {
+      pasteImage(file);
+      return;
+    } // 优先图片（截图/复制的图）
     const html = e.clipboardData?.getData('text/html') ?? '';
-    if (html) { pasteHtml(html); return; }  // 富文本：Word/Docs/网页/编辑器内部复制
+    if (html) {
+      pasteHtml(html);
+      return;
+    } // 富文本：Word/Docs/网页/编辑器内部复制
     pasteText(e.clipboardData?.getData('text/plain') ?? '');
   });
 
@@ -74,20 +99,31 @@ export function setupClipboard(ime: HTMLTextAreaElement, rd: RichDoc, afterEdit:
     if (!t) return false;
     try {
       if (typeof ClipboardItem !== 'undefined' && navigator.clipboard?.write) {
-        await navigator.clipboard.write([new ClipboardItem({
-          'text/plain': new Blob([t], { type: 'text/plain' }),
-          'text/html': new Blob([selectionHtml()], { type: 'text/html' }),
-        })]);
+        await navigator.clipboard.write([
+          new ClipboardItem({
+            'text/plain': new Blob([t], { type: 'text/plain' }),
+            'text/html': new Blob([selectionHtml()], { type: 'text/html' }),
+          }),
+        ]);
       } else {
         await navigator.clipboard.writeText(t);
       }
-    } catch { /* 权限拒绝等：静默（与事件路径不可用时的旧行为一致） */ }
+    } catch {
+      /* 权限拒绝等：静默（与事件路径不可用时的旧行为一致） */
+    }
     return true;
   };
 
   return {
-    async copy() { await writeSelectionAsync(); },
-    async cut() { if (await writeSelectionAsync()) { rd.backspace(); afterEdit(); } },
+    async copy() {
+      await writeSelectionAsync();
+    },
+    async cut() {
+      if (await writeSelectionAsync()) {
+        rd.backspace();
+        afterEdit();
+      }
+    },
     async paste() {
       // 优先读富文本（clipboard.read 需权限，被拒/不支持时退回纯文本通道）
       try {
@@ -100,8 +136,14 @@ export function setupClipboard(ime: HTMLTextAreaElement, rd: RichDoc, afterEdit:
             }
           }
         }
-      } catch { /* 权限拒绝/不支持：落回 readText */ }
-      try { pasteText(await navigator.clipboard.readText()); } catch { /* */ }
+      } catch {
+        /* 权限拒绝/不支持：落回 readText */
+      }
+      try {
+        pasteText(await navigator.clipboard.readText());
+      } catch {
+        /* */
+      }
     },
   };
 }

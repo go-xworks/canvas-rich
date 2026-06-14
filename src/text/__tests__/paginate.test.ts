@@ -9,26 +9,57 @@ import { PositionedGlyph, GlyphInfo } from '../../types';
 // 页几何：页高 100、上下边距 10（内容区高 80）、页缝 20 → 首页页顶 20、stride=120。
 // contentTop(p) = 30 + 120p；contentBottom(p) = 110 + 120p。
 const OPT: PaginateOpts = {
-  pageX: 5, pageW: 200, pageH: 100,
-  marginTop: 10, marginBottom: 10, gap: 20,
+  pageX: 5,
+  pageW: 200,
+  pageH: 100,
+  marginTop: 10,
+  marginBottom: 10,
+  gap: 20,
   padT: 30, // = gap + marginTop
 };
 const STRIDE = 120; // pageH + gap
 const PAGE0_TOP = 20; // padT - marginTop
 
 const EMPTY_GLYPH: GlyphInfo = {
-  u0: 0, v0: 0, u1: 0, v1: 0, page: 0, w: 4, h: 8, bearingX: 0, bearingY: 6, advance: 10, empty: false,
+  u0: 0,
+  v0: 0,
+  u1: 0,
+  v1: 0,
+  page: 0,
+  w: 4,
+  h: 8,
+  bearingX: 0,
+  bearingY: 6,
+  advance: 10,
+  empty: false,
 };
 
 const line = (top: number, h: number, block = 0): LineBox => ({
-  block, top, bottom: top + h, baseline: top + h * 0.75,
-  startOffset: 0, endOffset: 1, offsets: [0, 1], xs: [0, 10], minX: 0, maxX: 10, rtl: false,
+  block,
+  top,
+  bottom: top + h,
+  baseline: top + h * 0.75,
+  startOffset: 0,
+  endOffset: 1,
+  offsets: [0, 1],
+  xs: [0, 10],
+  minX: 0,
+  maxX: 10,
+  rtl: false,
 });
-const glyph = (baselineY: number): PositionedGlyph =>
-  ({ info: EMPTY_GLYPH, penX: 0, baselineY, color: [0, 0, 0, 1] });
+const glyph = (baselineY: number): PositionedGlyph => ({ info: EMPTY_GLYPH, penX: 0, baselineY, color: [0, 0, 0, 1] });
 const layoutOf = (over: Partial<DocLayout>): DocLayout => ({
-  backgrounds: [], highlights: [], glyphs: [], decorations: [], overlays: [], inlineOverlays: [],
-  lines: [], contentHeight: 0, contentRight: 195, dpr: 1, ...over,
+  backgrounds: [],
+  highlights: [],
+  glyphs: [],
+  decorations: [],
+  overlays: [],
+  inlineOverlays: [],
+  lines: [],
+  contentHeight: 0,
+  contentRight: 195,
+  dpr: 1,
+  ...over,
 });
 
 describe('paginateLayout: 单页不分', () => {
@@ -57,7 +88,7 @@ describe('paginateLayout: 恰好跨页', () => {
     expect(pages.length).toBe(2);
     expect(layout.lines[0].top).toBe(90);
     expect(layout.lines[0].bottom).toBe(110);
-    expect(layout.lines[1].top).toBe(150);            // contentTop(1)
+    expect(layout.lines[1].top).toBe(150); // contentTop(1)
     expect(layout.lines[1].bottom).toBe(170);
     expect(layout.lines[1].baseline).toBe(110 + 20 * 0.75 + 40); // 刚体平移：baseline 同 shift=40
   });
@@ -72,7 +103,8 @@ describe('paginateLayout: 多页', () => {
     for (const ln of layout.lines) {
       // 找到所属页：行须整体处于该页内容区 [contentTop, contentBottom]
       const p = Math.round((ln.top - 30) / STRIDE);
-      const cTop = 30 + p * STRIDE, cBottom = 110 + p * STRIDE;
+      const cTop = 30 + p * STRIDE,
+        cBottom = 110 + p * STRIDE;
       expect(ln.top).toBeGreaterThanOrEqual(cTop - 0.5);
       expect(ln.bottom).toBeLessThanOrEqual(cBottom + 0.5);
     }
@@ -88,7 +120,7 @@ describe('paginateLayout: 超高行（大原子块）不死循环', () => {
     // 首行 30..330（高 300 > 内容区 80）；次行 330..350
     const L = layoutOf({ lines: [line(30, 300), line(330, 20)] });
     const { layout, pages } = paginateLayout(L, OPT); // 终止本身即「不死循环」的验证
-    expect(layout.lines[0].top).toBe(30);   // 已在内容顶，不再移动
+    expect(layout.lines[0].top).toBe(30); // 已在内容顶，不再移动
     expect(layout.lines[0].bottom).toBe(330);
     // 其底 330 落入第 3 页（contentBottom(2)=350）→ 至少 3 页
     expect(pages.length).toBe(3);
@@ -116,7 +148,7 @@ describe('paginateLayout: glyph 与 line 同步平移', () => {
       glyphs: [glyph(105), glyph(125)], // 分属行 A（90..110）与行 B（110..130）
     });
     const { layout } = paginateLayout(L, OPT);
-    expect(layout.glyphs[0].baselineY).toBe(105);      // 行 A 未移
+    expect(layout.glyphs[0].baselineY).toBe(105); // 行 A 未移
     expect(layout.glyphs[1].baselineY).toBe(125 + 40); // 行 B shift=40
   });
 });
@@ -135,13 +167,13 @@ describe('paginateLayout: 覆盖层 / 背景 / 高亮 / 装饰平移', () => {
     const L = layoutOf({
       lines: [line(90, 20), line(110, 20)],
       inlineOverlays: [{ block: 0, offset: 1, kind: 'image', x: 4, y: 115, w: 10, h: 10 }],
-      backgrounds: [{ x: 0, y: 92, w: 50, h: 10, color: [0, 0, 0, 1] }],   // 行 A 段
-      highlights: [{ x: 0, y: 110, w: 50, h: 20, color: [0, 0, 0, 1] }],   // 行 B 段
-      decorations: [{ x: 0, y: 127, w: 50, h: 2, color: [0, 0, 0, 1] }],   // 行 B 段
+      backgrounds: [{ x: 0, y: 92, w: 50, h: 10, color: [0, 0, 0, 1] }], // 行 A 段
+      highlights: [{ x: 0, y: 110, w: 50, h: 20, color: [0, 0, 0, 1] }], // 行 B 段
+      decorations: [{ x: 0, y: 127, w: 50, h: 2, color: [0, 0, 0, 1] }], // 行 B 段
     });
     const { layout } = paginateLayout(L, OPT);
     expect(layout.inlineOverlays[0].y).toBe(115 + 40);
-    expect(layout.backgrounds[0].y).toBe(92);        // 前段不动
+    expect(layout.backgrounds[0].y).toBe(92); // 前段不动
     expect(layout.highlights[0].y).toBe(110 + 40);
     expect(layout.decorations[0].y).toBe(127 + 40);
   });

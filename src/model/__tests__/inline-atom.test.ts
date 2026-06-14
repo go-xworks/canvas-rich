@@ -1,10 +1,26 @@
 import { describe, it, expect } from 'vitest';
 import {
-  text, inlineAtom, isInlineAtom, cloneDoc, cloneInline, blockText, blockTextLen,
-  para, Inline, ATOM_PLACEHOLDER, InlineAtom,
+  text,
+  inlineAtom,
+  isInlineAtom,
+  cloneDoc,
+  cloneInline,
+  blockText,
+  blockTextLen,
+  para,
+  Inline,
+  ATOM_PLACEHOLDER,
+  InlineAtom,
 } from '../schema';
 import {
-  normalizeInlines, sliceInlines, insertText, deleteRange, splitInlines, applyMark, marksAt, rangeHasMark,
+  normalizeInlines,
+  sliceInlines,
+  insertText,
+  deleteRange,
+  splitInlines,
+  applyMark,
+  marksAt,
+  rangeHasMark,
 } from '../inlines';
 
 // 行内原子（行内图片）单测：占 1 UTF-16 offset、不可分割。
@@ -26,7 +42,7 @@ describe('schema: 行内原子构造与守卫', () => {
 
   it('blockText/blockTextLen 把行内原子计为 1 个 offset', () => {
     const b = para([text('ab'), img('x'), text('cd')]);
-    expect(blockTextLen(b)).toBe(5);     // a b (atom) c d
+    expect(blockTextLen(b)).toBe(5); // a b (atom) c d
     expect(blockText(b).length).toBe(5);
   });
 
@@ -35,7 +51,7 @@ describe('schema: 行内原子构造与守卫', () => {
     const c = cloneInline(a);
     expect(isInlineAtom(c)).toBe(true);
     expect((c as InlineAtom).attrs.src).toBe('x.png');
-    expect(c).not.toBe(a);                // 新对象
+    expect(c).not.toBe(a); // 新对象
     expect((c as InlineAtom).attrs).not.toBe(a.attrs); // attrs 深拷贝
 
     const doc = { blocks: [para([text('a'), img('y'), text('b')])] };
@@ -49,12 +65,17 @@ describe('schema: 行内原子构造与守卫', () => {
 describe('inlines: normalize 不合并/不删除原子', () => {
   it('原子原样保留，不与相邻同 marks 文本合并', () => {
     expect(summary(normalizeInlines([text('a'), img('x'), text('b')]))).toEqual([
-      ['a', ''], ['(atom)', ''], ['b', ''],
+      ['a', ''],
+      ['(atom)', ''],
+      ['b', ''],
     ]);
   });
 
   it('两个相邻原子各自保留（互不合并）', () => {
-    expect(summary(normalizeInlines([img('x'), img('y')]))).toEqual([['(atom)', ''], ['(atom)', '']]);
+    expect(summary(normalizeInlines([img('x'), img('y')]))).toEqual([
+      ['(atom)', ''],
+      ['(atom)', ''],
+    ]);
   });
 });
 
@@ -73,7 +94,11 @@ describe('inlines: slice 把原子当不可分 1 长度单元', () => {
   });
 
   it('跨原子切 [1,4) 得到 b + atom + c，原子保持身份', () => {
-    expect(summary(sliceInlines(seq(), 1, 4))).toEqual([['b', ''], ['(atom)', ''], ['c', '']]);
+    expect(summary(sliceInlines(seq(), 1, 4))).toEqual([
+      ['b', ''],
+      ['(atom)', ''],
+      ['c', ''],
+    ]);
     const out = sliceInlines(seq(), 1, 4);
     expect(isInlineAtom(out[1])).toBe(true);
   });
@@ -81,29 +106,43 @@ describe('inlines: slice 把原子当不可分 1 长度单元', () => {
   it('切到原子内部不可能（长度 1）：[2,3) 即整段，永不半切', () => {
     // 任何与原子相交的区间都恰好覆盖其 [2,3)
     const out = sliceInlines(seq(), 0, 3);
-    expect(summary(out)).toEqual([['ab', ''], ['(atom)', '']]);
+    expect(summary(out)).toEqual([
+      ['ab', ''],
+      ['(atom)', ''],
+    ]);
   });
 });
 
 describe('inlines: insert / delete / split 与原子', () => {
   it('在原子右侧插入文本（offset 3）', () => {
-    const inls: Inline[] = [text('ab'), img('x')];        // 全长 3
+    const inls: Inline[] = [text('ab'), img('x')]; // 全长 3
     const out = insertText(inls, 3, 'Z', []);
-    expect(summary(out)).toEqual([['ab', ''], ['(atom)', ''], ['Z', '']]);
+    expect(summary(out)).toEqual([
+      ['ab', ''],
+      ['(atom)', ''],
+      ['Z', ''],
+    ]);
   });
 
   it('在原子左侧插入文本（offset 2）不切原子（与左侧同 marks 文本合并）', () => {
     const inls: Inline[] = [text('ab'), img('x')];
     const out = insertText(inls, 2, 'Z', []);
     // 'Z' 无 marks，与左侧 'ab' 合并为 'abZ'；原子原样保留在其后
-    expect(summary(out)).toEqual([['abZ', ''], ['(atom)', '']]);
+    expect(summary(out)).toEqual([
+      ['abZ', ''],
+      ['(atom)', ''],
+    ]);
     expect(isInlineAtom(out[1])).toBe(true);
   });
 
   it('在原子左侧插入带 marks 文本（不与无 mark 文本合并、不切原子）', () => {
     const inls: Inline[] = [text('ab'), img('x')];
     const out = insertText(inls, 2, 'Z', bold);
-    expect(summary(out)).toEqual([['ab', ''], ['Z', 'bold'], ['(atom)', '']]);
+    expect(summary(out)).toEqual([
+      ['ab', ''],
+      ['Z', 'bold'],
+      ['(atom)', ''],
+    ]);
     expect(isInlineAtom(out[2])).toBe(true);
   });
 
@@ -134,14 +173,18 @@ describe('inlines: applyMark / rangeHasMark 跳过原子', () => {
     const inls: Inline[] = [text('ab'), img('x'), text('cd')];
     const out = applyMark(inls, 0, 5, { type: 'bold' }, true);
     // a b -> bold, atom 不变, c d -> bold
-    expect(summary(out)).toEqual([['ab', 'bold'], ['(atom)', ''], ['cd', 'bold']]);
+    expect(summary(out)).toEqual([
+      ['ab', 'bold'],
+      ['(atom)', ''],
+      ['cd', 'bold'],
+    ]);
     expect(isInlineAtom(out[1])).toBe(true);
   });
 
   it('rangeHasMark：区间含原子（无 mark）→ 非全覆盖返回 false', () => {
     const inls: Inline[] = [text('ab', bold), img('x'), text('cd', bold)];
     expect(rangeHasMark(inls, 0, 5, 'bold')).toBe(false); // 原子无 bold
-    expect(rangeHasMark(inls, 0, 2, 'bold')).toBe(true);  // 不含原子区间全覆盖
+    expect(rangeHasMark(inls, 0, 2, 'bold')).toBe(true); // 不含原子区间全覆盖
   });
 
   it('marksAt：原子右缘打字不继承原子的（空）marks，回退文本段语义', () => {

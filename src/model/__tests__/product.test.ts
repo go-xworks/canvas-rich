@@ -9,8 +9,7 @@ const docTypes = (rd: RichDoc) => rd.doc.blocks.map((b) => b.type);
 const docText = (rd: RichDoc) => rd.doc.blocks.map((b) => blockText(b));
 
 // 找到块内所有命中某 mark 的段
-const runsWithMark = (b: Block, type: string) =>
-  b.inlines.filter((r) => r.marks.some((m) => m.type === type));
+const runsWithMark = (b: Block, type: string) => b.inlines.filter((r) => r.marks.some((m) => m.type === type));
 const getMark = (b: Block, type: string): Mark | undefined => {
   for (const r of b.inlines) {
     const m = r.marks.find((mk) => mk.type === type);
@@ -92,7 +91,11 @@ describe('toggleMark strikethrough', () => {
     const rd = rdOf(block('paragraph', [text('strike')]));
     select(rd, pos(0, 0), pos(0, 6));
     rd.toggleMark('strikethrough');
-    expect(runsWithMark(rd.doc.blocks[0], 'strikethrough').map((r) => r.text).join('')).toBe('strike');
+    expect(
+      runsWithMark(rd.doc.blocks[0], 'strikethrough')
+        .map((r) => r.text)
+        .join(''),
+    ).toBe('strike');
 
     // 再 toggle 去掉
     select(rd, pos(0, 0), pos(0, 6));

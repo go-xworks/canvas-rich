@@ -28,7 +28,9 @@ export interface AriaTree {
  * @internal
  */
 export function createAriaTree(canvas: HTMLElement, ime: HTMLElement): AriaTree {
-  const style = document.createElement('style'); style.textContent = CSS; document.head.appendChild(style);
+  const style = document.createElement('style');
+  style.textContent = CSS;
+  document.head.appendChild(style);
   canvas.setAttribute('aria-hidden', 'true');
   ime.setAttribute('aria-label', '富文本编辑器，使用箭头键浏览，工具栏设置格式');
   ime.setAttribute('aria-multiline', 'true');
@@ -51,12 +53,17 @@ export function createAriaTree(canvas: HTMLElement, ime: HTMLElement): AriaTree 
   return {
     update(doc: Doc) {
       const html = toHtml(doc);
-      if (html !== lastHtml) { mirror.innerHTML = html; lastHtml = html; }
+      if (html !== lastHtml) {
+        mirror.innerHTML = html;
+        lastHtml = html;
+      }
     },
     announce(msg: string) {
       // 先清空再写，确保相同/重复消息也被重新播报
       live.textContent = '';
-      window.setTimeout(() => { live.textContent = msg; }, 30);
+      window.setTimeout(() => {
+        live.textContent = msg;
+      }, 30);
     },
     destroy() {
       style.remove();

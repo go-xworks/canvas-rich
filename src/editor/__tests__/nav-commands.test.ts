@@ -13,11 +13,16 @@ const doc = (...blocks: Block[]): Doc => ({ blocks });
 
 describe('keymap 注册完备性（修饰键导航/删除/查找）', () => {
   it.each([
-    ['alt+arrowleft', 'nav.wordLeft'], ['alt+shift+arrowleft', 'nav.wordLeft'],
-    ['alt+arrowright', 'nav.wordRight'], ['alt+shift+arrowright', 'nav.wordRight'],
-    ['mod+arrowleft', 'nav.lineStart'], ['mod+shift+arrowleft', 'nav.lineStart'],
-    ['mod+arrowright', 'nav.lineEnd'], ['mod+shift+arrowright', 'nav.lineEnd'],
-    ['alt+backspace', 'delete.wordBack'], ['alt+delete', 'delete.wordForward'],
+    ['alt+arrowleft', 'nav.wordLeft'],
+    ['alt+shift+arrowleft', 'nav.wordLeft'],
+    ['alt+arrowright', 'nav.wordRight'],
+    ['alt+shift+arrowright', 'nav.wordRight'],
+    ['mod+arrowleft', 'nav.lineStart'],
+    ['mod+shift+arrowleft', 'nav.lineStart'],
+    ['mod+arrowright', 'nav.lineEnd'],
+    ['mod+shift+arrowright', 'nav.lineEnd'],
+    ['alt+backspace', 'delete.wordBack'],
+    ['alt+delete', 'delete.wordForward'],
     ['mod+backspace', 'delete.toLineStart'],
     ['mod+f', 'find.open'],
   ])('keymap["%s"] → %s 且已注册', (combo, name) => {
@@ -26,9 +31,15 @@ describe('keymap 注册完备性（修饰键导航/删除/查找）', () => {
   });
 
   it('keyCombo 解析真实按键事件到组合串（⌥←/⌘⌫）', () => {
-    expect(keyCombo({ metaKey: false, ctrlKey: false, altKey: true, shiftKey: false, key: 'ArrowLeft' })).toBe('alt+arrowleft');
-    expect(keyCombo({ metaKey: true, ctrlKey: false, altKey: false, shiftKey: false, key: 'Backspace' })).toBe('mod+backspace');
-    expect(keyCombo({ metaKey: false, ctrlKey: false, altKey: true, shiftKey: true, key: 'ArrowRight' })).toBe('alt+shift+arrowright');
+    expect(keyCombo({ metaKey: false, ctrlKey: false, altKey: true, shiftKey: false, key: 'ArrowLeft' })).toBe(
+      'alt+arrowleft',
+    );
+    expect(keyCombo({ metaKey: true, ctrlKey: false, altKey: false, shiftKey: false, key: 'Backspace' })).toBe(
+      'mod+backspace',
+    );
+    expect(keyCombo({ metaKey: false, ctrlKey: false, altKey: true, shiftKey: true, key: 'ArrowRight' })).toBe(
+      'alt+shift+arrowright',
+    );
   });
 });
 

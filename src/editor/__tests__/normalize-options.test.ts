@@ -25,8 +25,13 @@ describe('normalizeEditorOptions — 缺省（复刻现 demo 全开）', () => {
 
   it('空 chrome 对象：各开关仍默认 true', () => {
     const n = normalizeEditorOptions({ chrome: {} });
-    expect([n.showToolbar, n.showOutline, n.showStatusBar, n.enableContextMenu, n.showFindBar])
-      .toEqual([true, true, true, true, true]);
+    expect([n.showToolbar, n.showOutline, n.showStatusBar, n.enableContextMenu, n.showFindBar]).toEqual([
+      true,
+      true,
+      true,
+      true,
+      true,
+    ]);
   });
 });
 
@@ -35,21 +40,30 @@ describe('normalizeEditorOptions — chrome 开关 !== false 语义', () => {
     const off = normalizeEditorOptions({
       chrome: { toolbar: false, outline: false, statusBar: false, contextMenu: false, findBar: false },
     });
-    expect([off.showToolbar, off.showOutline, off.showStatusBar, off.enableContextMenu, off.showFindBar])
-      .toEqual([false, false, false, false, false]);
+    expect([off.showToolbar, off.showOutline, off.showStatusBar, off.enableContextMenu, off.showFindBar]).toEqual([
+      false,
+      false,
+      false,
+      false,
+      false,
+    ]);
 
     const on = normalizeEditorOptions({
       chrome: { toolbar: true, outline: true, statusBar: true, contextMenu: true, findBar: true },
     });
-    expect([on.showToolbar, on.showOutline, on.showStatusBar, on.enableContextMenu, on.showFindBar])
-      .toEqual([true, true, true, true, true]);
+    expect([on.showToolbar, on.showOutline, on.showStatusBar, on.enableContextMenu, on.showFindBar]).toEqual([
+      true,
+      true,
+      true,
+      true,
+      true,
+    ]);
   });
 
   it('部分关闭：未提及的开关保持默认开', () => {
     const n = normalizeEditorOptions({ chrome: { toolbar: false } });
     expect(n.showToolbar).toBe(false);
-    expect([n.showOutline, n.showStatusBar, n.enableContextMenu, n.showFindBar])
-      .toEqual([true, true, true, true]);
+    expect([n.showOutline, n.showStatusBar, n.enableContextMenu, n.showFindBar]).toEqual([true, true, true, true]);
   });
 
   it('chrome 开关显式 undefined 视同默认开（!== false）', () => {

@@ -1,6 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
-  DRAFT_KEY, DRAFT_DEBOUNCE_MS, serializeDraft, parseDraft, loadDraft, saveDraft, clearDraft, createAutosaver,
+  DRAFT_KEY,
+  DRAFT_DEBOUNCE_MS,
+  serializeDraft,
+  parseDraft,
+  loadDraft,
+  saveDraft,
+  clearDraft,
+  createAutosaver,
 } from '../persistence';
 import { Doc, para, text, block, cell } from '../schema';
 import type { Pos } from '../rich-document';
@@ -13,11 +20,17 @@ function ensureLocalStorage(): void {
   if (g.localStorage) return;
   const mem = new Map<string, string>();
   g.localStorage = {
-    get length() { return mem.size; },
+    get length() {
+      return mem.size;
+    },
     clear: () => mem.clear(),
     getItem: (k: string) => (mem.has(k) ? mem.get(k)! : null),
-    setItem: (k: string, v: string) => { mem.set(k, String(v)); },
-    removeItem: (k: string) => { mem.delete(k); },
+    setItem: (k: string, v: string) => {
+      mem.set(k, String(v));
+    },
+    removeItem: (k: string) => {
+      mem.delete(k);
+    },
     key: (i: number) => Array.from(mem.keys())[i] ?? null,
   } as Storage;
 }
@@ -26,7 +39,12 @@ const sampleDoc = (): Doc => ({
   blocks: [
     block('heading', [text('标题', [{ type: 'bold' }])], { level: 2 }),
     para([text('正文', [{ type: 'color', attrs: { color: '#ff0000' } }])]),
-    block('table', [text('')], { rows: [[cell('a'), cell('b')], [cell(''), cell('d')]] }),
+    block('table', [text('')], {
+      rows: [
+        [cell('a'), cell('b')],
+        [cell(''), cell('d')],
+      ],
+    }),
   ],
 });
 const A: Pos = { block: 1, offset: 1 };
@@ -60,13 +78,15 @@ describe('serializeDraft / parseDraft round-trip', () => {
         doc: {
           blocks: [
             { type: 'paragraph', attrs: {}, inlines: [{ kind: 'text', text: 'ok', marks: [] }] },
-            { type: 'nope', attrs: {}, inlines: [] },                  // 未注册类型
-            { type: 'paragraph', attrs: {} },                          // 缺 inlines
-            { type: 'paragraph', attrs: null, inlines: [] },           // attrs 非对象
+            { type: 'nope', attrs: {}, inlines: [] }, // 未注册类型
+            { type: 'paragraph', attrs: {} }, // 缺 inlines
+            { type: 'paragraph', attrs: null, inlines: [] }, // attrs 非对象
             { type: 'table', attrs: { rows: 'broken' }, inlines: [] }, // rows 畸形
           ],
         },
-        anchor: A, focus: F, savedAt: 1,
+        anchor: A,
+        focus: F,
+        savedAt: 1,
       });
       const d = parseDraft(raw);
       expect(d!.doc.blocks).toHaveLength(1);
@@ -75,7 +95,9 @@ describe('serializeDraft / parseDraft round-trip', () => {
 
       const allBad = JSON.stringify({ doc: { blocks: [{ type: 'x' }] }, anchor: A, focus: F });
       expect(parseDraft(allBad)).toBeNull();
-    } finally { warn.mockRestore(); }
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   it('选区端点畸形 → 回退文首 {0,0}', () => {
@@ -86,7 +108,11 @@ describe('serializeDraft / parseDraft round-trip', () => {
   });
 
   it('合法块的空 inlines 补一个空文本段（block 不变量）', () => {
-    const raw = JSON.stringify({ doc: { blocks: [{ type: 'paragraph', attrs: {}, inlines: [] }] }, anchor: A, focus: F });
+    const raw = JSON.stringify({
+      doc: { blocks: [{ type: 'paragraph', attrs: {}, inlines: [] }] },
+      anchor: A,
+      focus: F,
+    });
     const d = parseDraft(raw);
     expect(d!.doc.blocks[0].inlines).toHaveLength(1);
     expect(d!.doc.blocks[0].inlines[0].text).toBe('');
@@ -94,7 +120,10 @@ describe('serializeDraft / parseDraft round-trip', () => {
 });
 
 describe('saveDraft / loadDraft / clearDraft（localStorage）', () => {
-  beforeEach(() => { ensureLocalStorage(); clearDraft(); });
+  beforeEach(() => {
+    ensureLocalStorage();
+    clearDraft();
+  });
 
   it('保存后可恢复（round-trip 经真实存储）', () => {
     const doc = sampleDoc();
@@ -122,7 +151,9 @@ describe('saveDraft / loadDraft / clearDraft（localStorage）', () => {
     // 直接替换实例方法模拟配额错误（垫片/浏览器实例均适用）
     const store = localStorage;
     const orig = store.setItem.bind(store);
-    store.setItem = () => { throw new Error('QuotaExceededError'); };
+    store.setItem = () => {
+      throw new Error('QuotaExceededError');
+    };
     try {
       expect(saveDraft(sampleDoc(), A, F)).toBe(false);
       expect(warn).toHaveBeenCalled();
@@ -134,8 +165,12 @@ describe('saveDraft / loadDraft / clearDraft（localStorage）', () => {
 });
 
 describe('createAutosaver（防抖调度器）', () => {
-  beforeEach(() => { vi.useFakeTimers(); });
-  afterEach(() => { vi.useRealTimers(); });
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
 
   it('schedule 标脏；静默 DRAFT_DEBOUNCE_MS 后落盘一次并复位脏标记', () => {
     const persist = vi.fn(() => true);
@@ -179,7 +214,7 @@ describe('createAutosaver（防抖调度器）', () => {
     const saver = createAutosaver(persist);
     saver.schedule();
     vi.advanceTimersByTime(DRAFT_DEBOUNCE_MS);
-    expect(saver.dirty).toBe(true);  // 落盘失败：仍脏
+    expect(saver.dirty).toBe(true); // 落盘失败：仍脏
     expect(saver.flush()).toBe(false);
   });
 });

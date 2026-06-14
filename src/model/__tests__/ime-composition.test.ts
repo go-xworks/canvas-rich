@@ -61,7 +61,7 @@ describe('撤销粒度（不进撤销栈的中间态）', () => {
     expect(rd.canUndo).toBe(true);
     rd.undo();
     expect(blockText(rd.doc.blocks[0])).toBe('ab'); // 一步回到组合前
-    expect(rd.canUndo).toBe(false);                 // 中间态没有额外记录
+    expect(rd.canUndo).toBe(false); // 中间态没有额外记录
     rd.redo();
     expect(blockText(rd.doc.blocks[0])).toBe('ab你');
   });

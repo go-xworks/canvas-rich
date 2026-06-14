@@ -48,15 +48,23 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build --config vite.lib.config.ts && tsc -p tsconfig.build.json",
+    "build": "tsdown && npm run build:css",
+    "build:css": "tailwindcss -i src/styles/lib.css -o dist/style.css --minify",
     "build:demo": "vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.examples.json",
+    "lint": "oxlint",
+    "format": "oxfmt --write src examples",
+    "format:check": "oxfmt --check src examples",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "devDependencies": {
+    "@tailwindcss/cli": "^4.3.1",
     "@webgpu/types": "^0.1.70",
+    "oxfmt": "^0.54.0",
+    "oxlint": "^1.69.0",
+    "tsdown": "^0.22.2",
     "typescript": "^5.6.3",
     "vite": "^6.0.7",
     "vitest": "^4.1.8"

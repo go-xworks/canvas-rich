@@ -1,7 +1,18 @@
 import { describe, it, expect } from 'vitest';
 import {
-  Doc, Block, TableCell, TextRun, cell, cellText, cellsFromStrings, cloneCell, cloneDoc, text,
-  inlineAtom, isCellEmpty, isInlineAtom,
+  Doc,
+  Block,
+  TableCell,
+  TextRun,
+  cell,
+  cellText,
+  cellsFromStrings,
+  cloneCell,
+  cloneDoc,
+  text,
+  inlineAtom,
+  isCellEmpty,
+  isInlineAtom,
 } from '../schema';
 import { RichDoc } from '../rich-document';
 import { toHtml, toMarkdown, inlinesToCellHtml } from '../export';
@@ -28,8 +39,14 @@ describe('cell / cellText / cellsFromStrings', () => {
   });
 
   it('cellsFromStrings lifts a string grid into independent rich cells', () => {
-    const rows = cellsFromStrings([['a', 'b'], ['c', '']]);
-    expect(rows.map((r) => r.map(cellText))).toEqual([['a', 'b'], ['c', '']]);
+    const rows = cellsFromStrings([
+      ['a', 'b'],
+      ['c', ''],
+    ]);
+    expect(rows.map((r) => r.map(cellText))).toEqual([
+      ['a', 'b'],
+      ['c', ''],
+    ]);
     expect(rows[0][0]).not.toBe(rows[0][1]); // 每格独立对象
     expect(rows[1][1].inlines).toHaveLength(1); // 空格子保留空段承载光标
   });
@@ -57,7 +74,12 @@ describe('cloneDoc — 表格 rows 深拷（撤销隔离）', () => {
   });
 
   it('in-place cell writeback (overlay input pattern) does not pollute the undo stack', () => {
-    const rd = rdWith(cellsFromStrings([['A', 'B'], ['C', 'D']]));
+    const rd = rdWith(
+      cellsFromStrings([
+        ['A', 'B'],
+        ['C', 'D'],
+      ]),
+    );
     rd.setColWidth(0, 0, 100); // 任意进撤销栈的操作（快照在前）
     // 模拟覆盖层 input 回写：直接给当前 rows 赋新 cell 对象（不经撤销栈）
     rowsOf(rd)[0][0] = { inlines: [text('EDITED', [{ type: 'bold' }])] };
@@ -104,13 +126,19 @@ describe('mergeCells — 富内容连接', () => {
   });
 
   it('whitespace-only cells are treated as empty (not joined)', () => {
-    const rd = rdWith([[cell('A'), { inlines: [text('  ')] }], [cell('C'), cell()]]);
+    const rd = rdWith([
+      [cell('A'), { inlines: [text('  ')] }],
+      [cell('C'), cell()],
+    ]);
     rd.mergeCells(0, 0, 0, 1, 1);
     expect(cellText(rowsOf(rd)[0][0])).toBe('A C');
   });
 
   it('a pure "\\n" cell counts as empty (no stray separator joined in)', () => {
-    const rd = rdWith([[cell('A'), { inlines: [text('\n')] }], [cell('C'), cell()]]);
+    const rd = rdWith([
+      [cell('A'), { inlines: [text('\n')] }],
+      [cell('C'), cell()],
+    ]);
     rd.mergeCells(0, 0, 0, 1, 1);
     expect(cellText(rowsOf(rd)[0][0])).toBe('A C');
   });
@@ -164,17 +192,24 @@ describe('行列增删 — 空富格子', () => {
 
 describe('导出 — 表格富单元格', () => {
   it('toHtml renders cell marks, converts \\n to <br>, and escapes raw HTML', () => {
-    const rows: TableCell[][] = [[
-      { inlines: [text('B', [{ type: 'bold' }]), text('\na<b')] },
-      { inlines: [text('L', [{ type: 'link', attrs: { href: 'https://e.com' } }])] },
-    ]];
+    const rows: TableCell[][] = [
+      [
+        { inlines: [text('B', [{ type: 'bold' }]), text('\na<b')] },
+        { inlines: [text('L', [{ type: 'link', attrs: { href: 'https://e.com' } }])] },
+      ],
+    ];
     const html = toHtml({ blocks: [tableBlock(rows)] });
     expect(html).toContain('<td><strong>B</strong><br>a&lt;b</td>');
     expect(html).toContain('<td><a href="https://e.com">L</a></td>');
   });
 
   it('toHtml keeps colspan/rowspan output for merged rich tables', () => {
-    const rd = rdWith(cellsFromStrings([['A', 'B'], ['C', 'D']]));
+    const rd = rdWith(
+      cellsFromStrings([
+        ['A', 'B'],
+        ['C', 'D'],
+      ]),
+    );
     rd.mergeCells(0, 0, 0, 0, 1);
     const html = toHtml(rd.doc);
     expect(html).toContain('<td colspan="2">A B</td>');
@@ -190,7 +225,22 @@ describe('导出 — 表格富单元格', () => {
   });
 
   it('toHtml clamps an oversized merge to the table bounds (no out-of-range colspan/rowspan)', () => {
-    const doc: Doc = { blocks: [{ type: 'table', attrs: { rows: cellsFromStrings([['A', 'B'], ['C', 'D']]), merges: [{ r: 0, c: 0, rowspan: 9, colspan: 9 }], id: 'tbl' }, inlines: [text('')] }] };
+    const doc: Doc = {
+      blocks: [
+        {
+          type: 'table',
+          attrs: {
+            rows: cellsFromStrings([
+              ['A', 'B'],
+              ['C', 'D'],
+            ]),
+            merges: [{ r: 0, c: 0, rowspan: 9, colspan: 9 }],
+            id: 'tbl',
+          },
+          inlines: [text('')],
+        },
+      ],
+    };
     const html = toHtml(doc);
     expect(html).toContain('<td colspan="2" rowspan="2">A</td>'); // 跨度 clamp 到 2×2
     expect(html).not.toContain('colspan="9"');
@@ -198,7 +248,15 @@ describe('导出 — 表格富单元格', () => {
   });
 
   it('toHtml drops a merge whose anchor lies outside the rows (cells stay intact)', () => {
-    const doc: Doc = { blocks: [{ type: 'table', attrs: { rows: cellsFromStrings([['A', 'B']]), merges: [{ r: 5, c: 0, rowspan: 2, colspan: 2 }], id: 'tbl' }, inlines: [text('')] }] };
+    const doc: Doc = {
+      blocks: [
+        {
+          type: 'table',
+          attrs: { rows: cellsFromStrings([['A', 'B']]), merges: [{ r: 5, c: 0, rowspan: 2, colspan: 2 }], id: 'tbl' },
+          inlines: [text('')],
+        },
+      ],
+    };
     const html = toHtml(doc);
     expect(html).toContain('<td>A</td><td>B</td>'); // 越界合并区被忽略，不吞真实格子
     expect(html).not.toContain('colspan');
@@ -216,12 +274,16 @@ describe('inlinesToCellHtml — 编辑态单元格片段', () => {
   });
 
   it('renders color/fontSize/fontFamily as style spans', () => {
-    const out = inlinesToCellHtml([text('x', [
-      { type: 'color', attrs: { color: '#ff0000' } },
-      { type: 'fontSize', attrs: { size: '24' } },
-      { type: 'fontFamily', attrs: { fontFamily: 'Georgia' } },
-    ])]);
-    expect(out).toBe('<span style="color:#ff0000"><span style="font-size:24px"><span style="font-family:Georgia">x</span></span></span>');
+    const out = inlinesToCellHtml([
+      text('x', [
+        { type: 'color', attrs: { color: '#ff0000' } },
+        { type: 'fontSize', attrs: { size: '24' } },
+        { type: 'fontFamily', attrs: { fontFamily: 'Georgia' } },
+      ]),
+    ]);
+    expect(out).toBe(
+      '<span style="color:#ff0000"><span style="font-size:24px"><span style="font-family:Georgia">x</span></span></span>',
+    );
   });
 
   it('degrades link to span[data-href] (no clickable <a>, no inline style to misparse)', () => {

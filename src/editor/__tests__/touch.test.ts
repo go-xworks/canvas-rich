@@ -1,7 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import {
-  TouchGesture, GestureScheduler, pointerDist, pinchZoom, visibleCanvasHeightDev,
-  decayVelocity, exceedsThreshold, LONG_PRESS_MS, TOUCH_SLOP_PX, INERTIA_MIN_V,
+  TouchGesture,
+  GestureScheduler,
+  pointerDist,
+  pinchZoom,
+  visibleCanvasHeightDev,
+  decayVelocity,
+  exceedsThreshold,
+  LONG_PRESS_MS,
+  TOUCH_SLOP_PX,
+  INERTIA_MIN_V,
 } from '../touch';
 
 // 触屏手势基元：单指判型状态机（平移/长按/点按分流）、捏合缩放、键盘可视高换算、惯性衰减。
@@ -13,10 +21,23 @@ function fakeScheduler() {
   let ms = -1;
   let cancelled = 0;
   const schedule: GestureScheduler = (fn, t) => {
-    cb = fn; ms = t;
-    return () => { cancelled++; cb = null; };
+    cb = fn;
+    ms = t;
+    return () => {
+      cancelled++;
+      cb = null;
+    };
   };
-  return { schedule, fire: () => cb?.(), get ms() { return ms; }, get cancelled() { return cancelled; } };
+  return {
+    schedule,
+    fire: () => cb?.(),
+    get ms() {
+      return ms;
+    },
+    get cancelled() {
+      return cancelled;
+    },
+  };
 }
 
 describe('TouchGesture — 单指判型状态机', () => {
@@ -31,7 +52,12 @@ describe('TouchGesture — 单指判型状态机', () => {
 
   it('pending 中位移超容差 → pan（长按停表），up 返回 pan', () => {
     const t = fakeScheduler();
-    const g = new TouchGesture({ onLongPress: () => { throw new Error('不应触发长按'); }, schedule: t.schedule });
+    const g = new TouchGesture({
+      onLongPress: () => {
+        throw new Error('不应触发长按');
+      },
+      schedule: t.schedule,
+    });
     g.down(100, 100);
     const r1 = g.move(100, 100 + TOUCH_SLOP_PX); // 恰好容差：仍 pending（严格大于才判型）
     expect(r1.mode).toBe('pending');
@@ -39,7 +65,7 @@ describe('TouchGesture — 单指判型状态机', () => {
     expect(r2.mode).toBe('pan');
     expect(r2.dy).toBe(30);
     expect(t.cancelled).toBe(1); // 长按停表
-    t.fire();                    // 已取消的计时即使误触发也不改判型
+    t.fire(); // 已取消的计时即使误触发也不改判型
     expect(g.mode).toBe('pan');
     expect(g.up()).toBe('pan');
     expect(g.mode).toBe('idle');
@@ -48,7 +74,12 @@ describe('TouchGesture — 单指判型状态机', () => {
   it('容差内静止 → 计时到点切 select 并回调长按坐标（按下原点）', () => {
     const t = fakeScheduler();
     let lp: [number, number] | null = null;
-    const g = new TouchGesture({ onLongPress: (x, y) => { lp = [x, y]; }, schedule: t.schedule });
+    const g = new TouchGesture({
+      onLongPress: (x, y) => {
+        lp = [x, y];
+      },
+      schedule: t.schedule,
+    });
     g.down(50, 60);
     g.move(53, 62); // 容差内抖动不取消
     t.fire();
@@ -70,7 +101,12 @@ describe('TouchGesture — 单指判型状态机', () => {
 
   it('快速点按（无位移未到时）up 返回 pending（= tap）并停表', () => {
     const t = fakeScheduler();
-    const g = new TouchGesture({ onLongPress: () => { throw new Error('不应触发'); }, schedule: t.schedule });
+    const g = new TouchGesture({
+      onLongPress: () => {
+        throw new Error('不应触发');
+      },
+      schedule: t.schedule,
+    });
     g.down(0, 0);
     expect(g.up()).toBe('pending');
     expect(t.cancelled).toBe(1);
@@ -80,7 +116,12 @@ describe('TouchGesture — 单指判型状态机', () => {
 
   it('cancel（pointercancel/进入捏合）静默复位 idle，长按停表，不残留拖拽态', () => {
     const t = fakeScheduler();
-    const g = new TouchGesture({ onLongPress: () => { throw new Error('不应触发'); }, schedule: t.schedule });
+    const g = new TouchGesture({
+      onLongPress: () => {
+        throw new Error('不应触发');
+      },
+      schedule: t.schedule,
+    });
     g.down(0, 0);
     g.cancel();
     expect(g.mode).toBe('idle');
@@ -141,7 +182,7 @@ describe('decayVelocity / exceedsThreshold — 惯性与阈值', () => {
     expect(v1).toBeLessThan(10);
     expect(v1).toBeGreaterThan(0);
     expect(decayVelocity(INERTIA_MIN_V, 16.7)).toBe(0); // 衰减后必低于阈值
-    expect(decayVelocity(-10, 16.7)).toBeLessThan(0);   // 方向保留
+    expect(decayVelocity(-10, 16.7)).toBeLessThan(0); // 方向保留
   });
   it('dt 越大衰减越多（时间基准而非帧数基准）', () => {
     expect(Math.abs(decayVelocity(10, 33.4))).toBeLessThan(Math.abs(decayVelocity(10, 16.7)));

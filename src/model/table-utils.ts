@@ -22,7 +22,12 @@ export function tableColCount(rows: TableCell[][]): number {
  * 返回锚点在左上的 CellMerge；表格为空（行/列为 0）时返回 null。 @public
  */
 export function normalizeRect(
-  r0: number, c0: number, r1: number, c1: number, rowCount: number, colCount: number,
+  r0: number,
+  c0: number,
+  r1: number,
+  c1: number,
+  rowCount: number,
+  colCount: number,
 ): CellMerge | null {
   if (rowCount <= 0 || colCount <= 0) return null;
   const rt = clamp(Math.min(r0, r1), 0, rowCount - 1);
@@ -34,8 +39,7 @@ export function normalizeRect(
 
 /** 判定两个合并区的矩形是否相交（用于合并时剔除被卷入的旧区，维持互不重叠不变量）。 @public */
 export function mergesIntersect(a: CellMerge, b: CellMerge): boolean {
-  return a.r < b.r + b.rowspan && b.r < a.r + a.rowspan
-    && a.c < b.c + b.colspan && b.c < a.c + a.colspan;
+  return a.r < b.r + b.rowspan && b.r < a.r + a.rowspan && a.c < b.c + b.colspan && b.c < a.c + a.colspan;
 }
 
 /**
@@ -48,7 +52,8 @@ export function sanitizeMerges(merges: CellMerge[], rowCount: number, colCount: 
   for (const m of merges) {
     if (m.r < 0 || m.c < 0 || m.r >= rowCount || m.c >= colCount) continue;
     out.push({
-      r: m.r, c: m.c,
+      r: m.r,
+      c: m.c,
       rowspan: clamp(m.rowspan, 1, rowCount - m.r),
       colspan: clamp(m.colspan, 1, colCount - m.c),
     });
@@ -68,9 +73,9 @@ export function sanitizeMerges(merges: CellMerge[], rowCount: number, colCount: 
  */
 export function adjustMergesOnInsertRow(merges: CellMerge[], at: number): CellMerge[] {
   return merges.map((m) => {
-    if (at <= m.r) return { ...m, r: m.r + 1 };               // 插在锚点上方/同行：整体下移
+    if (at <= m.r) return { ...m, r: m.r + 1 }; // 插在锚点上方/同行：整体下移
     if (at < m.r + m.rowspan) return { ...m, rowspan: m.rowspan + 1 }; // 插在跨度内部：撑高一行
-    return { ...m };                                          // 插在合并区下方：不变
+    return { ...m }; // 插在合并区下方：不变
   });
 }
 
@@ -84,8 +89,9 @@ export function adjustMergesOnDeleteRow(merges: CellMerge[], at: number): CellMe
   const out: CellMerge[] = [];
   for (const m of merges) {
     let { r, rowspan } = m;
-    if (at < r) r -= 1;                                       // 删在锚点上方：整体上移
-    else if (at < r + rowspan) rowspan -= 1;                  // 删在跨度内（含锚点行）：收缩一行
+    if (at < r)
+      r -= 1; // 删在锚点上方：整体上移
+    else if (at < r + rowspan) rowspan -= 1; // 删在跨度内（含锚点行）：收缩一行
     if (rowspan >= 1 && (rowspan > 1 || m.colspan > 1)) out.push({ ...m, r, rowspan }); // 丢弃退化为 1×1 的区
   }
   return out;
@@ -111,8 +117,9 @@ export function adjustMergesOnDeleteCol(merges: CellMerge[], at: number): CellMe
   const out: CellMerge[] = [];
   for (const m of merges) {
     let { c, colspan } = m;
-    if (at < c) c -= 1;                                       // 删在锚点左侧：整体左移
-    else if (at < c + colspan) colspan -= 1;                  // 删在跨度内（含锚点列）：收缩一列
+    if (at < c)
+      c -= 1; // 删在锚点左侧：整体左移
+    else if (at < c + colspan) colspan -= 1; // 删在跨度内（含锚点列）：收缩一列
     if (colspan >= 1 && (colspan > 1 || m.rowspan > 1)) out.push({ ...m, c, colspan }); // 丢弃退化为 1×1 的区
   }
   return out;

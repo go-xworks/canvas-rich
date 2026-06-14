@@ -11,9 +11,7 @@ import { BlockType, MarkType, ShapeKind } from '../model/schema';
  * 无参命令忽略第二参；null 表示「清除」（如清除字号 mark）。
  * @public
  */
-export type CommandArg =
-  | string | number | null
-  | { rows: number; cols: number };
+export type CommandArg = string | number | null | { rows: number; cols: number };
 
 /**
  * 命令执行上下文：文档模型 + 装配层弹层/视图服务的最小注入面，
@@ -76,7 +74,10 @@ export interface CommandContext {
  */
 export type Command = (ctx: CommandContext, arg?: CommandArg) => void;
 
-const mark = (t: MarkType): Command => (ctx) => ctx.rd.toggleMark(t);
+const mark =
+  (t: MarkType): Command =>
+  (ctx) =>
+    ctx.rd.toggleMark(t);
 
 /** 缩进增/减命令的步长（逻辑 px）。 @public */
 export const INDENT_STEP = 24;
@@ -96,10 +97,15 @@ export const commands: Record<string, Command> = {
   'mark.superscript': (ctx) => ctx.rd.toggleExclusiveMark('superscript', ['superscript', 'subscript']),
   'mark.subscript': (ctx) => ctx.rd.toggleExclusiveMark('subscript', ['superscript', 'subscript']),
   // —— 带值 mark（null → clearMark；语义复刻旧装配层守卫）——
-  'fontSize.set': (ctx, arg) => arg ? ctx.rd.setMark('fontSize', { size: arg as string }) : ctx.rd.clearMark('fontSize'),
-  'fontFamily.set': (ctx, arg) => (arg && arg !== 'default') ? ctx.rd.setMark('fontFamily', { fontFamily: arg as string }) : ctx.rd.clearMark('fontFamily'),
-  'color.set': (ctx, arg) => arg ? ctx.rd.setMark('color', { color: arg as string }) : ctx.rd.clearMark('color'),
-  'highlight.set': (ctx, arg) => arg ? ctx.rd.setMark('highlight', { color: arg as string }) : ctx.rd.clearMark('highlight'),
+  'fontSize.set': (ctx, arg) =>
+    arg ? ctx.rd.setMark('fontSize', { size: arg as string }) : ctx.rd.clearMark('fontSize'),
+  'fontFamily.set': (ctx, arg) =>
+    arg && arg !== 'default'
+      ? ctx.rd.setMark('fontFamily', { fontFamily: arg as string })
+      : ctx.rd.clearMark('fontFamily'),
+  'color.set': (ctx, arg) => (arg ? ctx.rd.setMark('color', { color: arg as string }) : ctx.rd.clearMark('color')),
+  'highlight.set': (ctx, arg) =>
+    arg ? ctx.rd.setMark('highlight', { color: arg as string }) : ctx.rd.clearMark('highlight'),
   'format.clear': (ctx) => ctx.rd.clearMarks(),
   // —— 块类型 ——
   'block.set': (ctx, arg) => {
@@ -134,7 +140,10 @@ export const commands: Record<string, Command> = {
   'list.outdent': (ctx) => ctx.rd.outdentList(),
   // —— 段落间距（带值；下拉/数字输入透传）——
   // 行距下拉透传字符串（如 '1.5'）：命令体 parseFloat（复刻旧 onPick if(v) setLineHeight(parseFloat(v))）。
-  'lineHeight.set': (ctx, arg) => { if (arg == null) return; ctx.rd.setLineHeight(typeof arg === 'number' ? arg : parseFloat(arg as string)); },
+  'lineHeight.set': (ctx, arg) => {
+    if (arg == null) return;
+    ctx.rd.setLineHeight(typeof arg === 'number' ? arg : parseFloat(arg as string));
+  },
   'space.before.set': (ctx, arg) => ctx.rd.setSpaceBefore(arg as number),
   'space.after.set': (ctx, arg) => ctx.rd.setSpaceAfter(arg as number),
   'letterSpacing.set': (ctx, arg) => ctx.rd.setLetterSpacing(arg as number),
@@ -169,14 +178,23 @@ export const commands: Record<string, Command> = {
   // 且 followCaret=true 会把滚离光标的视口拽回光标行）——
   'doc.print': (ctx) => ctx.view.printDoc(),
   // —— 直接变更模型的插入命令（非自收尾：afterEdit 由派发方追加；命令体仅播报）——
-  'insert.toc': (ctx) => { ctx.rd.insertToc(); ctx.announce('已插入目录'); },
-  'insert.shape': (ctx, arg) => { ctx.rd.insertShape(arg as ShapeKind); ctx.announce('已插入形状'); },
+  'insert.toc': (ctx) => {
+    ctx.rd.insertToc();
+    ctx.announce('已插入目录');
+  },
+  'insert.shape': (ctx, arg) => {
+    ctx.rd.insertShape(arg as ShapeKind);
+    ctx.announce('已插入形状');
+  },
   // —— 弹层委托命令（自收尾：dialogs 实现内含 afterEdit/聚焦/播报）——
   'link.toggle': (ctx) => ctx.dialogs.toggleLink(),
   'insert.image': (ctx) => ctx.dialogs.insertImage(),
   'insert.inlineImage': (ctx) => ctx.dialogs.insertInlineImage(),
   'insert.formula': (ctx) => ctx.dialogs.insertFormula(),
-  'insert.table': (ctx, arg) => { const { rows, cols } = arg as { rows: number; cols: number }; ctx.dialogs.insertTable(rows, cols); },
+  'insert.table': (ctx, arg) => {
+    const { rows, cols } = arg as { rows: number; cols: number };
+    ctx.dialogs.insertTable(rows, cols);
+  },
   'insert.audio': (ctx) => ctx.dialogs.insertMedia('audio'),
   'insert.video': (ctx) => ctx.dialogs.insertMedia('video'),
   'insert.iframe': (ctx) => ctx.dialogs.insertMedia('iframe'),
@@ -205,11 +223,25 @@ export const commands: Record<string, Command> = {
  */
 export const SELF_FINALIZING: ReadonlySet<string> = new Set([
   'link.toggle',
-  'insert.image', 'insert.inlineImage', 'insert.formula', 'insert.table',
-  'insert.audio', 'insert.video', 'insert.iframe',
-  'insert.attachment', 'insert.signature', 'insert.seal', 'insert.textbox',
-  'template.apply', 'template.save', 'doc.import', 'doc.export',
-  'view.web', 'view.word', 'shaper.toggle', 'theme.toggle',
+  'insert.image',
+  'insert.inlineImage',
+  'insert.formula',
+  'insert.table',
+  'insert.audio',
+  'insert.video',
+  'insert.iframe',
+  'insert.attachment',
+  'insert.signature',
+  'insert.seal',
+  'insert.textbox',
+  'template.apply',
+  'template.save',
+  'doc.import',
+  'doc.export',
+  'view.web',
+  'view.word',
+  'shaper.toggle',
+  'theme.toggle',
 ]);
 
 /**
@@ -242,8 +274,10 @@ export const READONLY_SAFE: ReadonlySet<string> = new Set(['find.open', 'doc.pri
  * @public
  */
 export const NAV_AFFINITY: Readonly<Record<string, 'before' | 'after'>> = {
-  'nav.wordLeft': 'after', 'nav.wordRight': 'before',
-  'nav.lineStart': 'after', 'nav.lineEnd': 'before',
+  'nav.wordLeft': 'after',
+  'nav.wordRight': 'before',
+  'nav.lineStart': 'after',
+  'nav.lineEnd': 'before',
 };
 
 /**
@@ -252,23 +286,40 @@ export const NAV_AFFINITY: Readonly<Record<string, 'before' | 'after'>> = {
  */
 // 快捷键 → 命令名（mod = ⌘/Ctrl；修饰顺序固定 mod+alt+shift+key）
 export const keymap: Record<string, string> = {
-  'mod+b': 'mark.bold', 'mod+i': 'mark.italic', 'mod+u': 'mark.underline',
-  'mod+e': 'align.center', 'mod+shift+l': 'align.left', 'mod+shift+r': 'align.right',
+  'mod+b': 'mark.bold',
+  'mod+i': 'mark.italic',
+  'mod+u': 'mark.underline',
+  'mod+e': 'align.center',
+  'mod+shift+l': 'align.left',
+  'mod+shift+r': 'align.right',
   'mod+shift+d': 'dir.toggle',
-  'mod+z': 'history.undo', 'mod+shift+z': 'history.redo', 'mod+y': 'history.redo',
+  'mod+z': 'history.undo',
+  'mod+shift+z': 'history.redo',
+  'mod+y': 'history.redo',
   'mod+a': 'select.all',
-  'mod+alt+1': 'block.h1', 'mod+alt+2': 'block.h2', 'mod+alt+3': 'block.h3',
-  'mod+alt+4': 'block.h4', 'mod+alt+5': 'block.h5', 'mod+alt+6': 'block.h6',
+  'mod+alt+1': 'block.h1',
+  'mod+alt+2': 'block.h2',
+  'mod+alt+3': 'block.h3',
+  'mod+alt+4': 'block.h4',
+  'mod+alt+5': 'block.h5',
+  'mod+alt+6': 'block.h6',
   'mod+alt+0': 'block.paragraph',
-  'mod+alt+8': 'block.bullet', 'mod+alt+9': 'block.ordered', 'mod+alt+t': 'block.task',
+  'mod+alt+8': 'block.bullet',
+  'mod+alt+9': 'block.ordered',
+  'mod+alt+t': 'block.task',
   'mod+alt+q': 'block.quote',
   // —— 修饰键导航/删除（keydown 对 ←/→/⌫/Del 的修饰组合先查本表，未注册组合落回无修饰 switch，
   // 见 main.ts）。⇧ 扩展选区经 arg='extend' 传入，同一命令注册 ±shift 两个组合。——
-  'alt+arrowleft': 'nav.wordLeft', 'alt+shift+arrowleft': 'nav.wordLeft',
-  'alt+arrowright': 'nav.wordRight', 'alt+shift+arrowright': 'nav.wordRight',
-  'mod+arrowleft': 'nav.lineStart', 'mod+shift+arrowleft': 'nav.lineStart',
-  'mod+arrowright': 'nav.lineEnd', 'mod+shift+arrowright': 'nav.lineEnd',
-  'alt+backspace': 'delete.wordBack', 'alt+delete': 'delete.wordForward',
+  'alt+arrowleft': 'nav.wordLeft',
+  'alt+shift+arrowleft': 'nav.wordLeft',
+  'alt+arrowright': 'nav.wordRight',
+  'alt+shift+arrowright': 'nav.wordRight',
+  'mod+arrowleft': 'nav.lineStart',
+  'mod+shift+arrowleft': 'nav.lineStart',
+  'mod+arrowright': 'nav.lineEnd',
+  'mod+shift+arrowright': 'nav.lineEnd',
+  'alt+backspace': 'delete.wordBack',
+  'alt+delete': 'delete.wordForward',
   'mod+backspace': 'delete.toLineStart',
   // —— 查找/替换 ——
   'mod+f': 'find.open',
@@ -282,6 +333,17 @@ export const keymap: Record<string, string> = {
  * @public
  */
 // 由键盘事件算出组合键串
-export function keyCombo(e: { metaKey: boolean; ctrlKey: boolean; altKey: boolean; shiftKey: boolean; key: string }): string {
-  return (e.metaKey || e.ctrlKey ? 'mod+' : '') + (e.altKey ? 'alt+' : '') + (e.shiftKey ? 'shift+' : '') + e.key.toLowerCase();
+export function keyCombo(e: {
+  metaKey: boolean;
+  ctrlKey: boolean;
+  altKey: boolean;
+  shiftKey: boolean;
+  key: string;
+}): string {
+  return (
+    (e.metaKey || e.ctrlKey ? 'mod+' : '') +
+    (e.altKey ? 'alt+' : '') +
+    (e.shiftKey ? 'shift+' : '') +
+    e.key.toLowerCase()
+  );
 }

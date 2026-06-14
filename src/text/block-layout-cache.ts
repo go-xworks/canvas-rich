@@ -14,15 +14,27 @@ import type { SolidRect } from './doc-layout';
  * @public
  */
 export interface RelLineBox {
-  top: number; bottom: number; baseline: number;
-  startOffset: number; endOffset: number;
-  offsets: number[]; xs: number[];
-  minX: number; maxX: number;
+  top: number;
+  bottom: number;
+  baseline: number;
+  startOffset: number;
+  endOffset: number;
+  offsets: number[];
+  xs: number[];
+  minX: number;
+  maxX: number;
   rtl: boolean;
 }
 
 /** 行内原子覆盖盒的缓存形态（y 相对块顶；block 由装配层重盖）。 @public */
-export interface RelInlineOverlay { offset: number; kind: 'image'; x: number; y: number; w: number; h: number }
+export interface RelInlineOverlay {
+  offset: number;
+  kind: 'image';
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
 
 /**
  * 单个文本块的完整相对几何（构建一次、跨帧复用）。
@@ -56,7 +68,10 @@ export interface BlockGeom {
  * @public
  */
 export interface LayoutEpoch {
-  width: number; padL: number; padT: number; scale: number;
+  width: number;
+  padL: number;
+  padT: number;
+  scale: number;
   shaper: Shaper;
   theme: string;
   atlasGen: number;
@@ -70,8 +85,16 @@ export class BlockLayoutCache {
   /** 开始一遍布局：与上一遍的 epoch 任一字段不等 → 整体清空缓存。 @public */
   beginPass(e: LayoutEpoch): void {
     const p = this.epoch;
-    if (!p || p.width !== e.width || p.padL !== e.padL || p.padT !== e.padT || p.scale !== e.scale
-      || p.shaper !== e.shaper || p.theme !== e.theme || p.atlasGen !== e.atlasGen) {
+    if (
+      !p ||
+      p.width !== e.width ||
+      p.padL !== e.padL ||
+      p.padT !== e.padT ||
+      p.scale !== e.scale ||
+      p.shaper !== e.shaper ||
+      p.theme !== e.theme ||
+      p.atlasGen !== e.atlasGen
+    ) {
       this.geo = new WeakMap();
       this.epoch = e;
     }
@@ -84,5 +107,7 @@ export class BlockLayoutCache {
   }
 
   /** 写入某块的相对几何。 @public */
-  set(blk: Block, g: BlockGeom): void { this.geo.set(blk, g); }
+  set(blk: Block, g: BlockGeom): void {
+    this.geo.set(blk, g);
+  }
 }

@@ -6,7 +6,11 @@ import { RichDoc } from '../../model/rich-document';
 // CommandContext 加字段需同步改 3 处）。仅供 __tests__ 引用，不参与产物构建。
 
 /** 视觉行边界注入形状（nav.lineStart/lineEnd、delete.toLineStart 消费）。 */
-export interface CtxLineBounds { block: number; startOffset: number; endOffset: number }
+export interface CtxLineBounds {
+  block: number;
+  startOffset: number;
+  endOffset: number;
+}
 
 /**
  * 构造最小 CommandContext：纯模型命令只用 ctx.rd；dialogs/view 均为可观察 no-op 记录器——
@@ -16,27 +20,48 @@ export interface CtxLineBounds { block: number; startOffset: number; endOffset: 
  */
 export function makeCtx(rd: RichDoc, lineBounds: CtxLineBounds | null = null): CommandContext & { calls: string[] } {
   const calls: string[] = [];
-  const log = (id: string) => () => { calls.push(id); };
+  const log = (id: string) => () => {
+    calls.push(id);
+  };
   const ctx: CommandContext & { calls: string[] } = {
-    rd, calls,
+    rd,
+    calls,
     afterEdit: log('afterEdit'),
-    announce: (m) => { calls.push('announce:' + m); },
+    announce: (m) => {
+      calls.push('announce:' + m);
+    },
     focusEditor: log('focusEditor'),
-    exec: (id: string, arg?: CommandArg) => { commands[id](ctx, arg); },
+    exec: (id: string, arg?: CommandArg) => {
+      commands[id](ctx, arg);
+    },
     dialogs: {
-      toggleLink: log('toggleLink'), insertImage: log('insertImage'),
-      insertInlineImage: log('insertInlineImage'), insertFormula: log('insertFormula'),
-      insertTable: (r, c) => { calls.push(`insertTable:${r}x${c}`); },
-      insertMedia: (k) => { calls.push('insertMedia:' + k); },
-      insertAttachment: log('insertAttachment'), insertSignature: log('insertSignature'),
-      insertSeal: log('insertSeal'), insertTextbox: log('insertTextbox'),
-      saveTemplate: log('saveTemplate'), importDoc: log('importDoc'),
+      toggleLink: log('toggleLink'),
+      insertImage: log('insertImage'),
+      insertInlineImage: log('insertInlineImage'),
+      insertFormula: log('insertFormula'),
+      insertTable: (r, c) => {
+        calls.push(`insertTable:${r}x${c}`);
+      },
+      insertMedia: (k) => {
+        calls.push('insertMedia:' + k);
+      },
+      insertAttachment: log('insertAttachment'),
+      insertSignature: log('insertSignature'),
+      insertSeal: log('insertSeal'),
+      insertTextbox: log('insertTextbox'),
+      saveTemplate: log('saveTemplate'),
+      importDoc: log('importDoc'),
     },
     view: {
-      toggleShaper: log('toggleShaper'), toggleTheme: log('toggleTheme'),
-      setViewMode: (m) => { calls.push('setViewMode:' + m); },
+      toggleShaper: log('toggleShaper'),
+      toggleTheme: log('toggleTheme'),
+      setViewMode: (m) => {
+        calls.push('setViewMode:' + m);
+      },
       exportDoc: log('exportDoc'),
-      applyTemplate: (n) => { calls.push('applyTemplate:' + n); },
+      applyTemplate: (n) => {
+        calls.push('applyTemplate:' + n);
+      },
       templateNames: () => [],
       caretLineBounds: () => lineBounds,
       openFind: log('openFind'),

@@ -50,11 +50,9 @@ describe('多块片段', () => {
   it('中间块独立保留类型（标题/列表）', () => {
     const rd = new RichDoc(doc(para([text('xy')])));
     rd.setSel({ block: 0, offset: 1 });
-    rd.insertFragment(doc(
-      para([text('A')]),
-      block('heading', [text('H')], { level: 2 }),
-      block('bullet_item', [text('L')]),
-    ));
+    rd.insertFragment(
+      doc(para([text('A')]), block('heading', [text('H')], { level: 2 }), block('bullet_item', [text('L')])),
+    );
     expect(rd.doc.blocks.map((b) => b.type)).toEqual(['paragraph', 'heading', 'bullet_item']);
     expect(rd.doc.blocks.map(blockText)).toEqual(['xA', 'H', 'Ly']);
     expect(rd.doc.blocks[1].attrs.level).toBe(2);

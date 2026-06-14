@@ -4,8 +4,20 @@
 // 块级行解析为纯函数；行内 marks 用一遍递归扫描。无法识别的内容降级为段落纯文本。
 // 分层：editor（把外部格式桥接进 model；仅依赖 model 的构造器/归一化，不触碰 UI）。
 import {
-  Doc, Block, BlockType, BlockAttrs, Inline, Mark, MarkType, CellMerge, TableCell,
-  block as mkBlock, text as mkText, inlineAtom as mkInlineAtom, cell as mkCell, cellsFromStrings,
+  Doc,
+  Block,
+  BlockType,
+  BlockAttrs,
+  Inline,
+  Mark,
+  MarkType,
+  CellMerge,
+  TableCell,
+  block as mkBlock,
+  text as mkText,
+  inlineAtom as mkInlineAtom,
+  cell as mkCell,
+  cellsFromStrings,
   fontSizeFromCss,
 } from '../model/schema';
 import { normalizeInlines, normalizeCellInlines } from '../model/inlines';
@@ -34,8 +46,16 @@ function parseTableRow(line: string): string[] {
   let buf = '';
   for (let i = 0; i < inner.length; i++) {
     const ch = inner[i];
-    if (ch === '\\' && i + 1 < inner.length) { buf += inner[i + 1]; i++; continue; } // \| 转义
-    if (ch === '|') { cells.push(buf.trim()); buf = ''; continue; }
+    if (ch === '\\' && i + 1 < inner.length) {
+      buf += inner[i + 1];
+      i++;
+      continue;
+    } // \| 转义
+    if (ch === '|') {
+      cells.push(buf.trim());
+      buf = '';
+      continue;
+    }
     buf += ch;
   }
   cells.push(buf.trim());
@@ -55,19 +75,29 @@ const RE_CELL_BR = /<br\s*\/?>/gi;
 function parseInlineMd(src: string, base: Mark[] = []): Inline[] {
   const out: Inline[] = [];
   let buf = '';
-  const flush = (): void => { if (buf) { out.push(mkText(buf, base)); buf = ''; } };
+  const flush = (): void => {
+    if (buf) {
+      out.push(mkText(buf, base));
+      buf = '';
+    }
+  };
   let i = 0;
   while (i < src.length) {
     const ch = src[i];
     // 转义：反斜杠后一个字符按字面输出
-    if (ch === '\\' && i + 1 < src.length) { buf += src[i + 1]; i += 2; continue; }
+    if (ch === '\\' && i + 1 < src.length) {
+      buf += src[i + 1];
+      i += 2;
+      continue;
+    }
     // 行内代码：`code`（内部不解析其它 marks）
     if (ch === '`') {
       const end = src.indexOf('`', i + 1);
       if (end > i) {
         flush();
         out.push(mkText(src.slice(i + 1, end), addMark(base, 'code')));
-        i = end + 1; continue;
+        i = end + 1;
+        continue;
       }
     }
     // 行内图片：![alt](url) → 行内原子（与 export 的 runMd 互逆）
@@ -76,7 +106,8 @@ function parseInlineMd(src: string, base: Mark[] = []): Inline[] {
       if (img) {
         flush();
         out.push(mkInlineAtom('image', { src: img.src }));
-        i = img.end; continue;
+        i = img.end;
+        continue;
       }
     }
     // 链接：[text](url)
@@ -88,7 +119,8 @@ function parseInlineMd(src: string, base: Mark[] = []): Inline[] {
         const safe = sanitizeLinkHref(link.href);
         const inner = parseInlineMd(link.text, safe ? addMark(base, 'link', { href: safe }) : base);
         out.push(...inner);
-        i = link.end; continue;
+        i = link.end;
+        continue;
       }
     }
     // 强调/删除/高亮定界符
@@ -97,9 +129,11 @@ function parseInlineMd(src: string, base: Mark[] = []): Inline[] {
       flush();
       const next = delim.types.reduce((acc, t) => addMark(acc, t), base);
       out.push(...parseInlineMd(delim.inner, next));
-      i = delim.end; continue;
+      i = delim.end;
+      continue;
     }
-    buf += ch; i++;
+    buf += ch;
+    i++;
   }
   flush();
   return out;
@@ -107,15 +141,23 @@ function parseInlineMd(src: string, base: Mark[] = []): Inline[] {
 
 // 安全解码 URL 百分号转义（%20 等）；非法序列原样返回，避免抛错破坏导入。
 function decodeHref(raw: string): string {
-  try { return decodeURIComponent(raw); } catch { return raw; }
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
 }
 
 // 在 [start] 处尝试匹配 [text](href)，成功返回内容与结束位置（href 经 decodeURIComponent 解码）。
 function matchLink(src: string, start: number): { text: string; href: string; end: number } | null {
-  let depth = 0, j = start;
+  let depth = 0,
+    j = start;
   for (; j < src.length; j++) {
     if (src[j] === '[') depth++;
-    else if (src[j] === ']') { depth--; if (depth === 0) break; }
+    else if (src[j] === ']') {
+      depth--;
+      if (depth === 0) break;
+    }
   }
   if (j >= src.length || src[j + 1] !== '(') return null;
   const close = src.indexOf(')', j + 2);
@@ -190,7 +232,8 @@ export function parseMarkdown(md: string): Doc {
       i++;
       let any = false;
       while (i < lines.length && !RE_FENCE.test(lines[i].trim())) {
-        blocks.push(mkBlock('code_block', [mkText(lines[i])])); any = true;
+        blocks.push(mkBlock('code_block', [mkText(lines[i])]));
+        any = true;
         i++;
       }
       if (i < lines.length) i++; // 跳过收尾围栏
@@ -199,17 +242,25 @@ export function parseMarkdown(md: string): Doc {
     }
 
     // 空行：分块分隔，跳过
-    if (trimmed === '') { i++; continue; }
+    if (trimmed === '') {
+      i++;
+      continue;
+    }
 
     // 分隔线
-    if (RE_HR.test(trimmed)) { blocks.push(mkBlock('paragraph', [mkText('———')])); i++; continue; }
+    if (RE_HR.test(trimmed)) {
+      blocks.push(mkBlock('paragraph', [mkText('———')]));
+      i++;
+      continue;
+    }
 
     // 管道表格：当前行是表格行且下一行是分隔行（GFM 表头规则）。
     if (RE_TABLE_ROW.test(trimmed) && i + 1 < lines.length && RE_TABLE_SEP.test(lines[i + 1].trim())) {
       const rows: string[][] = [parseTableRow(trimmed)];
       i += 2; // 跳过表头与分隔行
       while (i < lines.length && RE_TABLE_ROW.test(lines[i].trim())) {
-        rows.push(parseTableRow(lines[i].trim())); i++;
+        rows.push(parseTableRow(lines[i].trim()));
+        i++;
       }
       // 单元格内 <br> → '\n'（与 toMarkdown 导出互逆，换行保真）；cellsFromStrings 产纯文本
       // 富单元格，天然满足「td 不承载行内原子」不变量（见 normalizeCellInlines）。
@@ -220,35 +271,53 @@ export function parseMarkdown(md: string): Doc {
 
     // 独占一行的图片 → 块级 image
     const imgBlock = RE_IMAGE_BLOCK.exec(trimmed);
-    if (imgBlock) { blocks.push(mkBlock('image', [], { src: decodeHref(imgBlock[1]) })); i++; continue; }
+    if (imgBlock) {
+      blocks.push(mkBlock('image', [], { src: decodeHref(imgBlock[1]) }));
+      i++;
+      continue;
+    }
 
     // 标题
     const h = RE_HEADING.exec(trimmed);
     if (h) {
       const level = Math.min(6, h[1].length) as 1 | 2 | 3 | 4 | 5 | 6;
       blocks.push(mkBlock('heading', parseInlineMd(h[2]), { level }));
-      i++; continue;
+      i++;
+      continue;
     }
 
     // 引用（连续 > 行合并为一个 blockquote 块的多行 → v1 每行一块）
     const q = RE_QUOTE.exec(trimmed);
-    if (q) { blocks.push(mkBlock('blockquote', parseInlineMd(q[1]))); i++; continue; }
+    if (q) {
+      blocks.push(mkBlock('blockquote', parseInlineMd(q[1])));
+      i++;
+      continue;
+    }
 
     // 任务项（必须先于无序列表判断，因 task 是 bullet 的特例）
     const task = RE_TASK.exec(trimmed);
     if (task) {
       const checked = task[1] !== ' ';
       blocks.push(mkBlock('task_item', parseInlineMd(task[2]), { checked }));
-      i++; continue;
+      i++;
+      continue;
     }
 
     // 有序列表
     const ol = RE_ORDERED.exec(trimmed);
-    if (ol) { blocks.push(mkBlock('ordered_item', parseInlineMd(ol[1]))); i++; continue; }
+    if (ol) {
+      blocks.push(mkBlock('ordered_item', parseInlineMd(ol[1])));
+      i++;
+      continue;
+    }
 
     // 无序列表
     const ul = RE_BULLET.exec(trimmed);
-    if (ul) { blocks.push(mkBlock('bullet_item', parseInlineMd(ul[1]))); i++; continue; }
+    if (ul) {
+      blocks.push(mkBlock('bullet_item', parseInlineMd(ul[1])));
+      i++;
+      continue;
+    }
 
     // 默认：段落（行内 marks）
     blocks.push(mkBlock('paragraph', parseInlineMd(trimmed)));
@@ -263,8 +332,16 @@ export function parseMarkdown(md: string): Doc {
 // 注：此表已是块级 HTML 解析的表驱动雏形（与 export.ts 的 BLOCK_EXPORTERS 对偶）；walkBlocks 的 if(tag===…)
 // 仍含 ul/ol/table/img/hr 等需特殊遍历的分支，本步②不进一步收口（保 round-trip）。
 const HTML_BLOCK_TAG: Record<string, BlockType> = {
-  h1: 'heading', h2: 'heading', h3: 'heading', h4: 'heading', h5: 'heading', h6: 'heading',
-  p: 'paragraph', blockquote: 'blockquote', li: 'bullet_item', pre: 'code_block',
+  h1: 'heading',
+  h2: 'heading',
+  h3: 'heading',
+  h4: 'heading',
+  h5: 'heading',
+  h6: 'heading',
+  p: 'paragraph',
+  blockquote: 'blockquote',
+  li: 'bullet_item',
+  pre: 'code_block',
 };
 // 内联标签 → mark 类型：查 model/markHtml 的 SSOT 表（markTypeOfTag，同义标签归并）。
 
@@ -301,10 +378,22 @@ function walkBlocks(root: Node, out: Block[]): void {
     const el = node as Element;
     const tag = el.tagName.toLowerCase();
 
-    if (tag === 'ul' || tag === 'ol') { walkList(el, out, tag); continue; }
-    if (tag === 'table') { walkTable(el, out); continue; }
-    if (tag === 'img') { out.push(mkBlock('image', [], imgBlockAttrs(el))); continue; } // 独立成段的图片 → 块级
-    if (tag === 'hr') { out.push(mkBlock('paragraph', [mkText('———')])); continue; }
+    if (tag === 'ul' || tag === 'ol') {
+      walkList(el, out, tag);
+      continue;
+    }
+    if (tag === 'table') {
+      walkTable(el, out);
+      continue;
+    }
+    if (tag === 'img') {
+      out.push(mkBlock('image', [], imgBlockAttrs(el)));
+      continue;
+    } // 独立成段的图片 → 块级
+    if (tag === 'hr') {
+      out.push(mkBlock('paragraph', [mkText('———')]));
+      continue;
+    }
     if (tag === 'br') continue;
 
     const blockType = HTML_BLOCK_TAG[tag];
@@ -313,15 +402,27 @@ function walkBlocks(root: Node, out: Block[]): void {
       out.push(mkBlock('heading', parseInlineHtml(el, []), { level }));
       continue;
     }
-    if (tag === 'pre') { pushCodeBlock(el, out); continue; }
-    if (blockType === 'blockquote') { out.push(mkBlock('blockquote', parseInlineHtml(el, []))); continue; }
+    if (tag === 'pre') {
+      pushCodeBlock(el, out);
+      continue;
+    }
+    if (blockType === 'blockquote') {
+      out.push(mkBlock('blockquote', parseInlineHtml(el, [])));
+      continue;
+    }
     if (blockType === 'paragraph') {
       out.push(mkBlock('paragraph', parseInlineHtml(el, []), alignOf(el)));
       continue;
     }
-    if (tag === 'li') { out.push(mkBlock('bullet_item', parseInlineHtml(el, []))); continue; } // 游离 <li>
+    if (tag === 'li') {
+      out.push(mkBlock('bullet_item', parseInlineHtml(el, [])));
+      continue;
+    } // 游离 <li>
     // 容器类（div/section/article 等）：递归其子节点
-    if (hasBlockChild(el)) { walkBlocks(el, out); continue; }
+    if (hasBlockChild(el)) {
+      walkBlocks(el, out);
+      continue;
+    }
     // 其余块级：降级为段落纯文本
     const inl = parseInlineHtml(el, []);
     out.push(mkBlock('paragraph', inl));
@@ -404,7 +505,16 @@ function pushCodeBlock(pre: Element, out: Block[]): void {
 function hasBlockChild(el: Element): boolean {
   for (const c of Array.from(el.children)) {
     const t = c.tagName.toLowerCase();
-    if (t in HTML_BLOCK_TAG || t === 'ul' || t === 'ol' || t === 'table' || t === 'div' || t === 'section' || t === 'article') return true;
+    if (
+      t in HTML_BLOCK_TAG ||
+      t === 'ul' ||
+      t === 'ol' ||
+      t === 'table' ||
+      t === 'div' ||
+      t === 'section' ||
+      t === 'article'
+    )
+      return true;
   }
   return false;
 }
@@ -419,7 +529,9 @@ function alignOf(el: Element): BlockAttrs {
  * withSpanStyle 读取的最小元素结构（style 子集）：浏览器 HTMLElement 天然满足，
  * node 单测可用纯对象构造（无需 DOM）。 @public
  */
-export interface SpanStyleSource { style?: { color?: string; fontFamily?: string; fontSize?: string } }
+export interface SpanStyleSource {
+  style?: { color?: string; fontFamily?: string; fontSize?: string };
+}
 
 /**
  * 从 <span style> 叠加外观 marks：color / font-family→fontFamily / font-size→fontSize。
@@ -433,7 +545,8 @@ export function withSpanStyle(base: Mark[], el: SpanStyleSource): Mark[] {
   const st = el.style;
   if (!st) return marks;
   if (st.color && isSafeCssColor(st.color)) marks = addMark(marks, 'color', { color: st.color });
-  if (st.fontFamily && isSafeFontFamily(st.fontFamily)) marks = addMark(marks, 'fontFamily', { fontFamily: st.fontFamily });
+  if (st.fontFamily && isSafeFontFamily(st.fontFamily))
+    marks = addMark(marks, 'fontFamily', { fontFamily: st.fontFamily });
   // CSS font-size 形如 "16px"；经 fontSizeFromCss 剥 px 存裸数值（非 px 单位不产 mark，
   // 保「attrs.size 恒裸数值 ↔ 序列化端拼 px」互逆不变量，见 schema.fontSizeFromCss）。
   if (st.fontSize) {
@@ -459,11 +572,18 @@ function parseInlineHtml(el: Node, base: Mark[], skip?: Node | null, brText = ' 
   const out: Inline[] = [];
   for (const node of Array.from(el.childNodes)) {
     if (skip && node === skip) continue;
-    if (node.nodeType === 3) { const t = node.textContent ?? ''; if (t) out.push(mkText(t, base)); continue; }
+    if (node.nodeType === 3) {
+      const t = node.textContent ?? '';
+      if (t) out.push(mkText(t, base));
+      continue;
+    }
     if (node.nodeType !== 1) continue;
     const child = node as Element;
     const tag = child.tagName.toLowerCase();
-    if (tag === 'br') { out.push(mkText(brText, base)); continue; }
+    if (tag === 'br') {
+      out.push(mkText(brText, base));
+      continue;
+    }
     if (tag === 'img') {
       const src = decodeHref(child.getAttribute('src') ?? '');
       out.push(mkInlineAtom('image', { src, ...imgDims(child) }));
@@ -480,7 +600,10 @@ function parseInlineHtml(el: Node, base: Mark[], skip?: Node | null, brText = ' 
       continue;
     }
     const mark = markTypeOfTag(tag);
-    if (mark) { out.push(...parseInlineHtml(child, addMark(base, mark), null, brText)); continue; }
+    if (mark) {
+      out.push(...parseInlineHtml(child, addMark(base, mark), null, brText));
+      continue;
+    }
     // 未知内联：透传子节点
     out.push(...parseInlineHtml(child, base, null, brText));
   }
@@ -493,8 +616,14 @@ function fallbackHtml(html: string): Doc {
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<\/(p|div|h[1-6]|li|blockquote|tr)>/gi, '\n')
     .replace(/<[^>]+>/g, '')
-    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"');
-  const blocks = stripped.split('\n').map((s) => s.trim()).filter(Boolean)
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"');
+  const blocks = stripped
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean)
     .map((s) => mkBlock('paragraph', [mkText(s)]));
   return blocks.length ? { blocks } : { blocks: [mkBlock('paragraph', [])] };
 }

@@ -1,0 +1,11 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "ignorePatterns": ["dist/**", "dist-demo/**", ".bak/**", "public/**", "node_modules/**"],
+  "categories": {
+    "correctness": "warn"
+  },
+  "rules": {
+    "no-control-regex": "off",
+    "unicorn/no-new-array": "off"
+  }
+}

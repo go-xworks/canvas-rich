@@ -36,7 +36,10 @@ export const SPAN_STYLE_MARKS: readonly { mark: MarkType; attrKey: string; cssNa
 
 // 解析端同义标签 → mark（导出规范标签之外的别名：b/i/strike/del）。
 const TAG_MARK_ALIASES: Record<string, MarkType> = {
-  b: 'bold', i: 'italic', strike: 'strikethrough', del: 'strikethrough',
+  b: 'bold',
+  i: 'italic',
+  strike: 'strikethrough',
+  del: 'strikethrough',
 };
 
 // 标签（小写）→ mark 的查找表：规范包裹标签 + 同义别名，模块加载时由上两表派生一次。
@@ -91,9 +94,13 @@ export function isSafeFontFamily(v: string): boolean {
 export function isSafeSpanStyleValue(mark: MarkType, value: string): boolean {
   switch (mark) {
     case 'color':
-    case 'highlight': return isSafeCssColor(value);
-    case 'fontFamily': return isSafeFontFamily(value);
-    case 'fontSize': return RE_FONT_SIZE.test(value);
-    default: return false;
+    case 'highlight':
+      return isSafeCssColor(value);
+    case 'fontFamily':
+      return isSafeFontFamily(value);
+    case 'fontSize':
+      return RE_FONT_SIZE.test(value);
+    default:
+      return false;
   }
 }

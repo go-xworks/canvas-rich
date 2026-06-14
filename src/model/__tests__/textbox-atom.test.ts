@@ -80,11 +80,13 @@ describe('export: textbox → HTML', () => {
 
 describe('export: textbox → Markdown（兜底为段落）', () => {
   it('textbox → 纯文本段落', () => {
-    const md = toMarkdown(docOf(
-      para([text('before')]),
-      { type: 'textbox', attrs: { content: '文本框内容' }, inlines: [text('')] },
-      para([text('after')]),
-    ));
+    const md = toMarkdown(
+      docOf(
+        para([text('before')]),
+        { type: 'textbox', attrs: { content: '文本框内容' }, inlines: [text('')] },
+        para([text('after')]),
+      ),
+    );
     expect(md).toContain('文本框内容');
     // 段落用空行分隔（toMarkdown join '\n\n'）
     expect(md).toContain('before\n\n文本框内容\n\nafter');

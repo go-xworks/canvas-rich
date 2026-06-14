@@ -24,7 +24,10 @@ export interface ToolbarViewEnv {
  */
 export function blockValueOf(rd: RichDoc): string {
   const b = rd.focusBlock();
-  if (b.type === 'heading') { const l = b.attrs.level ?? 1; return 'heading' + (l < 1 ? 1 : l > 6 ? 6 : l); }
+  if (b.type === 'heading') {
+    const l = b.attrs.level ?? 1;
+    return 'heading' + (l < 1 ? 1 : l > 6 ? 6 : l);
+  }
   return b.type;
 }
 
@@ -66,10 +69,15 @@ export function buildToolbarState(rd: RichDoc, resolver: StyleResolver, view: To
   const blk = rd.focusBlock();
   return {
     marks: {
-      bold: rd.markActive('bold'), italic: rd.markActive('italic'),
-      underline: rd.markActive('underline'), strikethrough: rd.markActive('strikethrough'),
-      highlight: rd.markActive('highlight'), code: rd.markActive('code'), link: rd.markActive('link'),
-      superscript: rd.markActive('superscript'), subscript: rd.markActive('subscript'),
+      bold: rd.markActive('bold'),
+      italic: rd.markActive('italic'),
+      underline: rd.markActive('underline'),
+      strikethrough: rd.markActive('strikethrough'),
+      highlight: rd.markActive('highlight'),
+      code: rd.markActive('code'),
+      link: rd.markActive('link'),
+      superscript: rd.markActive('superscript'),
+      subscript: rd.markActive('subscript'),
     },
     blockValue: blockValueOf(rd),
     fontSize: activeFontSize(rd, resolver),
@@ -82,7 +90,8 @@ export function buildToolbarState(rd: RichDoc, resolver: StyleResolver, view: To
     spaceBefore: blk.attrs.spaceBefore ?? 0,
     spaceAfter: blk.attrs.spaceAfter ?? 0,
     letterSpacing: blk.attrs.letterSpacing ?? 0,
-    canUndo: rd.canUndo, canRedo: rd.canRedo,
+    canUndo: rd.canUndo,
+    canRedo: rd.canRedo,
     shaperShort: view.shaperShort,
     theme: view.theme,
     viewMode: view.viewMode,
@@ -92,9 +101,22 @@ export function buildToolbarState(rd: RichDoc, resolver: StyleResolver, view: To
 // ToolbarState 除 marks 外的标量字段全集：Record<…, true> 强制穷举 —— 新增字段漏列会编译报错，
 // 防止脏检查漏比导致工具栏「该刷不刷」。
 const SCALAR_KEY_SET: Record<Exclude<keyof ToolbarState, 'marks'>, true> = {
-  blockValue: true, fontSize: true, fontFamily: true, color: true, highlight: true,
-  align: true, dir: true, lineHeight: true, spaceBefore: true, spaceAfter: true,
-  letterSpacing: true, canUndo: true, canRedo: true, shaperShort: true, theme: true, viewMode: true,
+  blockValue: true,
+  fontSize: true,
+  fontFamily: true,
+  color: true,
+  highlight: true,
+  align: true,
+  dir: true,
+  lineHeight: true,
+  spaceBefore: true,
+  spaceAfter: true,
+  letterSpacing: true,
+  canUndo: true,
+  canRedo: true,
+  shaperShort: true,
+  theme: true,
+  viewMode: true,
 };
 const SCALAR_KEYS = Object.keys(SCALAR_KEY_SET) as Exclude<keyof ToolbarState, 'marks'>[];
 
@@ -105,7 +127,8 @@ const SCALAR_KEYS = Object.keys(SCALAR_KEY_SET) as Exclude<keyof ToolbarState, '
  */
 export function isToolbarStateEqual(a: ToolbarState, b: ToolbarState): boolean {
   for (const k of SCALAR_KEYS) if (a[k] !== b[k]) return false;
-  const ak = Object.keys(a.marks), bk = Object.keys(b.marks);
+  const ak = Object.keys(a.marks),
+    bk = Object.keys(b.marks);
   if (ak.length !== bk.length) return false;
   for (const k of ak) if (a.marks[k] !== b.marks[k]) return false;
   return true;

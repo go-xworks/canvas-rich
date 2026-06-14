@@ -7,15 +7,29 @@ import type { DocLayout, LineBox } from '../../text/doc-layout';
 // 构造最小布局行：只填命中逻辑会读的字段，其余给惰性默认值。
 function line(p: Partial<LineBox> & { block: number; top: number; bottom: number }): LineBox {
   return {
-    baseline: p.top, startOffset: 0, endOffset: 0,
-    offsets: [], xs: [], minX: 0, maxX: 0, rtl: false,
+    baseline: p.top,
+    startOffset: 0,
+    endOffset: 0,
+    offsets: [],
+    xs: [],
+    minX: 0,
+    maxX: 0,
+    rtl: false,
     ...p,
   };
 }
 function layoutOf(lines: LineBox[]): DocLayout {
   return {
-    backgrounds: [], highlights: [], glyphs: [], decorations: [],
-    overlays: [], inlineOverlays: [], lines, contentHeight: 0, contentRight: 0, dpr: 1,
+    backgrounds: [],
+    highlights: [],
+    glyphs: [],
+    decorations: [],
+    overlays: [],
+    inlineOverlays: [],
+    lines,
+    contentHeight: 0,
+    contentRight: 0,
+    dpr: 1,
   };
 }
 
@@ -63,9 +77,9 @@ describe('blockBounds / gapAtY / gapYDevice（拖拽重排间隙）', () => {
   });
 
   it('gapAtY：落在块垂直中线之上 → 插到该块前', () => {
-    expect(gapAtY(L, N, 4)).toBe(0);   // 4 < 块0中线 5
-    expect(gapAtY(L, N, 6)).toBe(1);   // 6 < 块1中线 20
-    expect(gapAtY(L, N, 21)).toBe(2);  // 21 < 块2中线 35
+    expect(gapAtY(L, N, 4)).toBe(0); // 4 < 块0中线 5
+    expect(gapAtY(L, N, 6)).toBe(1); // 6 < 块1中线 20
+    expect(gapAtY(L, N, 21)).toBe(2); // 21 < 块2中线 35
   });
 
   it('gapAtY：全部块之下 → blockCount（末尾间隙）', () => {
@@ -86,7 +100,7 @@ describe('blockBounds / gapAtY / gapYDevice（拖拽重排间隙）', () => {
 
 describe('tocLineHit（目录标题行命中）', () => {
   const L = layoutOf([
-    line({ block: 0, top: 0, bottom: 20 }),                  // 无 tocTarget：跳过
+    line({ block: 0, top: 0, bottom: 20 }), // 无 tocTarget：跳过
     line({ block: 1, top: 20, bottom: 40, tocTarget: 7 }),
     line({ block: 1, top: 40, bottom: 60, tocTarget: 9 }),
   ]);
@@ -106,13 +120,11 @@ describe('tocLineHit（目录标题行命中）', () => {
 
 describe('taskCheckboxHit（任务勾选标记栏命中）', () => {
   const doc: Doc = {
-    blocks: [
-      para([text('plain paragraph')]),
-      block('task_item', [text('todo item that wraps')]),
-    ],
+    blocks: [para([text('plain paragraph')]), block('task_item', [text('todo item that wraps')])],
   };
   const resolver = new StyleResolver();
-  const padL = 26, scale = 2;
+  const padL = 26,
+    scale = 2;
   // 标记栏右缘 = padL + indent×scale（与实现同源换算，验证的是判定分支本身）
   const x0 = padL + resolver.resolveBlock(doc.blocks[1]).indent * scale;
   const L = layoutOf([

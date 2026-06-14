@@ -50,6 +50,8 @@ export function createEmitter(): Emitter {
       map[ev].delete(fn);
     },
     emit(ev) {
+      // 拍快照再遍历：容忍回调内退订/再订阅（spread 是本意，非冗余）
+      // oxlint-disable-next-line no-useless-spread
       for (const fn of [...map[ev]]) fn();
     },
   };

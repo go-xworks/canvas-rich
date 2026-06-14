@@ -22,8 +22,9 @@ describe('H3–H6 标题级别', () => {
   });
 
   it('heading 主题按 level 给逐级递减的字号、统一加粗', () => {
-    const sizes = [1, 2, 3, 4, 5, 6].map((lv) =>
-      meta('heading').theme({ level: lv as 1 | 2 | 3 | 4 | 5 | 6 }).base.fontSize);
+    const sizes = [1, 2, 3, 4, 5, 6].map(
+      (lv) => meta('heading').theme({ level: lv as 1 | 2 | 3 | 4 | 5 | 6 }).base.fontSize,
+    );
     expect(sizes).toEqual([32, 24, 20, 18, 16, 15]);
     // 严格递减
     for (let i = 1; i < sizes.length; i++) expect(sizes[i]).toBeLessThan(sizes[i - 1]);
@@ -115,23 +116,27 @@ describe('toggleTaskChecked', () => {
 
 describe('export: 标题级别与任务列表映射', () => {
   it('HTML: heading level 1..6 → h1..h6', () => {
-    const html = toHtml(doc(
-      block('heading', [text('A')], { level: 1 }),
-      block('heading', [text('C')], { level: 3 }),
-      block('heading', [text('F')], { level: 6 }),
-    ));
+    const html = toHtml(
+      doc(
+        block('heading', [text('A')], { level: 1 }),
+        block('heading', [text('C')], { level: 3 }),
+        block('heading', [text('F')], { level: 6 }),
+      ),
+    );
     expect(html).toContain('<h1>A</h1>');
     expect(html).toContain('<h3>C</h3>');
     expect(html).toContain('<h6>F</h6>');
   });
 
   it('Markdown: heading level 3/4/5/6 → ###/####/#####/######', () => {
-    const md = toMarkdown(doc(
-      block('heading', [text('a')], { level: 3 }),
-      block('heading', [text('b')], { level: 4 }),
-      block('heading', [text('c')], { level: 5 }),
-      block('heading', [text('d')], { level: 6 }),
-    ));
+    const md = toMarkdown(
+      doc(
+        block('heading', [text('a')], { level: 3 }),
+        block('heading', [text('b')], { level: 4 }),
+        block('heading', [text('c')], { level: 5 }),
+        block('heading', [text('d')], { level: 6 }),
+      ),
+    );
     expect(md).toContain('### a');
     expect(md).toContain('#### b');
     expect(md).toContain('##### c');
@@ -139,19 +144,23 @@ describe('export: 标题级别与任务列表映射', () => {
   });
 
   it('Markdown: task_item → GFM - [ ] / - [x]', () => {
-    const md = toMarkdown(doc(
-      block('task_item', [text('open')], { checked: false }),
-      block('task_item', [text('done')], { checked: true }),
-    ));
+    const md = toMarkdown(
+      doc(
+        block('task_item', [text('open')], { checked: false }),
+        block('task_item', [text('done')], { checked: true }),
+      ),
+    );
     expect(md).toContain('- [ ] open');
     expect(md).toContain('- [x] done');
   });
 
   it('HTML: task_item 合并为 <ul class="task-list"> 含 disabled checkbox', () => {
-    const html = toHtml(doc(
-      block('task_item', [text('open')], { checked: false }),
-      block('task_item', [text('done')], { checked: true }),
-    ));
+    const html = toHtml(
+      doc(
+        block('task_item', [text('open')], { checked: false }),
+        block('task_item', [text('done')], { checked: true }),
+      ),
+    );
     expect(html).toContain('<ul class="task-list">');
     expect(html).toContain('<input type="checkbox" disabled /> open');
     expect(html).toContain('<input type="checkbox" disabled checked /> done');

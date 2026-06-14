@@ -10,19 +10,29 @@ export const DRAFT_KEY = 'rte.draft';
 export const DRAFT_DEBOUNCE_MS = 800;
 
 /** 持久化的文档草稿：文档树 + 选区端点 + 保存时刻（ms 时间戳）。 @public */
-export interface Draft { doc: Doc; anchor: Pos; focus: Pos; savedAt: number }
+export interface Draft {
+  doc: Doc;
+  anchor: Pos;
+  focus: Pos;
+  savedAt: number;
+}
 
 // 安全取 localStorage（SSR/单测/隐私模式下不存在则返回 null）；与 templates.ts 同护栏。
 function ls(): Storage | null {
-  try { return typeof localStorage !== 'undefined' ? localStorage : null; } catch { return null; }
+  try {
+    return typeof localStorage !== 'undefined' ? localStorage : null;
+  } catch {
+    return null;
+  }
 }
 
 // 选区端点形状（反序列化校验）：block/offset 均为有限数。clamp 由 RichDoc 恢复时负责。
 function isPosShape(v: unknown): v is Pos {
   if (!v || typeof v !== 'object') return false;
   const p = v as { block?: unknown; offset?: unknown };
-  return typeof p.block === 'number' && Number.isFinite(p.block)
-    && typeof p.offset === 'number' && Number.isFinite(p.offset);
+  return (
+    typeof p.block === 'number' && Number.isFinite(p.block) && typeof p.offset === 'number' && Number.isFinite(p.offset)
+  );
 }
 
 /** 把文档 + 选区序列化为草稿 JSON 字符串。 @public */
@@ -50,14 +60,20 @@ export function parseDraft(raw: string | null): Draft | null {
       focus: isPosShape(d.focus) ? { block: d.focus.block, offset: d.focus.offset } : start,
       savedAt: typeof d.savedAt === 'number' && Number.isFinite(d.savedAt) ? d.savedAt : 0,
     };
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
 /** 从 localStorage 读取草稿（无存储/无草稿/损坏时返回 null）。 @public */
 export function loadDraft(): Draft | null {
   const store = ls();
   if (!store) return null;
-  try { return parseDraft(store.getItem(DRAFT_KEY)); } catch { return null; }
+  try {
+    return parseDraft(store.getItem(DRAFT_KEY));
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -79,7 +95,11 @@ export function saveDraft(doc: Doc, anchor: Pos, focus: Pos): boolean {
 
 /** 删除已保存的草稿（如「新建空白文档」场景；无存储时静默）。 @public */
 export function clearDraft(): void {
-  try { ls()?.removeItem(DRAFT_KEY); } catch { /* 隐私模式等：忽略 */ }
+  try {
+    ls()?.removeItem(DRAFT_KEY);
+  } catch {
+    /* 隐私模式等：忽略 */
+  }
 }
 
 /**
@@ -112,18 +132,29 @@ export function createAutosaver(
     onStateChange?.(next);
   };
   const persistNow = (): boolean => {
-    if (persist()) { setDirty(false); return true; }
+    if (persist()) {
+      setDirty(false);
+      return true;
+    }
     return false;
   };
   return {
-    get dirty() { return dirty; },
+    get dirty() {
+      return dirty;
+    },
     schedule() {
       setDirty(true);
       if (timer !== null) clearTimeout(timer);
-      timer = setTimeout(() => { timer = null; persistNow(); }, delayMs);
+      timer = setTimeout(() => {
+        timer = null;
+        persistNow();
+      }, delayMs);
     },
     flush() {
-      if (timer !== null) { clearTimeout(timer); timer = null; }
+      if (timer !== null) {
+        clearTimeout(timer);
+        timer = null;
+      }
       return dirty ? persistNow() : true;
     },
   };

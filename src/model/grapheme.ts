@@ -19,7 +19,10 @@ export function splitGraphemes(textStr: string): string[] {
 export function clusterBoundaries(textStr: string): number[] {
   const bounds = [0];
   let off = 0;
-  for (const g of splitGraphemes(textStr)) { off += g.length; bounds.push(off); }
+  for (const g of splitGraphemes(textStr)) {
+    off += g.length;
+    bounds.push(off);
+  }
   return bounds;
 }
 
@@ -31,6 +34,9 @@ export function nextBoundary(textStr: string, offset: number): number {
 /** 返回严格小于 offset 的上一个簇边界；不存在时返回 0。 @public */
 export function prevBoundary(textStr: string, offset: number): number {
   let prev = 0;
-  for (const b of clusterBoundaries(textStr)) { if (b >= offset) return prev; prev = b; }
+  for (const b of clusterBoundaries(textStr)) {
+    if (b >= offset) return prev;
+    prev = b;
+  }
   return prev;
 }

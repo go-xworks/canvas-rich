@@ -8,7 +8,14 @@ import { enrichTooltips } from './tooltips';
 import { RENDERERS } from './renderers';
 import { TOOLBAR_GROUPS } from './toolbar-items';
 import type {
-  ToolbarState, Toolbar, ToolbarContext, ToolbarItem, MountedItem, GroupSpec, ToolbarTab, ToolbarCommandArg,
+  ToolbarState,
+  Toolbar,
+  ToolbarContext,
+  ToolbarItem,
+  MountedItem,
+  GroupSpec,
+  ToolbarTab,
+  ToolbarCommandArg,
 } from './types';
 
 /**
@@ -30,7 +37,9 @@ const RIBBON_TABS: ToolbarTab[] = ['start', 'insert', 'view'];
 
 // 所有下拉面板的关闭器；单一 document 监听实现「点外部即关」。逐字搬自源（模块级 + 每次 createToolbar 重置）。
 const closers: Array<() => void> = [];
-function closeAllPanels(): void { for (const c of closers) c(); }
+function closeAllPanels(): void {
+  for (const c of closers) c();
+}
 let docClickBound = false;
 
 /**
@@ -40,18 +49,26 @@ let docClickBound = false;
  * @param manifest - 声明式控件清单（默认 TOOLBAR_GROUPS，可注入自定义清单）
  * @internal
  */
-export function createToolbar(
-  host: HTMLElement, deps: ToolbarDeps, manifest: GroupSpec[] = TOOLBAR_GROUPS,
-): Toolbar {
+export function createToolbar(host: HTMLElement, deps: ToolbarDeps, manifest: GroupSpec[] = TOOLBAR_GROUPS): Toolbar {
   host.className = HOST;
   host.innerHTML = '';
   closers.length = 0; // 重建工具栏时丢弃旧面板关闭器，避免悬挂引用（逐字搬自源）。
-  if (!docClickBound) { docClickBound = true; document.addEventListener('mousedown', closeAllPanels); }
+  if (!docClickBound) {
+    docClickBound = true;
+    document.addEventListener('mousedown', closeAllPanels);
+  }
 
   // —— 渲染上下文：item 的点击/选值经 ctx.exec 派发命名命令（不再持行为 bag）——
   const ctx: ToolbarContext = {
-    exec: deps.exec, focusEditor: deps.focusEditor, templateNames: deps.templateNames, icon,
-    wrap: (fn) => (e) => { e.preventDefault(); fn(); deps.focusEditor(); },
+    exec: deps.exec,
+    focusEditor: deps.focusEditor,
+    templateNames: deps.templateNames,
+    icon,
+    wrap: (fn) => (e) => {
+      e.preventDefault();
+      fn();
+      deps.focusEditor();
+    },
     registerCloser: (close) => closers.push(close),
     closeAllPanels,
   };
@@ -82,7 +99,8 @@ export function createToolbar(
     }
     const rowEls: HTMLElement[] = [];
     for (const itemRow of g.rows) {
-      const r = document.createElement('div'); r.className = ROW;
+      const r = document.createElement('div');
+      r.className = ROW;
       for (const item of itemRow) r.appendChild(mount(item).el);
       rowEls.push(r);
     }
@@ -90,12 +108,13 @@ export function createToolbar(
   }
 
   // —— 页签栏（文字页签 + 右端常驻 trailing 控件）——
-  const tabbar = document.createElement('div'); tabbar.className = TABBAR;
+  const tabbar = document.createElement('div');
+  tabbar.className = TABBAR;
   tabbar.setAttribute('role', 'tablist');
   const tabBtns: Record<string, HTMLButtonElement> = {};
   let activeTab = 'start';
-  const underline = (on: boolean): string => on
-    ? '<span class="absolute left-2 right-2 -bottom-px h-[2px] rounded bg-[var(--rte-active-fg)]"></span>' : '';
+  const underline = (on: boolean): string =>
+    on ? '<span class="absolute left-2 right-2 -bottom-px h-[2px] rounded bg-[var(--rte-active-fg)]"></span>' : '';
   const selectTab = (key: string): void => {
     activeTab = key;
     for (const [k, btn] of Object.entries(tabBtns)) {
@@ -110,14 +129,21 @@ export function createToolbar(
   };
   for (const [key, label] of TAB_DEFS) {
     const btn = document.createElement('button');
-    btn.type = 'button'; btn.className = TAB; btn.textContent = label;
+    btn.type = 'button';
+    btn.className = TAB;
+    btn.textContent = label;
     btn.setAttribute('role', 'tab');
     btn.onmousedown = (e) => e.stopPropagation();
-    btn.onclick = (e) => { e.preventDefault(); selectTab(key); };
-    tabBtns[key] = btn; tabbar.appendChild(btn);
+    btn.onclick = (e) => {
+      e.preventDefault();
+      selectTab(key);
+    };
+    tabBtns[key] = btn;
+    tabbar.appendChild(btn);
   }
   // 右端常驻：trailing 控件（导出，任意页签可见），前置 flex-1 spacer。
-  const tabSpacer = document.createElement('div'); tabSpacer.className = 'flex-1';
+  const tabSpacer = document.createElement('div');
+  tabSpacer.className = 'flex-1';
   tabbar.append(tabSpacer, ...trailingEls);
 
   host.append(tabbar, ribbons.start, ribbons.insert, ribbons.view);
@@ -125,29 +151,43 @@ export function createToolbar(
   enrichTooltips(host); // 把每个控件的 title 升级为「名称 + 快捷键 + 用法」悬停提示
 
   return {
-    refresh(s: ToolbarState): void { for (const r of handles) r(s); },
+    refresh(s: ToolbarState): void {
+      for (const r of handles) r(s);
+    },
     register(item): () => void {
       const m = RENDERERS[item.kind](item as never, ctx);
-      const target = item.tab === 'trailing' ? tabbar : ribbons[item.tab] ?? tabbar;
+      const target = item.tab === 'trailing' ? tabbar : (ribbons[item.tab] ?? tabbar);
       target.appendChild(m.el);
       enrichTooltips(target); // 追加项的 tooltip 升级（installTooltips/attachTooltip 幂等）
       if (m.refresh) handles.push(m.refresh);
       return () => {
         m.dispose?.();
         m.el.remove();
-        if (m.refresh) { const i = handles.indexOf(m.refresh); if (i >= 0) handles.splice(i, 1); }
+        if (m.refresh) {
+          const i = handles.indexOf(m.refresh);
+          if (i >= 0) handles.splice(i, 1);
+        }
       };
     },
-    destroy(): void { handles.length = 0; },
+    destroy(): void {
+      handles.length = 0;
+    },
   };
 }
 
 /** 构建一个功能组：纵向容器内放任意行（el），可选底部组名小字。逐字搬自源 makeGroup。 */
 function makeGroupEl(rows: HTMLElement[], name?: string): HTMLDivElement {
-  const g = document.createElement('div'); g.className = GROUP;
-  const col = document.createElement('div'); col.className = GROUP_ROWS;
+  const g = document.createElement('div');
+  g.className = GROUP;
+  const col = document.createElement('div');
+  col.className = GROUP_ROWS;
   col.append(...rows);
   g.appendChild(col);
-  if (name) { const n = document.createElement('div'); n.className = GROUP_NAME; n.textContent = name; g.appendChild(n); }
+  if (name) {
+    const n = document.createElement('div');
+    n.className = GROUP_NAME;
+    n.textContent = name;
+    g.appendChild(n);
+  }
   return g;
 }

@@ -9,18 +9,21 @@ import { inlinesToCellHtml } from '../../model/export';
 // —— 结构节点构造器 ——
 const t = (s: string): CellDomNode => ({ nodeType: 3, textContent: s, childNodes: [] });
 const el = (
-  tag: string, children: CellDomNode[],
+  tag: string,
+  children: CellDomNode[],
   opts: { attrs?: Record<string, string>; style?: { color?: string; fontSize?: string; fontFamily?: string } } = {},
 ): CellDomNode => ({
-  nodeType: 1, tagName: tag, textContent: null, childNodes: children,
+  nodeType: 1,
+  tagName: tag,
+  textContent: null,
+  childNodes: children,
   getAttribute: (name: string) => opts.attrs?.[name] ?? null,
   style: opts.style,
 });
 const td = (...children: CellDomNode[]): CellDomNode => el('TD', children);
 
 // 摘成 [text, "type1,type2"] 列表便于断言。
-const summary = (inls: Inline[]): [string, string][] =>
-  inls.map((r) => [r.text, r.marks.map((m) => m.type).join(',')]);
+const summary = (inls: Inline[]): [string, string][] => inls.map((r) => [r.text, r.marks.map((m) => m.type).join(',')]);
 
 describe('domToInlines — 文本与标签 marks', () => {
   it('plain text becomes a single unmarked run', () => {
@@ -29,21 +32,31 @@ describe('domToInlines — 文本与标签 marks', () => {
 
   it('maps STRONG/B/EM/I/U/S/STRIKE/DEL/MARK/CODE/SUP/SUB to marks', () => {
     const root = td(
-      el('STRONG', [t('a')]), el('EM', [t('b')]), el('U', [t('c')]),
-      el('DEL', [t('d')]), el('MARK', [t('e')]), el('CODE', [t('f')]),
-      el('SUP', [t('g')]), el('SUB', [t('h')]),
+      el('STRONG', [t('a')]),
+      el('EM', [t('b')]),
+      el('U', [t('c')]),
+      el('DEL', [t('d')]),
+      el('MARK', [t('e')]),
+      el('CODE', [t('f')]),
+      el('SUP', [t('g')]),
+      el('SUB', [t('h')]),
     );
     expect(summary(domToInlines(root))).toEqual([
-      ['a', 'bold'], ['b', 'italic'], ['c', 'underline'], ['d', 'strikethrough'],
-      ['e', 'highlight'], ['f', 'code'], ['g', 'superscript'], ['h', 'subscript'],
+      ['a', 'bold'],
+      ['b', 'italic'],
+      ['c', 'underline'],
+      ['d', 'strikethrough'],
+      ['e', 'highlight'],
+      ['f', 'code'],
+      ['g', 'superscript'],
+      ['h', 'subscript'],
     ]);
   });
 
   it('treats B/I/STRIKE synonyms identically and merges adjacent same-marks runs', () => {
     const root = td(el('STRONG', [t('a')]), el('B', [t('b')]));
     expect(summary(domToInlines(root))).toEqual([['ab', 'bold']]); // normalizeInlines 合并
-    expect(summary(domToInlines(td(el('S', [t('x')]), el('STRIKE', [t('y')])))))
-      .toEqual([['xy', 'strikethrough']]);
+    expect(summary(domToInlines(td(el('S', [t('x')]), el('STRIKE', [t('y')]))))).toEqual([['xy', 'strikethrough']]);
   });
 
   it('stacks marks across nesting (strong > em)', () => {
@@ -55,7 +68,10 @@ describe('domToInlines — 文本与标签 marks', () => {
 
   it('ignores unknown tags but recurses into their children', () => {
     const root = td(el('FONT', [t('a'), el('STRONG', [t('b')])]));
-    expect(summary(domToInlines(root))).toEqual([['a', ''], ['b', 'bold']]);
+    expect(summary(domToInlines(root))).toEqual([
+      ['a', ''],
+      ['b', 'bold'],
+    ]);
   });
 });
 
@@ -101,13 +117,17 @@ describe('inlinesToCellHtml ↔ domToInlines — CSS 值形式互逆（集群3�
     ];
     const html = inlinesToCellHtml([text('x', marks)]);
     // 写出形式锚定：fontSize 带 px 后缀、color/fontFamily 原值
-    expect(html).toBe('<span style="color:#ff0000"><span style="font-size:24px"><span style="font-family:Georgia">x</span></span></span>');
+    expect(html).toBe(
+      '<span style="color:#ff0000"><span style="font-size:24px"><span style="font-family:Georgia">x</span></span></span>',
+    );
     // 按写出的嵌套 span/style 构造等价 DOM 树（浏览器解析后的 style 对象形态），回读应还原原 marks
-    const root = td(el('SPAN', [
-      el('SPAN', [
-        el('SPAN', [t('x')], { style: { fontFamily: 'Georgia' } }),
-      ], { style: { fontSize: '24px' } }),
-    ], { style: { color: '#ff0000' } }));
+    const root = td(
+      el(
+        'SPAN',
+        [el('SPAN', [el('SPAN', [t('x')], { style: { fontFamily: 'Georgia' } })], { style: { fontSize: '24px' } })],
+        { style: { color: '#ff0000' } },
+      ),
+    );
     const [run] = domToInlines(root);
     expect(run.text).toBe('x');
     expect(run.marks).toEqual(text('x', marks).marks); // 同规范化排序逐项相等；size 无 px 残留
@@ -163,16 +183,20 @@ describe('domToInlines — 归一化', () => {
 
 describe('domToInlines — span style 值白名单（回写路径防 CSS 注入）', () => {
   it('注入 color/fontFamily（含 ; : ( )）不产 mark，文本保留', () => {
-    const root = td(el('SPAN', [t('x')], {
-      style: { color: 'red;position:fixed', fontFamily: 'Arial;background:url(http://evil)' },
-    }));
+    const root = td(
+      el('SPAN', [t('x')], {
+        style: { color: 'red;position:fixed', fontFamily: 'Arial;background:url(http://evil)' },
+      }),
+    );
     expect(summary(domToInlines(root))).toEqual([['x', '']]);
   });
 
   it('合法值照常产 mark（hex / rgb() / 引号族名）', () => {
-    const root = td(el('SPAN', [t('x')], {
-      style: { color: 'rgb(1, 2, 3)', fontFamily: '"Microsoft YaHei", sans-serif' },
-    }));
+    const root = td(
+      el('SPAN', [t('x')], {
+        style: { color: 'rgb(1, 2, 3)', fontFamily: '"Microsoft YaHei", sans-serif' },
+      }),
+    );
     const [run] = domToInlines(root);
     expect(run.marks.map((m) => m.type).sort()).toEqual(['color', 'fontFamily']);
   });

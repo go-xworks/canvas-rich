@@ -7,7 +7,13 @@ import { Style } from '../../types';
 // per-page 脏矩形 / setDpr 收缩页数。Canvas2D 光栅本身（像素正确性）留浏览器实测。
 
 // —— 假 Canvas2D：只实现 GlyphAtlas 用到的成员，度量可按字符配置 ——
-interface FakeBox { adv: number; left: number; right: number; asc: number; desc: number }
+interface FakeBox {
+  adv: number;
+  left: number;
+  right: number;
+  asc: number;
+  desc: number;
+}
 
 class FakeCtx {
   font = '';
@@ -21,13 +27,24 @@ class FakeCtx {
 
   constructor(private measure: (ch: string) => FakeBox) {}
 
-  clearRect(_x: number, _y: number, _w: number, _h: number): void { void _x; }
+  clearRect(_x: number, _y: number, _w: number, _h: number): void {
+    void _x;
+  }
   save(): void {}
   restore(): void {}
-  translate(_x: number, _y: number): void { void _x; }
-  scale(kx: number, _ky: number): void { void _ky; this.scaleCalls.push(kx); }
-  fillRect(x: number, y: number, w: number, h: number): void { this.fillRectCalls.push({ x, y, w, h }); }
-  fillText(ch: string, x: number, y: number): void { this.fillTextCalls.push({ ch, x, y }); }
+  translate(_x: number, _y: number): void {
+    void _x;
+  }
+  scale(kx: number, _ky: number): void {
+    void _ky;
+    this.scaleCalls.push(kx);
+  }
+  fillRect(x: number, y: number, w: number, h: number): void {
+    this.fillRectCalls.push({ x, y, w, h });
+  }
+  fillText(ch: string, x: number, y: number): void {
+    this.fillTextCalls.push({ ch, x, y });
+  }
   measureText(ch: string): TextMetrics {
     this.measureCalls++;
     const b = this.measure(ch);
@@ -47,8 +64,13 @@ class FakeCanvas {
   width = 0;
   height = 0;
   readonly ctx: FakeCtx;
-  constructor(measure: (ch: string) => FakeBox) { this.ctx = new FakeCtx(measure); }
-  getContext(_id: string, _opts?: unknown): FakeCtx { void _id; return this.ctx; }
+  constructor(measure: (ch: string) => FakeBox) {
+    this.ctx = new FakeCtx(measure);
+  }
+  getContext(_id: string, _opts?: unknown): FakeCtx {
+    void _id;
+    return this.ctx;
+  }
 }
 
 // 默认度量：每字符 30×30 的方盒（adv=30）；空格无可见像素
@@ -58,7 +80,11 @@ const box30 = (ch: string): FakeBox =>
 const STYLE: Style = { fontFamily: 'fake', fontSize: 20, bold: false, italic: false, color: [1, 1, 1, 1] };
 
 // 测试图集：pageSize=64（PAD=2 → maxContent=58），白块占首槽 (4,4)
-function makeAtlas(measure: (ch: string) => FakeBox, maxPages: number, pageSize = 64): { atlas: GlyphAtlas; canvases: FakeCanvas[] } {
+function makeAtlas(
+  measure: (ch: string) => FakeBox,
+  maxPages: number,
+  pageSize = 64,
+): { atlas: GlyphAtlas; canvases: FakeCanvas[] } {
   const canvases: FakeCanvas[] = [];
   const factory = () => {
     const c = new FakeCanvas(measure);
@@ -111,7 +137,8 @@ describe('GlyphAtlas: 多页分配', () => {
 describe('GlyphAtlas: 巨字形夹紧（不触发 reset 风暴）', () => {
   it('超页字形降采样光栅：度量存全尺寸、UV 不超 maxContent、零复位', () => {
     // 200×100 字形 > 单页 64：k = 58/200，槽位 58×29
-    const giant = (ch: string): FakeBox => (ch === 'G' ? { adv: 200, left: 0, right: 200, asc: 100, desc: 0 } : box30(ch));
+    const giant = (ch: string): FakeBox =>
+      ch === 'G' ? { adv: 200, left: 0, right: 200, asc: 100, desc: 0 } : box30(ch);
     const { atlas, canvases } = makeAtlas(giant, 8);
     const g = atlas.getGlyph('G', STYLE);
     expect(g.exhausted).toBeUndefined(); // 任何尺寸都能分配成功
@@ -205,11 +232,18 @@ describe('GlyphAtlas: addGlyphById（HarfBuzz 路径）', () => {
     let drawCount = 0;
     let drawCtx: unknown = null;
     const info = { w: 30, h: 30, bearingX: 0, bearingY: 30, advance: 30, empty: false };
-    const g1 = atlas.addGlyphById('hb:r:1:20', info, (ctx, ox, oy) => { drawCount++; drawCtx = ctx; void ox; void oy; });
+    const g1 = atlas.addGlyphById('hb:r:1:20', info, (ctx, ox, oy) => {
+      drawCount++;
+      drawCtx = ctx;
+      void ox;
+      void oy;
+    });
     expect(g1.page).toBe(0);
     expect(drawCount).toBe(1);
     expect(drawCtx).toBe(canvases[0].ctx);
-    const g2 = atlas.addGlyphById('hb:r:1:20', info, () => { drawCount++; });
+    const g2 = atlas.addGlyphById('hb:r:1:20', info, () => {
+      drawCount++;
+    });
     expect(g2).toBe(g1); // 缓存命中
     expect(drawCount).toBe(1);
 

@@ -8,8 +8,8 @@ import { FontMetrics } from './glyph-atlas';
 // - 连字（多字符→单字形）：字形与合计前进量记在簇首字符上，后续字符 advance=0、glyph=empty。
 /** 单个字符整形后的结果：前进量 + 字形位图信息，下标对齐到原字符序列。 @public */
 export interface ShapedChar {
-  advance: number;   // 设备 px
-  glyph: GlyphInfo;  // 可能 empty=true（空格/换行/连字续字）
+  advance: number; // 设备 px
+  glyph: GlyphInfo; // 可能 empty=true（空格/换行/连字续字）
 }
 
 /** 整形器接口：把带样式字符序列转成逐字符前进量与字形，是排版的可替换缝。 @public */

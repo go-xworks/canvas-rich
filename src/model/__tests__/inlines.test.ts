@@ -14,8 +14,7 @@ import {
 import { text, inlineAtom, Inline } from '../schema';
 
 // 把 Inline[] 摘成易断言形式：每段 -> [text, "type1,type2,..."]（marks 类型集合，逗号连接）
-const summary = (inls: Inline[]): [string, string][] =>
-  inls.map((r) => [r.text, r.marks.map((m) => m.type).join(',')]);
+const summary = (inls: Inline[]): [string, string][] => inls.map((r) => [r.text, r.marks.map((m) => m.type).join(',')]);
 
 const bold = [{ type: 'bold' as const }];
 const link = (href: string) => [{ type: 'link' as const, attrs: { href } }];

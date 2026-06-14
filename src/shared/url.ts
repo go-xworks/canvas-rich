@@ -42,7 +42,7 @@ export function sanitizeUrl(url: string, kind: UrlKind): string | null {
   if (!m) return null; // 无协议：拒绝
   const scheme = m[1];
   if (scheme === 'http' || scheme === 'https') return trimmed; // 所有场景放行
-  if (kind === 'link' || kind === 'iframe') return null;       // 可导航/可执行场景：仅 http(s)
+  if (kind === 'link' || kind === 'iframe') return null; // 可导航/可执行场景：仅 http(s)
   if (scheme === 'blob') return trimmed;
   if (scheme === 'data') {
     // 图片/签名仅接受 data:image/*；音视频/附件接受任意 data:（MIME 不可枚举）

@@ -8,7 +8,10 @@ import { Doc, block, para, text, blockText } from '../schema';
 const doc = (...blocks: Doc['blocks']): Doc => ({ blocks });
 const rdOf = (...blocks: Doc['blocks']) => new RichDoc(doc(...blocks));
 const docText = (rd: RichDoc): string[] => rd.doc.blocks.map((b) => blockText(b));
-const sel = (rd: RichDoc, a: Pos, f: Pos) => { rd.setSel(a); rd.setSel(f, true); };
+const sel = (rd: RichDoc, a: Pos, f: Pos) => {
+  rd.setSel(a);
+  rd.setSel(f, true);
+};
 
 describe('posAfterRangeDelete — 删除区间后的落点折算', () => {
   const from: Pos = { block: 1, offset: 2 };
@@ -33,14 +36,14 @@ describe('moveSelTo — 同块移动', () => {
   it('向后移动：落点 offset 随删除前移，移动后选中被移文本', () => {
     const rd = rdOf(para([text('abcdef')]));
     sel(rd, { block: 0, offset: 0 }, { block: 0, offset: 2 }); // 选 "ab"
-    expect(rd.moveSelTo({ block: 0, offset: 4 })).toBe(true);  // 落到 "cd|ef"
+    expect(rd.moveSelTo({ block: 0, offset: 4 })).toBe(true); // 落到 "cd|ef"
     expect(docText(rd)).toEqual(['cdabef']);
     expect(rd.range()).toEqual({ from: { block: 0, offset: 2 }, to: { block: 0, offset: 4 } });
   });
   it('向前移动：落点在选区之前不折算', () => {
     const rd = rdOf(para([text('abcdef')]));
     sel(rd, { block: 0, offset: 4 }, { block: 0, offset: 6 }); // 选 "ef"
-    expect(rd.moveSelTo({ block: 0, offset: 1 })).toBe(true);  // 落到 "a|bcd"
+    expect(rd.moveSelTo({ block: 0, offset: 1 })).toBe(true); // 落到 "a|bcd"
     expect(docText(rd)).toEqual(['aefbcd']);
     expect(rd.range()).toEqual({ from: { block: 0, offset: 1 }, to: { block: 0, offset: 3 } });
   });
@@ -58,7 +61,7 @@ describe('moveSelTo — 跨块与拒绝路径', () => {
   it('跨块选区移动到后方块', () => {
     const rd = rdOf(para([text('abc')]), para([text('def')]), para([text('ghi')]));
     sel(rd, { block: 0, offset: 1 }, { block: 1, offset: 2 }); // 选 "bc\nde"
-    expect(rd.moveSelTo({ block: 2, offset: 3 })).toBe(true);  // 落到 "ghi" 尾
+    expect(rd.moveSelTo({ block: 2, offset: 3 })).toBe(true); // 落到 "ghi" 尾
     // 删除合并后文档为 ["af", "ghi"]，落点折算为块1尾 → 拆块插入
     expect(docText(rd).join('|')).toBe('af|ghibc|de');
   });
@@ -99,7 +102,10 @@ describe('moveSelTo — 单次撤销', () => {
 
   it('撤销栈满（200 上限触发 shift）时仍单次 undo 还原（中间态按栈顶弹）', () => {
     const rd = rdOf(para([text('abcdef')]));
-    for (let i = 0; i < 205; i++) { rd.setSel({ block: 0, offset: 0 }); rd.insertText('x'); } // setSel 断合并 → 每次独立快照
+    for (let i = 0; i < 205; i++) {
+      rd.setSel({ block: 0, offset: 0 });
+      rd.insertText('x');
+    } // setSel 断合并 → 每次独立快照
     rd.setSel({ block: 0, offset: 205 });
     rd.setSel({ block: 0, offset: 207 }, true); // 选 "ab"（x 连段之后的可辨别字符）
     const before = docText(rd)[0];

@@ -13,7 +13,12 @@ import { PositionedGlyph } from '../types';
 import { lowerBoundIndex } from '../shared/util';
 
 /** 单页纸面矩形（设备 px），供渲染层画纸面/投影与页缝底色。 @public */
-export interface PageRect { x: number; y: number; w: number; h: number }
+export interface PageRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
 
 /**
  * 分页参数（全部设备 px）。
@@ -62,8 +67,8 @@ export function paginateLayout(L: DocLayout, o: PaginateOpts): { layout: DocLayo
   // —— 单遍扫描产出断点表：breakYs[i]（原始 y，升序）之后的几何统一加 breakShifts[i] ——
   const breakYs: number[] = [-Infinity];
   const breakShifts: number[] = [0];
-  let p = 0;       // 当前页号
-  let shift = 0;   // 累计平移量（随断点单调不减）
+  let p = 0; // 当前页号
+  let shift = 0; // 累计平移量（随断点单调不减）
   for (const ln of L.lines) {
     if (ln.bottom + shift <= contentBottom(p) + EPS) continue; // 本行装得下当前页
     // 行底越过当前页内容底：整行移到下一页内容顶（已在内容顶的行不再移——只能是超高行，防死循环）
@@ -83,7 +88,10 @@ export function paginateLayout(L: DocLayout, o: PaginateOpts): { layout: DocLayo
   /** 原始 y → 该段的平移量（断点表二分；breakYs[0] = -Infinity 兜底首段）。 */
   const shiftAt = (y: number): number => breakShifts[lowerBoundIndex(breakYs, y)];
   const shiftRects = (rs: SolidRect[]): SolidRect[] =>
-    rs.map((r) => { const s = shiftAt(r.y); return s === 0 ? r : { ...r, y: r.y + s }; });
+    rs.map((r) => {
+      const s = shiftAt(r.y);
+      return s === 0 ? r : { ...r, y: r.y + s };
+    });
 
   const lines: LineBox[] = L.lines.map((ln) => {
     const s = shiftAt(ln.top); // 行作刚体平移：top/bottom/baseline 同 shift

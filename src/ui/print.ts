@@ -57,9 +57,11 @@ const escTitle = (s: string): string =>
  * @internal
  */
 export function buildPrintHtml(doc: Doc, title = '文档'): string {
-  return '<!doctype html>\n<html lang="zh">\n<head>\n<meta charset="utf-8" />\n'
-    + `<title>${escTitle(title)}</title>\n<style>${PRINT_CSS}</style>\n</head>\n<body>\n`
-    + `${toHtml(doc)}\n</body>\n</html>`;
+  return (
+    '<!doctype html>\n<html lang="zh">\n<head>\n<meta charset="utf-8" />\n' +
+    `<title>${escTitle(title)}</title>\n<style>${PRINT_CSS}</style>\n</head>\n<body>\n` +
+    `${toHtml(doc)}\n</body>\n</html>`
+  );
 }
 
 /** 图片落定等待上限（ms）：跨域/坏链/慢图超时后照常打印，不无限阻塞。 */
@@ -82,7 +84,12 @@ function whenImagesSettled(d: Document, timeoutMs: number): Promise<void> {
   return new Promise((resolve) => {
     let left = pending.length;
     const timer = setTimeout(resolve, timeoutMs);
-    const settle = (): void => { if (--left === 0) { clearTimeout(timer); resolve(); } };
+    const settle = (): void => {
+      if (--left === 0) {
+        clearTimeout(timer);
+        resolve();
+      }
+    };
     for (const img of pending) {
       img.addEventListener('load', settle, { once: true });
       img.addEventListener('error', settle, { once: true });
@@ -97,21 +104,39 @@ function adoptPrintCss(win: Window, fdoc: Document): void {
     const sheet = new (win as Window & typeof globalThis).CSSStyleSheet();
     sheet.replaceSync(PRINT_CSS);
     fdoc.adoptedStyleSheets = [...fdoc.adoptedStyleSheets, sheet];
-  } catch { /* 旧引擎无构造样式表：维持 <style> 路径 */ }
+  } catch {
+    /* 旧引擎无构造样式表：维持 <style> 路径 */
+  }
 }
 
 // iframe onload 后的打印编排：补 CSSOM 样式 → 等图片落定 → focus + print → afterprint/超时回收。
 async function firePrint(frame: HTMLIFrameElement): Promise<void> {
   const win = frame.contentWindow;
   const fdoc = frame.contentDocument;
-  if (!win || !fdoc) { removeActiveFrame(); return; }
+  if (!win || !fdoc) {
+    removeActiveFrame();
+    return;
+  }
   adoptPrintCss(win, fdoc);
   await whenImagesSettled(fdoc, IMAGE_SETTLE_TIMEOUT_MS);
   if (frame !== activeFrame) return; // 等待期间被更新的打印替换
-  win.addEventListener('afterprint', () => { if (frame === activeFrame) removeActiveFrame(); }, { once: true });
+  win.addEventListener(
+    'afterprint',
+    () => {
+      if (frame === activeFrame) removeActiveFrame();
+    },
+    { once: true },
+  );
   // 兜底回收：部分引擎 print() 立即返回且 afterprint 不可靠；超时后移除（系统对话框已持有快照）。
-  setTimeout(() => { if (frame === activeFrame) removeActiveFrame(); }, CLEANUP_FALLBACK_MS);
-  try { win.focus(); win.print(); } catch { removeActiveFrame(); }
+  setTimeout(() => {
+    if (frame === activeFrame) removeActiveFrame();
+  }, CLEANUP_FALLBACK_MS);
+  try {
+    win.focus();
+    win.print();
+  } catch {
+    removeActiveFrame();
+  }
 }
 
 /**
@@ -128,7 +153,9 @@ export function printDoc(doc: Doc, title?: string): void {
   frame.setAttribute('aria-hidden', 'true');
   frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
   frame.srcdoc = buildPrintHtml(doc, title);
-  frame.addEventListener('load', () => { void firePrint(frame); });
+  frame.addEventListener('load', () => {
+    void firePrint(frame);
+  });
   activeFrame = frame;
   document.body.appendChild(frame);
 }

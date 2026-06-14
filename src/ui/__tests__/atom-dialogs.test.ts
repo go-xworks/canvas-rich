@@ -11,8 +11,8 @@ import { loadUserTemplates, USER_TEMPLATES_KEY } from '../../model/templates';
 interface Harness {
   rd: RichDoc;
   dialogs: AtomDialogs;
-  prompts: (string | null)[];        // promptDialog.ask 的应答队列（耗尽则返回 null=取消）
-  promptCalls: PromptOptions[];      // ask 实参记录（断言标题/预填值）
+  prompts: (string | null)[]; // promptDialog.ask 的应答队列（耗尽则返回 null=取消）
+  promptCalls: PromptOptions[]; // ask 实参记录（断言标题/预填值）
   log: { afterEdit: number; announces: string[]; focus: number };
   setImage(src: string | null): void;
   setSignature(src: string | null): void;
@@ -28,17 +28,37 @@ function harness(doc: Doc): Harness {
   const log = { afterEdit: 0, announces: [] as string[], focus: 0 };
   const dialogs = createAtomDialogs({
     rd,
-    promptDialog: { ask: async (opts) => { promptCalls.push(opts); return prompts.length ? prompts.shift()! : null; }, destroy: () => {} },
+    promptDialog: {
+      ask: async (opts) => {
+        promptCalls.push(opts);
+        return prompts.length ? prompts.shift()! : null;
+      },
+      destroy: () => {},
+    },
     imageDialog: { open: async () => imageSrc, destroy: () => {} },
     signatureDialog: { open: async () => signatureSrc, destroy: () => {} },
-    afterEdit: () => { log.afterEdit++; },
-    announce: (m) => { log.announces.push(m); },
-    focusEditor: () => { log.focus++; },
+    afterEdit: () => {
+      log.afterEdit++;
+    },
+    announce: (m) => {
+      log.announces.push(m);
+    },
+    focusEditor: () => {
+      log.focus++;
+    },
   });
   return {
-    rd, dialogs, prompts, promptCalls, log,
-    setImage: (s) => { imageSrc = s; },
-    setSignature: (s) => { signatureSrc = s; },
+    rd,
+    dialogs,
+    prompts,
+    promptCalls,
+    log,
+    setImage: (s) => {
+      imageSrc = s;
+    },
+    setSignature: (s) => {
+      signatureSrc = s;
+    },
   };
 }
 
@@ -241,11 +261,19 @@ describe('importDoc / saveTemplate（文档级弹层）', () => {
       const store = new Map<string, string>();
       g.localStorage = {
         getItem: (k: string) => store.get(k) ?? null,
-        setItem: (k: string, v: string) => { store.set(k, v); },
-        removeItem: (k: string) => { store.delete(k); },
-        clear: () => { store.clear(); },
+        setItem: (k: string, v: string) => {
+          store.set(k, v);
+        },
+        removeItem: (k: string) => {
+          store.delete(k);
+        },
+        clear: () => {
+          store.clear();
+        },
         key: () => null,
-        get length() { return store.size; },
+        get length() {
+          return store.size;
+        },
       } as Storage;
     }
     g.localStorage!.removeItem(USER_TEMPLATES_KEY);

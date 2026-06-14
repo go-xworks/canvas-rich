@@ -28,15 +28,28 @@ export function embeddingLevels(text: string, base: 'ltr' | 'rtl'): number[] {
 export function visualOrder(levels: number[]): number[] {
   const n = levels.length;
   const order = Array.from({ length: n }, (_, i) => i);
-  let maxL = 0, minOdd = Infinity;
-  for (const l of levels) { if (l > maxL) maxL = l; if (l % 2 && l < minOdd) minOdd = l; }
+  let maxL = 0,
+    minOdd = Infinity;
+  for (const l of levels) {
+    if (l > maxL) maxL = l;
+    if (l % 2 && l < minOdd) minOdd = l;
+  }
   if (!isFinite(minOdd)) return order; // 全偶（纯 LTR）→ 不重排
   for (let lvl = maxL; lvl >= minOdd; lvl--) {
     let i = 0;
     while (i < n) {
       if (levels[i] >= lvl) {
-        let j = i; while (j + 1 < n && levels[j + 1] >= lvl) j++;
-        let a = i, b = j; while (a < b) { const t = order[a]; order[a] = order[b]; order[b] = t; a++; b--; }
+        let j = i;
+        while (j + 1 < n && levels[j + 1] >= lvl) j++;
+        let a = i,
+          b = j;
+        while (a < b) {
+          const t = order[a];
+          order[a] = order[b];
+          order[b] = t;
+          a++;
+          b--;
+        }
         i = j + 1;
       } else i++;
     }

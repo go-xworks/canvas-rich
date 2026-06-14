@@ -15,7 +15,10 @@ import type { SignatureDialog } from './signature-dialog';
 export type MediaSrcKind = 'audio' | 'video' | 'iframe';
 
 // 媒体 src 弹层配置表：插入与双击「再编辑」共用同一份文案/占位/写回方法（配置驱动，消除逐 kind 重复样板）。
-const MEDIA_SRC_CONFIG: Record<MediaSrcKind, { label: string; placeholder: string; insert(rd: RichDoc, src: string): void }> = {
+const MEDIA_SRC_CONFIG: Record<
+  MediaSrcKind,
+  { label: string; placeholder: string; insert(rd: RichDoc, src: string): void }
+> = {
   audio: { label: '音频', placeholder: 'https://example.com/audio.mp3', insert: (rd, src) => rd.insertAudio(src) },
   video: { label: '视频', placeholder: 'https://example.com/video.mp4', insert: (rd, src) => rd.insertVideo(src) },
   iframe: { label: '内嵌网页', placeholder: 'https://example.com', insert: (rd, src) => rd.insertIframe(src) },
@@ -71,51 +74,93 @@ export function createAtomDialogs(deps: AtomDialogDeps): AtomDialogs {
   return {
     async insertImage() {
       const src = await imageDialog.open(); // 富弹层：本地上传/拖拽 + URL + 预览
-      if (src) { rd.insertImage(src); afterEdit(); announce('已插入图片'); }
+      if (src) {
+        rd.insertImage(src);
+        afterEdit();
+        announce('已插入图片');
+      }
       focusEditor();
     },
     async insertInlineImage() {
       const src = await imageDialog.open(); // 复用图片弹层（本地/URL/预览）
-      if (src) { rd.insertInlineImage(src); afterEdit(); announce('已插入行内图片'); }
+      if (src) {
+        rd.insertInlineImage(src);
+        afterEdit();
+        announce('已插入行内图片');
+      }
       focusEditor();
     },
     async insertFormula() {
-      const tex = await promptDialog.ask({ title: '插入公式（LaTeX）', value: 'e = mc^2', placeholder: '\\frac{a}{b}', multiline: true });
-      if (tex) { rd.insertFormula(tex); afterEdit(); announce('已插入公式'); }
+      const tex = await promptDialog.ask({
+        title: '插入公式（LaTeX）',
+        value: 'e = mc^2',
+        placeholder: '\\frac{a}{b}',
+        multiline: true,
+      });
+      if (tex) {
+        rd.insertFormula(tex);
+        afterEdit();
+        announce('已插入公式');
+      }
       focusEditor();
     },
     // 媒体对象：音频 / 视频 / 内嵌网页(iframe)，均经 promptDialog 取 URL。
     async insertMedia(kind: MediaSrcKind) {
       const cfg = MEDIA_SRC_CONFIG[kind];
       const src = await promptForSrc(`插入${cfg.label}`, cfg.placeholder);
-      if (src) { cfg.insert(rd, src); afterEdit(); announce(`已插入${cfg.label}`); }
+      if (src) {
+        cfg.insert(rd, src);
+        afterEdit();
+        announce(`已插入${cfg.label}`);
+      }
       focusEditor();
     },
     async insertAttachment() {
-      const src = await promptDialog.ask({ title: '插入附件', value: 'https://', placeholder: 'https://example.com/file.pdf' });
-      if (!src) { focusEditor(); return; }
+      const src = await promptDialog.ask({
+        title: '插入附件',
+        value: 'https://',
+        placeholder: 'https://example.com/file.pdf',
+      });
+      if (!src) {
+        focusEditor();
+        return;
+      }
       const name = await promptDialog.ask({ title: '附件文件名', placeholder: 'file.pdf', okLabel: '插入' });
-      rd.insertAttachment(src, name?.trim() || undefined); afterEdit(); announce('已插入附件');
+      rd.insertAttachment(src, name?.trim() || undefined);
+      afterEdit();
+      announce('已插入附件');
       focusEditor();
     },
     // 电子签名：弹画板手绘 → 确定产 PNG dataURL → 作为签名原子块插入。
     async insertSignature() {
       const src = await signatureDialog.open();
-      if (src) { rd.insertSignature(src); afterEdit(); announce('已插入电子签名'); }
+      if (src) {
+        rd.insertSignature(src);
+        afterEdit();
+        announce('已插入电子签名');
+      }
       focusEditor();
     },
     // 印章：promptDialog 取印章文字（单位/公司名）→ 插入印章原子块（覆盖层生成红色公章 SVG）。
     async insertSeal() {
       const text = await promptDialog.ask({ title: '插入印章', placeholder: '某某有限公司', okLabel: '生成' });
-      if (text && text.trim()) { rd.insertSeal(text.trim()); afterEdit(); announce('已插入印章'); }
+      if (text && text.trim()) {
+        rd.insertSeal(text.trim());
+        afterEdit();
+        announce('已插入印章');
+      }
       focusEditor();
     },
     insertTextbox() {
-      rd.insertTextbox(); afterEdit(); announce('已插入文本框');
+      rd.insertTextbox();
+      afterEdit();
+      announce('已插入文本框');
     },
     // 表格经工具栏网格选择器直接给出行列数（无弹层，归口原子插入族统一收尾）。
     insertTable(rows: number, cols: number) {
-      rd.insertTable(rows, cols); afterEdit(); announce(`已插入 ${rows} 行 ${cols} 列表格`);
+      rd.insertTable(rows, cols);
+      afterEdit();
+      announce(`已插入 ${rows} 行 ${cols} 列表格`);
       focusEditor();
     },
     /**
@@ -129,42 +174,85 @@ export function createAtomDialogs(deps: AtomDialogDeps): AtomDialogs {
       const a = blk.attrs;
       switch (kind) {
         case 'formula': {
-          const latex = await promptDialog.ask({ title: '编辑公式（LaTeX）', value: a.latex ?? '', placeholder: '\\frac{a}{b}', multiline: true });
-          if (latex !== null) { rd.updateAtomAttrs(blockIndex, { latex }); afterEdit(); announce('已更新公式'); }
+          const latex = await promptDialog.ask({
+            title: '编辑公式（LaTeX）',
+            value: a.latex ?? '',
+            placeholder: '\\frac{a}{b}',
+            multiline: true,
+          });
+          if (latex !== null) {
+            rd.updateAtomAttrs(blockIndex, { latex });
+            afterEdit();
+            announce('已更新公式');
+          }
           break;
         }
         case 'seal': {
-          const text = await promptDialog.ask({ title: '编辑印章', value: a.text ?? '', placeholder: '某某有限公司', okLabel: '生成' });
-          if (text !== null && text.trim()) { rd.updateAtomAttrs(blockIndex, { text: text.trim() }); afterEdit(); announce('已更新印章'); }
+          const text = await promptDialog.ask({
+            title: '编辑印章',
+            value: a.text ?? '',
+            placeholder: '某某有限公司',
+            okLabel: '生成',
+          });
+          if (text !== null && text.trim()) {
+            rd.updateAtomAttrs(blockIndex, { text: text.trim() });
+            afterEdit();
+            announce('已更新印章');
+          }
           break;
         }
-        case 'iframe': case 'audio': case 'video': {
+        case 'iframe':
+        case 'audio':
+        case 'video': {
           // 媒体 src 再编辑：与插入共用 MEDIA_SRC_CONFIG 文案/占位，弹层预填当前值
           const cfg = MEDIA_SRC_CONFIG[kind];
           const src = await promptForSrc(`编辑${cfg.label}`, cfg.placeholder, a.src);
-          if (src) { rd.updateAtomAttrs(blockIndex, { src }); afterEdit(); announce(`已更新${cfg.label}`); }
+          if (src) {
+            rd.updateAtomAttrs(blockIndex, { src });
+            afterEdit();
+            announce(`已更新${cfg.label}`);
+          }
           break;
         }
         case 'attachment': {
-          const src = await promptDialog.ask({ title: '编辑附件链接', value: a.src ?? 'https://', placeholder: 'https://example.com/file.pdf' });
+          const src = await promptDialog.ask({
+            title: '编辑附件链接',
+            value: a.src ?? 'https://',
+            placeholder: 'https://example.com/file.pdf',
+          });
           if (src) {
-            const name = await promptDialog.ask({ title: '附件文件名', value: a.name ?? '', placeholder: 'file.pdf', okLabel: '保存' });
+            const name = await promptDialog.ask({
+              title: '附件文件名',
+              value: a.name ?? '',
+              placeholder: 'file.pdf',
+              okLabel: '保存',
+            });
             rd.updateAtomAttrs(blockIndex, { src, name: name?.trim() || undefined });
-            afterEdit(); announce('已更新附件');
+            afterEdit();
+            announce('已更新附件');
           }
           break;
         }
         case 'image': {
           const src = await imageDialog.open(); // 复用图片弹层（本地/URL/预览）
-          if (src) { rd.updateAtomAttrs(blockIndex, { src }); afterEdit(); announce('已更新图片'); }
+          if (src) {
+            rd.updateAtomAttrs(blockIndex, { src });
+            afterEdit();
+            announce('已更新图片');
+          }
           break;
         }
         case 'signature': {
           const src = await signatureDialog.open(); // 重画签名
-          if (src) { rd.updateAtomAttrs(blockIndex, { src }); afterEdit(); announce('已更新电子签名'); }
+          if (src) {
+            rd.updateAtomAttrs(blockIndex, { src });
+            afterEdit();
+            announce('已更新电子签名');
+          }
           break;
         }
-        default: break; // shape/table/textbox 不走再编辑弹层
+        default:
+          break; // shape/table/textbox 不走再编辑弹层
       }
       focusEditor();
     },

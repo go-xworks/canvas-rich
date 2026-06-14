@@ -20,7 +20,14 @@ describe('insert*：src 经白名单过滤', () => {
     rd.insertAttachment('https://e.com/f.pdf', 'f.pdf');
     rd.insertSignature(PNG); // data:image 对 signature 合法
     const srcs = rd.doc.blocks.slice(1).map((b) => b.attrs.src);
-    expect(srcs).toEqual(['https://e.com/a.png', 'https://e.com/a.mp3', 'https://e.com/v.mp4', 'https://e.com', 'https://e.com/f.pdf', PNG]);
+    expect(srcs).toEqual([
+      'https://e.com/a.png',
+      'https://e.com/a.mp3',
+      'https://e.com/v.mp4',
+      'https://e.com',
+      'https://e.com/f.pdf',
+      PNG,
+    ]);
   });
 
   it('javascript: 一律降级为空串（块仍插入，结构不变）', () => {

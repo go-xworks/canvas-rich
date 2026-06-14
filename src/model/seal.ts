@@ -36,23 +36,26 @@ function starPoints(cx: number, cy: number, rOut: number): string {
  */
 export function sealSvg(text: string, size = SEAL_SIZE): string {
   const s = size;
-  const cx = s / 2, cy = s / 2;
-  const ringW = Math.max(2, s * 0.03);           // 外环线宽
-  const rRing = s / 2 - ringW;                   // 外环半径（留出线宽不被裁切）
-  const rText = rRing - Math.max(6, s * 0.09);   // 文字基线所在弧半径（位于环内侧）
+  const cx = s / 2,
+    cy = s / 2;
+  const ringW = Math.max(2, s * 0.03); // 外环线宽
+  const rRing = s / 2 - ringW; // 外环半径（留出线宽不被裁切）
+  const rText = rRing - Math.max(6, s * 0.09); // 文字基线所在弧半径（位于环内侧）
   const fontSize = Math.max(8, s * 0.12);
   const star = starPoints(cx, cy, s * 0.16);
   // 文字弧：上半圆，从左下绕到右下（sweep=1），令 textPath 居中(50%)时文字头朝上、可读。
   const arc = `M ${(cx - rText).toFixed(2)} ${cy.toFixed(2)} A ${rText.toFixed(2)} ${rText.toFixed(2)} 0 1 1 ${(cx + rText).toFixed(2)} ${cy.toFixed(2)}`;
   const label = escXml(text);
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}">`
-    + `<defs><path id="seal-arc" d="${arc}"/></defs>`
-    + `<circle cx="${cx}" cy="${cy}" r="${rRing.toFixed(2)}" fill="none" stroke="${SEAL_RED}" stroke-width="${ringW.toFixed(2)}"/>`
-    + `<polygon points="${star}" fill="${SEAL_RED}"/>`
-    + `<text fill="${SEAL_RED}" font-family="serif" font-weight="bold" font-size="${fontSize.toFixed(2)}" `
-    + `letter-spacing="${(s * 0.01).toFixed(2)}" text-anchor="middle">`
-    + `<textPath href="#seal-arc" startOffset="50%">${label}</textPath></text>`
-    + `</svg>`;
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" viewBox="0 0 ${s} ${s}">` +
+    `<defs><path id="seal-arc" d="${arc}"/></defs>` +
+    `<circle cx="${cx}" cy="${cy}" r="${rRing.toFixed(2)}" fill="none" stroke="${SEAL_RED}" stroke-width="${ringW.toFixed(2)}"/>` +
+    `<polygon points="${star}" fill="${SEAL_RED}"/>` +
+    `<text fill="${SEAL_RED}" font-family="serif" font-weight="bold" font-size="${fontSize.toFixed(2)}" ` +
+    `letter-spacing="${(s * 0.01).toFixed(2)}" text-anchor="middle">` +
+    `<textPath href="#seal-arc" startOffset="50%">${label}</textPath></text>` +
+    `</svg>`
+  );
 }
 
 /**

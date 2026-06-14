@@ -66,10 +66,7 @@ describe('RichDoc.insertInlineImage', () => {
   });
 
   it('停在原子块上插入行内图片 → 在其后新建段落承载', () => {
-    const rd = rdOf(
-      para([text('p')]),
-      block('image', [text('')], { src: 'block.png' }),
-    );
+    const rd = rdOf(para([text('p')]), block('image', [text('')], { src: 'block.png' }));
     rd.setSel({ block: 1, offset: 0 }); // 选中块级图片
     rd.insertInlineImage('inl.png');
     // 新段落插在块级图片之后

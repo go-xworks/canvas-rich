@@ -109,10 +109,7 @@ describe('export 列表 depth 缩进', () => {
   });
 
   it('toHtml 按 depth 给 li 加 margin-left', () => {
-    const d = doc(
-      block('bullet_item', [text('a')]),
-      block('bullet_item', [text('b')], { depth: 2 }),
-    );
+    const d = doc(block('bullet_item', [text('a')]), block('bullet_item', [text('b')], { depth: 2 }));
     const html = toHtml(d);
     expect(html).toContain('<li>a</li>');
     expect(html).toContain('margin-left:3em'); // depth 2 → 2 * 1.5em

@@ -9,7 +9,11 @@ import { ShelfPacker, unionRect } from './shelf-packer';
 // 巨字形夹紧降采样光栅 → 尺寸性 alloc 失败不复存在 → 「满载每帧全清重栅」死循环解除。
 
 /** 某样式的字体度量（设备像素）：上升/下降高度与建议行高，与具体字形无关。 @public */
-export interface FontMetrics { ascent: number; descent: number; lineHeight: number; }
+export interface FontMetrics {
+  ascent: number;
+  descent: number;
+  lineHeight: number;
+}
 
 const PAGE_SIZE = 2048;
 const MAX_PAGES = 8; // 8 页 × ~2000 字形 ≈ 1.6 万槽位：覆盖常用 CJK + 多字号/粗体变体
@@ -23,7 +27,11 @@ interface AtlasPage {
 }
 
 /** 单页脏区上传单元：页号 + 该页画布 + 自上次上传以来的脏矩形并集。 @public */
-export interface DirtyPage { page: number; canvas: HTMLCanvasElement; rect: AtlasRect }
+export interface DirtyPage {
+  page: number;
+  canvas: HTMLCanvasElement;
+  rect: AtlasRect;
+}
 
 /** 字形图集：按需把字符+样式光栅成位图并打包进多页纹理画布，供渲染层按页上传 GPU 纹理。 @public */
 export class GlyphAtlas {
@@ -57,7 +65,9 @@ export class GlyphAtlas {
   }
 
   /** 当前已开页数（≤ maxPages）。 @public */
-  get pageCount(): number { return this.pages.length; }
+  get pageCount(): number {
+    return this.pages.length;
+  }
 
   /**
    * 更新渲染比例（有效 dpr = 设备 dpr × 功能性缩放）：清空字形与度量缓存并整体复位，
@@ -87,7 +97,11 @@ export class GlyphAtlas {
 
   // 图集刚发生过整体复位（全页满载逐出 / setDpr）→ 上层应触发一次重排，让已放置字形重新光栅
   /** 取并清除「整体复位」标记；为 true 时上层须重排，让已放置字形重新光栅。 @public */
-  consumeReset(): boolean { const r = this._reset; this._reset = false; return r; }
+  consumeReset(): boolean {
+    const r = this._reset;
+    this._reset = false;
+    return r;
+  }
 
   /**
    * 全部页的整页上传单元（rect=整页），不动各页脏矩形。
@@ -95,7 +109,11 @@ export class GlyphAtlas {
    * @public
    */
   fullPages(): DirtyPage[] {
-    return this.pages.map((p, i) => ({ page: i, canvas: p.canvas, rect: { x: 0, y: 0, w: this.pageSize, h: this.pageSize } }));
+    return this.pages.map((p, i) => ({
+      page: i,
+      canvas: p.canvas,
+      rect: { x: 0, y: 0, w: this.pageSize, h: this.pageSize },
+    }));
   }
 
   // 整体复位：清空所有字形与各页画布，重置打包游标并重画白块（最简「全量逐出」兜底，
@@ -115,7 +133,9 @@ export class GlyphAtlas {
 
   // 按 key 取已缓存字形（HarfBuzz 路径用，避免重复算 extents/path）
   /** 按 key 取已缓存字形，未命中返回 undefined（HarfBuzz 路径复用，避免重复算 extents/path）。 @public */
-  getById(key: string): GlyphInfo | undefined { return this.glyphs.get(key); }
+  getById(key: string): GlyphInfo | undefined {
+    return this.glyphs.get(key);
+  }
 
   // 取某样式的字体度量（行高用，与具体字形无关；度量固定用 page0 上下文）
   /** 取并缓存某样式的字体度量（行高用，与具体字形无关）。 @public */
@@ -128,7 +148,9 @@ export class GlyphAtlas {
     ctx.textBaseline = 'alphabetic';
     const tm = ctx.measureText('Mg');
     const ascent = Math.ceil(tm.fontBoundingBoxAscent || tm.actualBoundingBoxAscent || style.fontSize * this.dpr * 0.8);
-    const descent = Math.ceil(tm.fontBoundingBoxDescent || tm.actualBoundingBoxDescent || style.fontSize * this.dpr * 0.2);
+    const descent = Math.ceil(
+      tm.fontBoundingBoxDescent || tm.actualBoundingBoxDescent || style.fontSize * this.dpr * 0.2,
+    );
     m = { ascent, descent, lineHeight: Math.ceil((ascent + descent) * 1.25) };
     this.metrics.set(key, m);
     return m;
@@ -174,7 +196,20 @@ export class GlyphAtlas {
     const sh = Math.min(this.packer.maxContent, Math.max(1, Math.ceil(h * k)));
     const slot = this.alloc(sw, sh);
     if (!slot) {
-      return { u0: 0, v0: 0, u1: 0, v1: 0, page: 0, w: 0, h: 0, bearingX: 0, bearingY: 0, advance, empty: true, exhausted: true };
+      return {
+        u0: 0,
+        v0: 0,
+        u1: 0,
+        v1: 0,
+        page: 0,
+        w: 0,
+        h: 0,
+        bearingX: 0,
+        bearingY: 0,
+        advance,
+        empty: true,
+        exhausted: true,
+      };
     }
     const { page, ox, oy } = slot;
     const ctx = this.pages[page].ctx;
@@ -200,7 +235,8 @@ export class GlyphAtlas {
       u1: (ox + sw) / this.pageSize,
       v1: (oy + sh) / this.pageSize,
       page,
-      w, h,
+      w,
+      h,
       bearingX: -(tm.actualBoundingBoxLeft || 0),
       bearingY: asc,
       advance,
@@ -222,14 +258,39 @@ export class GlyphAtlas {
 
     let g: GlyphInfo;
     if (info.empty || info.w <= 0 || info.h <= 0) {
-      g = { u0: 0, v0: 0, u1: 0, v1: 0, page: 0, w: 0, h: 0, bearingX: info.bearingX, bearingY: info.bearingY, advance: info.advance, empty: true };
+      g = {
+        u0: 0,
+        v0: 0,
+        u1: 0,
+        v1: 0,
+        page: 0,
+        w: 0,
+        h: 0,
+        bearingX: info.bearingX,
+        bearingY: info.bearingY,
+        advance: info.advance,
+        empty: true,
+      };
     } else {
       const k = Math.min(1, this.packer.maxContent / Math.max(info.w, info.h));
       const sw = Math.min(this.packer.maxContent, Math.max(1, Math.ceil(info.w * k)));
       const sh = Math.min(this.packer.maxContent, Math.max(1, Math.ceil(info.h * k)));
       const slot = this.alloc(sw, sh);
       if (!slot) {
-        g = { u0: 0, v0: 0, u1: 0, v1: 0, page: 0, w: 0, h: 0, bearingX: info.bearingX, bearingY: info.bearingY, advance: info.advance, empty: true, exhausted: true };
+        g = {
+          u0: 0,
+          v0: 0,
+          u1: 0,
+          v1: 0,
+          page: 0,
+          w: 0,
+          h: 0,
+          bearingX: info.bearingX,
+          bearingY: info.bearingY,
+          advance: info.advance,
+          empty: true,
+          exhausted: true,
+        };
       } else {
         const ctx = this.pages[slot.page].ctx;
         if (k < 1) {
@@ -244,10 +305,17 @@ export class GlyphAtlas {
           draw(ctx, slot.ox, slot.oy);
         }
         g = {
-          u0: slot.ox / this.pageSize, v0: slot.oy / this.pageSize,
-          u1: (slot.ox + sw) / this.pageSize, v1: (slot.oy + sh) / this.pageSize,
+          u0: slot.ox / this.pageSize,
+          v0: slot.oy / this.pageSize,
+          u1: (slot.ox + sw) / this.pageSize,
+          v1: (slot.oy + sh) / this.pageSize,
           page: slot.page,
-          w: info.w, h: info.h, bearingX: info.bearingX, bearingY: info.bearingY, advance: info.advance, empty: false,
+          w: info.w,
+          h: info.h,
+          bearingX: info.bearingX,
+          bearingY: info.bearingY,
+          advance: info.advance,
+          empty: false,
         };
       }
     }

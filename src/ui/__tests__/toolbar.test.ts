@@ -43,9 +43,7 @@ describe('numInput titles map to TIP_DESC keys (no duplicate / mismatched keys)'
   });
 
   it('exposes exactly the three paragraph numeric inputs with px titles', () => {
-    expect(NUM_INPUT_DEFS.map(([, t]) => t)).toEqual([
-      '段前间距 (px)', '段后间距 (px)', '字间距 (px)',
-    ]);
+    expect(NUM_INPUT_DEFS.map(([, t]) => t)).toEqual(['段前间距 (px)', '段后间距 (px)', '字间距 (px)']);
   });
 
   it('has no dead pre-dedup keys left in TIP_DESC', () => {

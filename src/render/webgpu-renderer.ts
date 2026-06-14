@@ -39,7 +39,12 @@ fn fs(in: VSOut) -> @location(0) vec4<f32> {
 `;
 
 // 一页图集的 GPU 侧资源：纹理 + 引用它的 bindGroup（uniform/sampler 共享，仅 view 不同）。
-interface PageTexture { tex: GPUTexture; bindGroup: GPUBindGroup; w: number; h: number }
+interface PageTexture {
+  tex: GPUTexture;
+  bindGroup: GPUBindGroup;
+  w: number;
+  h: number;
+}
 
 /** Renderer 的 WebGPU 实现，作为首选后端（构造经 async create）。 @public */
 export class WebGPURenderer implements Renderer {
@@ -52,7 +57,7 @@ export class WebGPURenderer implements Renderer {
   private uniformBuf: GPUBuffer;
 
   private vbo: GPUBuffer | null = null;
-  private vboFloats = 0;       // 当前 vbo 容量（以 float 计）
+  private vboFloats = 0; // 当前 vbo 容量（以 float 计）
   private cpu = new Float32Array(0);
 
   private pagesTex: (PageTexture | null)[] = []; // 每图集页一张纹理 + bindGroup，惰性创建
@@ -100,26 +105,30 @@ export class WebGPURenderer implements Renderer {
       vertex: {
         module,
         entryPoint: 'vs',
-        buffers: [{
-          arrayStride: stride,
-          attributes: [
-            { shaderLocation: 0, offset: 0, format: 'float32x2' },   // aPos
-            { shaderLocation: 1, offset: 8, format: 'float32x2' },   // aUV
-            { shaderLocation: 2, offset: 16, format: 'float32x4' },  // aColor
-          ],
-        }],
+        buffers: [
+          {
+            arrayStride: stride,
+            attributes: [
+              { shaderLocation: 0, offset: 0, format: 'float32x2' }, // aPos
+              { shaderLocation: 1, offset: 8, format: 'float32x2' }, // aUV
+              { shaderLocation: 2, offset: 16, format: 'float32x4' }, // aColor
+            ],
+          },
+        ],
       },
       fragment: {
         module,
         entryPoint: 'fs',
-        targets: [{
-          format,
-          // 标准 src_alpha / one_minus_src_alpha，与 WebGL2 blendFunc 一致
-          blend: {
-            color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add' },
-            alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' },
+        targets: [
+          {
+            format,
+            // 标准 src_alpha / one_minus_src_alpha，与 WebGL2 blendFunc 一致
+            blend: {
+              color: { srcFactor: 'src-alpha', dstFactor: 'one-minus-src-alpha', operation: 'add' },
+              alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' },
+            },
           },
-        }],
+        ],
       },
       primitive: { topology: 'triangle-list' },
     });
@@ -160,9 +169,7 @@ export class WebGPURenderer implements Renderer {
       const tex = device.createTexture({
         size: { width, height },
         format: 'rgba8unorm',
-        usage: GPUTextureUsage.TEXTURE_BINDING
-          | GPUTextureUsage.COPY_DST
-          | GPUTextureUsage.RENDER_ATTACHMENT,
+        usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.RENDER_ATTACHMENT,
       });
       pt = this.pagesTex[page] = { tex, bindGroup: this.createBindGroup(tex), w: width, h: height };
       full = true; // 新建纹理无旧内容，必须整页打底
@@ -222,12 +229,14 @@ export class WebGPURenderer implements Renderer {
     const view = this.context.getCurrentTexture().createView();
     const encoder = device.createCommandEncoder();
     const pass = encoder.beginRenderPass({
-      colorAttachments: [{
-        view,
-        clearValue: { r: clear[0], g: clear[1], b: clear[2], a: clear[3] },
-        loadOp: 'clear',
-        storeOp: 'store',
-      }],
+      colorAttachments: [
+        {
+          view,
+          clearValue: { r: clear[0], g: clear[1], b: clear[2], a: clear[3] },
+          loadOp: 'clear',
+          storeOp: 'store',
+        },
+      ],
     });
 
     // quads 为空也已执行一次 clear；有内容才绘制。

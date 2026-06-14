@@ -18,7 +18,13 @@ import type { DocLayout, LineBox } from '../text/doc-layout';
  * @public
  */
 export function affinityAt(layout: DocLayout | null, pos: Pos, ln: LineBox | null): 'before' | 'after' {
-  if (layout && ln && pos.offset === ln.endOffset && layout.lines.some((l) => l.block === ln.block && l !== ln && l.startOffset === pos.offset)) return 'before';
+  if (
+    layout &&
+    ln &&
+    pos.offset === ln.endOffset &&
+    layout.lines.some((l) => l.block === ln.block && l !== ln && l.startOffset === pos.offset)
+  )
+    return 'before';
   return 'after';
 }
 
@@ -29,8 +35,13 @@ export function affinityAt(layout: DocLayout | null, pos: Pos, ln: LineBox | nul
  */
 export function blockBounds(layout: DocLayout | null, b: number): { top: number; bottom: number } | null {
   if (!layout) return null;
-  let top = Infinity, bottom = -Infinity;
-  for (const l of layout.lines) if (l.block === b) { top = Math.min(top, l.top); bottom = Math.max(bottom, l.bottom); }
+  let top = Infinity,
+    bottom = -Infinity;
+  for (const l of layout.lines)
+    if (l.block === b) {
+      top = Math.min(top, l.top);
+      bottom = Math.max(bottom, l.bottom);
+    }
   return isFinite(top) ? { top, bottom } : null;
 }
 
@@ -80,8 +91,13 @@ export function tocLineHit(layout: DocLayout | null, cy: number): number {
  * @public
  */
 export function taskCheckboxHit(
-  layout: DocLayout | null, doc: Doc, resolver: StyleResolver,
-  padL: number, scale: number, px: number, cy: number,
+  layout: DocLayout | null,
+  doc: Doc,
+  resolver: StyleResolver,
+  padL: number,
+  scale: number,
+  px: number,
+  cy: number,
 ): number {
   if (!layout) return -1;
   for (const ln of layout.lines) {

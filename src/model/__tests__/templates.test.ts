@@ -1,7 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
-  BUILTIN_TEMPLATES, GOV_RED, loadUserTemplates, saveUserTemplate,
-  userTemplateToDocTemplate, USER_TEMPLATES_KEY,
+  BUILTIN_TEMPLATES,
+  GOV_RED,
+  loadUserTemplates,
+  saveUserTemplate,
+  userTemplateToDocTemplate,
+  USER_TEMPLATES_KEY,
 } from '../templates';
 import { Doc, BlockType, getMark, blockTextLen } from '../schema';
 import { isAtom } from '../block-specs';
@@ -9,8 +13,18 @@ import { isAtom } from '../block-specs';
 // 合法 Doc 判定：至少一块、每块类型已注册、每块至少一个 inline（block() 不变量）、
 // 非原子块文本块的 inline 均为 text run。
 const KNOWN_TYPES: BlockType[] = [
-  'paragraph', 'heading', 'bullet_item', 'ordered_item', 'task_item',
-  'blockquote', 'code_block', 'image', 'formula', 'table', 'toc', 'shape',
+  'paragraph',
+  'heading',
+  'bullet_item',
+  'ordered_item',
+  'task_item',
+  'blockquote',
+  'code_block',
+  'image',
+  'formula',
+  'table',
+  'toc',
+  'shape',
 ];
 function expectValidDoc(d: Doc): void {
   expect(d.blocks.length).toBeGreaterThan(0);
@@ -34,7 +48,7 @@ describe('内置模板 build() 产出合法 Doc', () => {
       const a = tpl.build();
       const b = tpl.build();
       expectValidDoc(a);
-      expect(a).not.toBe(b);            // 新对象，互不共享引用
+      expect(a).not.toBe(b); // 新对象，互不共享引用
       expect(a.blocks).not.toBe(b.blocks);
     }
   });
@@ -81,17 +95,30 @@ function ensureLocalStorage(): void {
   if (g.localStorage) return;
   const mem = new Map<string, string>();
   g.localStorage = {
-    get length() { return mem.size; },
+    get length() {
+      return mem.size;
+    },
     clear: () => mem.clear(),
     getItem: (k: string) => (mem.has(k) ? mem.get(k)! : null),
-    setItem: (k: string, v: string) => { mem.set(k, String(v)); },
-    removeItem: (k: string) => { mem.delete(k); },
+    setItem: (k: string, v: string) => {
+      mem.set(k, String(v));
+    },
+    removeItem: (k: string) => {
+      mem.delete(k);
+    },
     key: (i: number) => Array.from(mem.keys())[i] ?? null,
   } as Storage;
 }
 
 describe('用户模板存取（localStorage）', () => {
-  beforeEach(() => { ensureLocalStorage(); try { localStorage.removeItem(USER_TEMPLATES_KEY); } catch { /* no ls */ } });
+  beforeEach(() => {
+    ensureLocalStorage();
+    try {
+      localStorage.removeItem(USER_TEMPLATES_KEY);
+    } catch {
+      /* no ls */
+    }
+  });
 
   it('保存后可读回，同名覆盖', () => {
     const doc1: Doc = { blocks: [{ type: 'paragraph', attrs: {}, inlines: [{ kind: 'text', text: 'A', marks: [] }] }] };
@@ -113,7 +140,9 @@ describe('用户模板存取（localStorage）', () => {
       expect(loadUserTemplates()).toEqual([]);
       localStorage.setItem(USER_TEMPLATES_KEY, '{"a":1}'); // 非数组
       expect(loadUserTemplates()).toEqual([]);
-    } catch { /* 无 localStorage 环境跳过 */ }
+    } catch {
+      /* 无 localStorage 环境跳过 */
+    }
   });
 
   it('userTemplateToDocTemplate 转换出可 build 的 DocTemplate', () => {
@@ -133,26 +162,38 @@ describe('shape 块类型已注册为原子', () => {
 
 // 用户模板反序列化逐块校验（防被篡改/跨版本损坏的条目使 applyTemplate→cloneDoc 崩溃）。
 describe('用户模板反序列化逐块校验', () => {
-  beforeEach(() => { ensureLocalStorage(); try { localStorage.removeItem(USER_TEMPLATES_KEY); } catch { /* no ls */ } });
+  beforeEach(() => {
+    ensureLocalStorage();
+    try {
+      localStorage.removeItem(USER_TEMPLATES_KEY);
+    } catch {
+      /* no ls */
+    }
+  });
 
   const VALID_BLOCK = { type: 'paragraph', attrs: {}, inlines: [{ kind: 'text', text: 'ok', marks: [] }] };
 
   it('被篡改的畸形块被剔除（warn），合法块保留；cloneDoc 不抛', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     try {
-      localStorage.setItem(USER_TEMPLATES_KEY, JSON.stringify([{
-        name: 'T',
-        doc: {
-          blocks: [
-            VALID_BLOCK,
-            { type: 'paragraph', attrs: {} },                          // 缺 inlines → cloneDoc 原会 TypeError
-            { type: 'evil', attrs: {}, inlines: [] },                  // 未注册类型
-            { type: 'paragraph', attrs: 'x', inlines: [] },            // attrs 非对象
-            { type: 'paragraph', attrs: {}, inlines: [{ kind: 'text', text: 1 }] }, // 行内畸形
-            { type: 'table', attrs: { rows: [['no-cell']] }, inlines: [] },         // rows 畸形
-          ],
-        },
-      }]));
+      localStorage.setItem(
+        USER_TEMPLATES_KEY,
+        JSON.stringify([
+          {
+            name: 'T',
+            doc: {
+              blocks: [
+                VALID_BLOCK,
+                { type: 'paragraph', attrs: {} }, // 缺 inlines → cloneDoc 原会 TypeError
+                { type: 'evil', attrs: {}, inlines: [] }, // 未注册类型
+                { type: 'paragraph', attrs: 'x', inlines: [] }, // attrs 非对象
+                { type: 'paragraph', attrs: {}, inlines: [{ kind: 'text', text: 1 }] }, // 行内畸形
+                { type: 'table', attrs: { rows: [['no-cell']] }, inlines: [] }, // rows 畸形
+              ],
+            },
+          },
+        ]),
+      );
       const list = loadUserTemplates();
       expect(list).toHaveLength(1);
       expect(list[0].doc.blocks).toHaveLength(1);
@@ -161,36 +202,55 @@ describe('用户模板反序列化逐块校验', () => {
       // applyTemplate 链路核心（replaceDoc→cloneDoc）对清洗后的 doc 不抛
       const { cloneDoc } = await import('../schema');
       expect(() => cloneDoc(list[0].doc)).not.toThrow();
-    } finally { warn.mockRestore(); }
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   it('全部块畸形的条目整条跳过（warn）', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     try {
-      localStorage.setItem(USER_TEMPLATES_KEY, JSON.stringify([
-        { name: '坏', doc: { blocks: [{ type: 'paragraph' }] } },
-        { name: '好', doc: { blocks: [VALID_BLOCK] } },
-      ]));
+      localStorage.setItem(
+        USER_TEMPLATES_KEY,
+        JSON.stringify([
+          { name: '坏', doc: { blocks: [{ type: 'paragraph' }] } },
+          { name: '好', doc: { blocks: [VALID_BLOCK] } },
+        ]),
+      );
       const list = loadUserTemplates();
       expect(list.map((t) => t.name)).toEqual(['好']);
       expect(warn).toHaveBeenCalled();
-    } finally { warn.mockRestore(); }
+    } finally {
+      warn.mockRestore();
+    }
   });
 
   it('条目级畸形（name 非串 / doc 非对象 / blocks 非数组）静默跳过', () => {
-    localStorage.setItem(USER_TEMPLATES_KEY, JSON.stringify([
-      null, 42, { name: 7, doc: { blocks: [VALID_BLOCK] } },
-      { name: 'x', doc: 'nope' }, { name: 'y', doc: { blocks: 'nope' } },
-      { name: 'z', doc: { blocks: [VALID_BLOCK] } },
-    ]));
+    localStorage.setItem(
+      USER_TEMPLATES_KEY,
+      JSON.stringify([
+        null,
+        42,
+        { name: 7, doc: { blocks: [VALID_BLOCK] } },
+        { name: 'x', doc: 'nope' },
+        { name: 'y', doc: { blocks: 'nope' } },
+        { name: 'z', doc: { blocks: [VALID_BLOCK] } },
+      ]),
+    );
     const list = loadUserTemplates();
     expect(list.map((t) => t.name)).toEqual(['z']);
   });
 
   it('合法块的空 inlines 补空文本段（block 不变量，光标可承载）', () => {
-    localStorage.setItem(USER_TEMPLATES_KEY, JSON.stringify([{
-      name: 'E', doc: { blocks: [{ type: 'paragraph', attrs: {}, inlines: [] }] },
-    }]));
+    localStorage.setItem(
+      USER_TEMPLATES_KEY,
+      JSON.stringify([
+        {
+          name: 'E',
+          doc: { blocks: [{ type: 'paragraph', attrs: {}, inlines: [] }] },
+        },
+      ]),
+    );
     const list = loadUserTemplates();
     expect(list[0].doc.blocks[0].inlines).toHaveLength(1);
     expect(list[0].doc.blocks[0].inlines[0].text).toBe('');

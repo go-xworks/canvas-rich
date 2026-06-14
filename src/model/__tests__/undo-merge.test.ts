@@ -12,7 +12,9 @@ const docText = (rd: RichDoc) => rd.doc.blocks.map((b) => blockText(b));
 function fakeClock(rd: RichDoc): (ms: number) => void {
   let t = 0;
   rd.now = () => t;
-  return (ms) => { t += ms; };
+  return (ms) => {
+    t += ms;
+  };
 }
 
 describe('连续插入合并为一条撤销记录', () => {
@@ -20,7 +22,10 @@ describe('连续插入合并为一条撤销记录', () => {
     const rd = rdOf(para([text('')]));
     const tick = fakeClock(rd);
     rd.setSel({ block: 0, offset: 0 });
-    for (const ch of ['h', 'e', 'l', 'l', 'o']) { rd.insertText(ch); tick(100); }
+    for (const ch of ['h', 'e', 'l', 'l', 'o']) {
+      rd.insertText(ch);
+      tick(100);
+    }
     expect(docText(rd)).toEqual(['hello']);
     rd.undo();
     expect(docText(rd)).toEqual(['']);
@@ -41,7 +46,11 @@ describe('连续插入合并为一条撤销记录', () => {
     const rd = rdOf(para([text('')]));
     const tick = fakeClock(rd);
     rd.setSel({ block: 0, offset: 0 });
-    rd.insertText('a'); tick(50); rd.insertText('b'); tick(50); rd.insertText('c');
+    rd.insertText('a');
+    tick(50);
+    rd.insertText('b');
+    tick(50);
+    rd.insertText('c');
     rd.undo();
     expect(docText(rd)).toEqual(['']);
     rd.redo();
@@ -81,9 +90,10 @@ describe('位置/选区/编辑类型断开合并', () => {
     const rd = rdOf(para([text('xy')]));
     fakeClock(rd);
     rd.setSel({ block: 0, offset: 2 });
-    rd.insertText('a'); rd.insertText('b'); // 合并：'xyab'
+    rd.insertText('a');
+    rd.insertText('b'); // 合并：'xyab'
     rd.setSel({ block: 0, offset: 0 });
-    rd.insertText('z');                     // 新记录：'zxyab'
+    rd.insertText('z'); // 新记录：'zxyab'
     expect(docText(rd)).toEqual(['zxyab']);
     rd.undo();
     expect(docText(rd)).toEqual(['xyab']);
@@ -163,7 +173,11 @@ describe('连续删除合并', () => {
     const rd = rdOf(para([text('abcd')]));
     const tick = fakeClock(rd);
     rd.setSel({ block: 0, offset: 4 });
-    rd.backspace(); tick(80); rd.backspace(); tick(80); rd.backspace();
+    rd.backspace();
+    tick(80);
+    rd.backspace();
+    tick(80);
+    rd.backspace();
     expect(docText(rd)).toEqual(['a']);
     rd.undo();
     expect(docText(rd)).toEqual(['abcd']);
@@ -174,7 +188,11 @@ describe('连续删除合并', () => {
     const rd = rdOf(para([text('abcd')]));
     const tick = fakeClock(rd);
     rd.setSel({ block: 0, offset: 0 });
-    rd.del(); tick(80); rd.del(); tick(80); rd.del();
+    rd.del();
+    tick(80);
+    rd.del();
+    tick(80);
+    rd.del();
     expect(docText(rd)).toEqual(['d']);
     rd.undo();
     expect(docText(rd)).toEqual(['abcd']);
@@ -225,8 +243,8 @@ describe('undo/redo 与合并状态', () => {
     fakeClock(rd);
     rd.setSel({ block: 0, offset: 0 });
     rd.setSel({ block: 0, offset: 5 }, true);
-    rd.insertText('X');        // 替换整词：独立记录
-    rd.insertText('Y');        // 与上一次插入位置衔接 → 合并进同一记录
+    rd.insertText('X'); // 替换整词：独立记录
+    rd.insertText('Y'); // 与上一次插入位置衔接 → 合并进同一记录
     expect(docText(rd)).toEqual(['XY']);
     rd.undo();
     expect(docText(rd)).toEqual(['hello']);
@@ -242,10 +260,10 @@ describe('undo/redo 结构共享：未变块保对象身份', () => {
     rd.setSel({ block: 1, offset: 2 });
     rd.insertText('X');
     rd.undo();
-    expect(blockText(rd.doc.blocks[1])).toBe('bb');     // 内容正确回退
-    expect(rd.doc.blocks[0]).toBe(b0);                  // 未变块：身份复用（缓存命中）
+    expect(blockText(rd.doc.blocks[1])).toBe('bb'); // 内容正确回退
+    expect(rd.doc.blocks[0]).toBe(b0); // 未变块：身份复用（缓存命中）
     expect(rd.doc.blocks[2]).toBe(b2);
-    expect(rd.doc.blocks[1]).not.toBe(b1);              // 被编辑块：快照克隆（b1 已被改动）
+    expect(rd.doc.blocks[1]).not.toBe(b1); // 被编辑块：快照克隆（b1 已被改动）
   });
 
   it('redo 同样结构共享：未变块身份稳定', () => {
@@ -276,10 +294,11 @@ describe('undo/redo 结构共享：未变块保对象身份', () => {
   });
 
   it('原子块（表格）不复用：undo 后换为快照克隆（覆盖层就地回写不 touch，版本相等不充分）', () => {
-    const rd = rdOf(
-      para([text('p')]),
-      { type: 'table', attrs: { rows: [[{ inlines: [text('a')] }]] }, inlines: [text('')] },
-    );
+    const rd = rdOf(para([text('p')]), {
+      type: 'table',
+      attrs: { rows: [[{ inlines: [text('a')] }]] },
+      inlines: [text('')],
+    });
     const tableBlk = rd.doc.blocks[1];
     rd.setSel({ block: 0, offset: 1 });
     rd.insertText('x'); // 编辑无关文本块

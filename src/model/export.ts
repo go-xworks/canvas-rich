@@ -77,9 +77,13 @@ export function inlinesToCellHtml(inlines: Inline[]): string {
 //（escHtml 不触碰换行符，后置替换安全）。
 const cellHtml = (c: TableCell): string => c.inlines.map(runHtml).join('').replace(/\n/g, '<br>');
 const inlinesHtml = (b: Block) => b.inlines.map(runHtml).join('');
-const alignAttr = (b: Block) => (b.attrs.align && b.attrs.align !== 'left' ? ` style="text-align:${b.attrs.align}"` : '');
+const alignAttr = (b: Block) =>
+  b.attrs.align && b.attrs.align !== 'left' ? ` style="text-align:${b.attrs.align}"` : '';
 /** 标题级别夹回 1..6（缺省 1）。 @internal */
-const headingLevel = (b: Block): number => { const l = b.attrs.level ?? 1; return l < 1 ? 1 : l > 6 ? 6 : l; };
+const headingLevel = (b: Block): number => {
+  const l = b.attrs.level ?? 1;
+  return l < 1 ? 1 : l > 6 ? 6 : l;
+};
 
 // 列表项 depth → 缩进类（每级 1.5em）。仅在 depth>0 时输出 style。
 const depthStyle = (b: Block): string => {
@@ -130,7 +134,10 @@ export function toHtml(doc: Doc): string {
     if (b.type === 'bullet_item' || b.type === 'ordered_item') {
       const tag = b.type === 'bullet_item' ? 'ul' : 'ol';
       const items: string[] = [];
-      while (i < bs.length && bs[i].type === b.type) { items.push(`  <li${depthStyle(bs[i])}>${inlinesHtml(bs[i])}</li>`); i++; }
+      while (i < bs.length && bs[i].type === b.type) {
+        items.push(`  <li${depthStyle(bs[i])}>${inlinesHtml(bs[i])}</li>`);
+        i++;
+      }
       out.push(`<${tag}>\n${items.join('\n')}\n</${tag}>`);
       continue;
     }
@@ -147,7 +154,10 @@ export function toHtml(doc: Doc): string {
     }
     if (b.type === 'code_block') {
       const lines: string[] = [];
-      while (i < bs.length && bs[i].type === 'code_block') { lines.push(escHtml(bs[i].inlines.map((r) => r.text).join(''))); i++; }
+      while (i < bs.length && bs[i].type === 'code_block') {
+        lines.push(escHtml(bs[i].inlines.map((r) => r.text).join('')));
+        i++;
+      }
       out.push(`<pre><code>${lines.join('\n')}</code></pre>`);
       continue;
     }
@@ -172,7 +182,7 @@ function runMd(run: Inline): string {
   if (hasMarkType(m, 'highlight')) s = `==${s}==`;
   if (hasMarkType(m, 'underline')) s = `<u>${s}</u>`; // MD 无下划线，回退 HTML
   if (hasMarkType(m, 'superscript')) s = `<sup>${s}</sup>`; // MD 无上标，回退 HTML
-  if (hasMarkType(m, 'subscript')) s = `<sub>${s}</sub>`;  // MD 无下标，回退 HTML
+  if (hasMarkType(m, 'subscript')) s = `<sub>${s}</sub>`; // MD 无下标，回退 HTML
   // fontFamily/fontSize：MD 无对应语法，回退 <span style>（与 toHtml 同形，保 MD↔HTML 不丢）。
   // 同 wrapAppearanceMarks 的值白名单：MD 端拼接未经 escAttr，非法值（CSS 元字符）必须跳过。
   const fontFamily = getMark(m, 'fontFamily')?.attrs?.fontFamily;
@@ -199,7 +209,11 @@ function tableMd(b: Block): string {
   const rows = b.attrs.rows ?? [];
   if (!rows.length) return '';
   const cellMd = (r: TableCell[]): string => r.map((c) => cellText(c).replace(/\n/g, '<br>')).join(' | ');
-  const md = [`| ${cellMd(rows[0])} |`, `| ${rows[0].map(() => '---').join(' | ')} |`, ...rows.slice(1).map((r) => `| ${cellMd(r)} |`)];
+  const md = [
+    `| ${cellMd(rows[0])} |`,
+    `| ${rows[0].map(() => '---').join(' | ')} |`,
+    ...rows.slice(1).map((r) => `| ${cellMd(r)} |`),
+  ];
   return md.join('\n');
 }
 
@@ -213,19 +227,26 @@ function tableHtml(b: Block): string {
   const span = new Map<string, { rowspan: number; colspan: number }>();
   for (const m of sanitizeMerges(b.attrs.merges ?? [], rows.length, tableColCount(rows))) {
     span.set(`${m.r},${m.c}`, { rowspan: m.rowspan, colspan: m.colspan });
-    for (let dr = 0; dr < m.rowspan; dr++) for (let dc = 0; dc < m.colspan; dc++) {
-      if (dr || dc) covered.add(`${m.r + dr},${m.c + dc}`);
-    }
+    for (let dr = 0; dr < m.rowspan; dr++)
+      for (let dc = 0; dc < m.colspan; dc++) {
+        if (dr || dc) covered.add(`${m.r + dr},${m.c + dc}`);
+      }
   }
-  const trs = rows.map((r, ri) => {
-    const cells = r.map((c, ci) => {
-      if (covered.has(`${ri},${ci}`)) return '';
-      const sp = span.get(`${ri},${ci}`);
-      const a = sp ? `${sp.colspan > 1 ? ` colspan="${sp.colspan}"` : ''}${sp.rowspan > 1 ? ` rowspan="${sp.rowspan}"` : ''}` : '';
-      return `<td${a}>${cellHtml(c)}</td>`;
-    }).join('');
-    return `  <tr>${cells}</tr>`;
-  }).join('\n');
+  const trs = rows
+    .map((r, ri) => {
+      const cells = r
+        .map((c, ci) => {
+          if (covered.has(`${ri},${ci}`)) return '';
+          const sp = span.get(`${ri},${ci}`);
+          const a = sp
+            ? `${sp.colspan > 1 ? ` colspan="${sp.colspan}"` : ''}${sp.rowspan > 1 ? ` rowspan="${sp.rowspan}"` : ''}`
+            : '';
+          return `<td${a}>${cellHtml(c)}</td>`;
+        })
+        .join('');
+      return `  <tr>${cells}</tr>`;
+    })
+    .join('\n');
   return `<table>\n${trs}\n</table>`;
 }
 
@@ -267,14 +288,16 @@ export const BLOCK_EXPORTERS: Partial<Record<BlockType, BlockExporter>> = {
   },
   video: {
     html: (b, h) => {
-      const dim = (b.attrs.width ? ` width="${b.attrs.width}"` : '') + (b.attrs.height ? ` height="${b.attrs.height}"` : '');
+      const dim =
+        (b.attrs.width ? ` width="${b.attrs.width}"` : '') + (b.attrs.height ? ` height="${b.attrs.height}"` : '');
       return `<video controls src="${h.escAttr(b.attrs.src ?? '')}"${dim}></video>`;
     },
     md: (b) => `[视频](${b.attrs.src ?? ''})`,
   },
   iframe: {
     html: (b, h) => {
-      const dim = (b.attrs.width ? ` width="${b.attrs.width}"` : '') + (b.attrs.height ? ` height="${b.attrs.height}"` : '');
+      const dim =
+        (b.attrs.width ? ` width="${b.attrs.width}"` : '') + (b.attrs.height ? ` height="${b.attrs.height}"` : '');
       // sandbox 不含 allow-same-origin：与 allow-scripts 组合时同源内容可经 window.parent 触达
       // 宿主文档（沙箱逃逸/XSS 组合风险）。导出 HTML 与覆盖层（ui/overlays）保持同一安全基线。
       return `<iframe src="${h.escAttr(b.attrs.src ?? '')}"${dim} sandbox="allow-scripts allow-popups"></iframe>`;
@@ -283,7 +306,8 @@ export const BLOCK_EXPORTERS: Partial<Record<BlockType, BlockExporter>> = {
   },
   attachment: {
     html: (b, h) => {
-      const src = b.attrs.src ?? '', name = b.attrs.name || src;
+      const src = b.attrs.src ?? '',
+        name = b.attrs.name || src;
       return `<a href="${h.escAttr(src)}" download="${h.escAttr(name)}">${h.escHtml(name)}</a>`;
     },
     md: (b) => `[${b.attrs.name || b.attrs.src || '附件'}](${b.attrs.src ?? ''})`,
@@ -291,7 +315,8 @@ export const BLOCK_EXPORTERS: Partial<Record<BlockType, BlockExporter>> = {
   signature: {
     // 电子签名：手绘 PNG dataURL → <img alt="签名">（尺寸属性按需输出）；MD → 图片语法。
     html: (b, h) => {
-      const dim = (b.attrs.width ? ` width="${b.attrs.width}"` : '') + (b.attrs.height ? ` height="${b.attrs.height}"` : '');
+      const dim =
+        (b.attrs.width ? ` width="${b.attrs.width}"` : '') + (b.attrs.height ? ` height="${b.attrs.height}"` : '');
       return `<img src="${h.escAttr(b.attrs.src ?? '')}"${dim} alt="签名" />`;
     },
     md: (b) => `![签名](${b.attrs.src ?? ''})`,
@@ -324,24 +349,44 @@ export function toMarkdown(doc: Doc): string {
   const out: string[] = [];
   const bs = doc.blocks;
   const helpers = makeHelpers(doc);
-  let i = 0, ordinal = 0;
+  let i = 0,
+    ordinal = 0;
   while (i < bs.length) {
     const b = bs[i];
-    if (b.type === 'ordered_item') ordinal++; else ordinal = 0;
+    if (b.type === 'ordered_item') ordinal++;
+    else ordinal = 0;
     // —— 依赖循环状态（pad/ordinal）或聚类游标的分支：留在循环内 ——
     // 列表项 depth → Markdown 嵌套缩进（每级 2 空格）。
     const pad = '  '.repeat(clampDepth(b.attrs.depth));
-    if (b.type === 'bullet_item') { out.push(`${pad}- ${inlinesMd(b)}`); i++; continue; }
-    if (b.type === 'ordered_item') { out.push(`${pad}${ordinal}. ${inlinesMd(b)}`); i++; continue; }
-    if (b.type === 'task_item') { out.push(`${pad}- [${b.attrs.checked ? 'x' : ' '}] ${inlinesMd(b)}`); i++; continue; }
+    if (b.type === 'bullet_item') {
+      out.push(`${pad}- ${inlinesMd(b)}`);
+      i++;
+      continue;
+    }
+    if (b.type === 'ordered_item') {
+      out.push(`${pad}${ordinal}. ${inlinesMd(b)}`);
+      i++;
+      continue;
+    }
+    if (b.type === 'task_item') {
+      out.push(`${pad}- [${b.attrs.checked ? 'x' : ' '}] ${inlinesMd(b)}`);
+      i++;
+      continue;
+    }
     if (b.type === 'code_block') {
       const lines: string[] = [];
-      while (i < bs.length && bs[i].type === 'code_block') { lines.push(bs[i].inlines.map((r) => r.text).join('')); i++; }
+      while (i < bs.length && bs[i].type === 'code_block') {
+        lines.push(bs[i].inlines.map((r) => r.text).join(''));
+        i++;
+      }
       out.push('```\n' + lines.join('\n') + '\n```');
       continue;
     }
     // 空表退化态：原 case 'table' 的 if(rows.length) 守卫——空表不产任何 out 元素（byte-exact 保留）。
-    if (b.type === 'table' && !(b.attrs.rows?.length)) { i++; continue; }
+    if (b.type === 'table' && !b.attrs.rows?.length) {
+      i++;
+      continue;
+    }
     // —— 单块单出口分支：先看 block-specs 的 meta.exporter（插件扩展点），回退内置 BLOCK_EXPORTERS，
     // 二者皆无则 inlinesMd 段落兜底。内置块 meta.exporter 留空，故对现有类型恒走 BLOCK_EXPORTERS（输出字节级不变）。——
     const ex = meta(b.type).exporter?.md ?? BLOCK_EXPORTERS[b.type]?.md;

@@ -11,15 +11,30 @@ import { Pos } from '../../model/rich-document';
 // 不依赖 canvas，纯算术，验证 lineHeight / letterSpacing / justify·distribute 的 slack 分配
 // 与 caret/选区一致性。
 const ADV = 10;
-const ASCENT = 12, DESCENT = 4, LINEH = 16;
+const ASCENT = 12,
+  DESCENT = 4,
+  LINEH = 16;
 
 const EMPTY_GLYPH: GlyphInfo = {
-  u0: 0, v0: 0, u1: 0, v1: 0, page: 0, w: 0, h: 0, bearingX: 0, bearingY: 0, advance: ADV, empty: true,
+  u0: 0,
+  v0: 0,
+  u1: 0,
+  v1: 0,
+  page: 0,
+  w: 0,
+  h: 0,
+  bearingX: 0,
+  bearingY: 0,
+  advance: ADV,
+  empty: true,
 };
 
 class FakeShaper implements Shaper {
   readonly name = 'fake';
-  fontMetrics(_style: Style): FontMetrics { void _style; return { ascent: ASCENT, descent: DESCENT, lineHeight: LINEH }; }
+  fontMetrics(_style: Style): FontMetrics {
+    void _style;
+    return { ascent: ASCENT, descent: DESCENT, lineHeight: LINEH };
+  }
   shapeChars(chars: StyledChar[]): ShapedChar[] {
     return chars.map(() => ({ advance: ADV, glyph: EMPTY_GLYPH }));
   }
@@ -44,7 +59,7 @@ describe('doc-layout: lineHeight 行距倍数', () => {
   it('lineHeight 放大行盒后，文字基线垂直居中（多余行距上下均分）', () => {
     const L = layoutDoc(docOf(para([text('ab')], { lineHeight: 2 })), shaper, resolver, opt(1000));
     const ln = L.lines[0];
-    const lead = (LINEH * 2) - (ASCENT + DESCENT);
+    const lead = LINEH * 2 - (ASCENT + DESCENT);
     expect(ln.baseline).toBe(ln.top + ASCENT + lead / 2);
   });
 });
@@ -56,8 +71,8 @@ describe('doc-layout: letterSpacing 字间距', () => {
     const c1 = caretAt(L, { block: 0, offset: 1 })!;
     const c3 = caretAt(L, { block: 0, offset: 3 })!;
     expect(c0.x).toBe(0);
-    expect(c1.x).toBe(ADV + 4);          // 第一个字宽 = 基础 advance + letterSpacing
-    expect(c3.x).toBe((ADV + 4) * 3);    // 行末 caret 含每元素的字间距
+    expect(c1.x).toBe(ADV + 4); // 第一个字宽 = 基础 advance + letterSpacing
+    expect(c3.x).toBe((ADV + 4) * 3); // 行末 caret 含每元素的字间距
   });
 
   it('letterSpacing=0 时与无字间距等价', () => {
@@ -161,28 +176,35 @@ describe('doc-layout: indent attrs 覆盖块主题', () => {
   it('bullet 主题缩进被 attrs.indent 覆盖', () => {
     const def = layoutDoc(docOf(block('bullet_item', [text('ab')])), shaper, resolver, opt(1000));
     const over = layoutDoc(docOf(block('bullet_item', [text('ab')], { indent: 0 })), shaper, resolver, opt(1000));
-    expect(caretAt(def, { block: 0, offset: 0 })!.x).toBe(30);  // 主题默认
-    expect(caretAt(over, { block: 0, offset: 0 })!.x).toBe(0);  // attrs 覆盖
+    expect(caretAt(def, { block: 0, offset: 0 })!.x).toBe(30); // 主题默认
+    expect(caretAt(over, { block: 0, offset: 0 })!.x).toBe(0); // attrs 覆盖
   });
 });
 
 describe('doc-layout: toc 块生成标题行', () => {
   it('为每个 heading 生成一行，携带 tocTarget=heading 块号', () => {
-    const L = layoutDoc(docOf(
-      block('heading', [text('A')], { level: 1 }),
-      { type: 'toc', attrs: {}, inlines: [text('')] },
-      block('heading', [text('B')], { level: 2 }),
-    ), shaper, resolver, opt(1000));
+    const L = layoutDoc(
+      docOf(
+        block('heading', [text('A')], { level: 1 }),
+        { type: 'toc', attrs: {}, inlines: [text('')] },
+        block('heading', [text('B')], { level: 2 }),
+      ),
+      shaper,
+      resolver,
+      opt(1000),
+    );
     const tocLines = L.lines.filter((l) => l.block === 1);
     expect(tocLines.length).toBe(2);
     expect(tocLines.map((l) => l.tocTarget)).toEqual([0, 2]);
   });
 
   it('toc 行 caret 恒落在 {block,0}', () => {
-    const L = layoutDoc(docOf(
-      block('heading', [text('A')], { level: 1 }),
-      { type: 'toc', attrs: {}, inlines: [text('')] },
-    ), shaper, resolver, opt(1000));
+    const L = layoutDoc(
+      docOf(block('heading', [text('A')], { level: 1 }), { type: 'toc', attrs: {}, inlines: [text('')] }),
+      shaper,
+      resolver,
+      opt(1000),
+    );
     const tocLine = L.lines.find((l) => l.block === 1)!;
     expect(tocLine.offsets).toEqual([0]);
     expect(tocLine.startOffset).toBe(0);
@@ -190,20 +212,19 @@ describe('doc-layout: toc 块生成标题行', () => {
   });
 
   it('无标题时仍占一行占位（tocTarget 未设）', () => {
-    const L = layoutDoc(docOf(
-      para([text('body')]),
-      { type: 'toc', attrs: {}, inlines: [text('')] },
-    ), shaper, resolver, opt(1000));
+    const L = layoutDoc(
+      docOf(para([text('body')]), { type: 'toc', attrs: {}, inlines: [text('')] }),
+      shaper,
+      resolver,
+      opt(1000),
+    );
     const tocLines = L.lines.filter((l) => l.block === 1);
     expect(tocLines.length).toBe(1);
     expect(tocLines[0].tocTarget).toBeUndefined();
   });
 
   it('布局扫描为缺 id 的 heading 就地补 attrs.id', () => {
-    const doc = docOf(
-      block('heading', [text('A')], { level: 1 }),
-      { type: 'toc', attrs: {}, inlines: [text('')] },
-    );
+    const doc = docOf(block('heading', [text('A')], { level: 1 }), { type: 'toc', attrs: {}, inlines: [text('')] });
     expect(doc.blocks[0].attrs.id).toBeUndefined();
     layoutDoc(doc, shaper, resolver, opt(1000));
     expect(doc.blocks[0].attrs.id).toBeTruthy();
@@ -226,14 +247,37 @@ describe('doc-layout: shape 原子块覆盖框', () => {
 
   it('align=center / right 水平定位 shape（与 image 一致）', () => {
     const contentW = 600;
-    const center = layoutDoc(docOf({ type: 'shape', attrs: { shape: 'ellipse', width: 200, height: 120, align: 'center' }, inlines: [text('')] }), shaper, resolver, opt(contentW));
-    const right = layoutDoc(docOf({ type: 'shape', attrs: { shape: 'ellipse', width: 200, height: 120, align: 'right' }, inlines: [text('')] }), shaper, resolver, opt(contentW));
+    const center = layoutDoc(
+      docOf({
+        type: 'shape',
+        attrs: { shape: 'ellipse', width: 200, height: 120, align: 'center' },
+        inlines: [text('')],
+      }),
+      shaper,
+      resolver,
+      opt(contentW),
+    );
+    const right = layoutDoc(
+      docOf({
+        type: 'shape',
+        attrs: { shape: 'ellipse', width: 200, height: 120, align: 'right' },
+        inlines: [text('')],
+      }),
+      shaper,
+      resolver,
+      opt(contentW),
+    );
     expect(center.overlays[0].x).toBe((contentW - 200) / 2);
     expect(right.overlays[0].x).toBe(contentW - 200);
   });
 
   it('未给尺寸时用默认（width=200, height=120）', () => {
-    const L = layoutDoc(docOf({ type: 'shape', attrs: { shape: 'star' }, inlines: [text('')] }), shaper, resolver, opt(1000));
+    const L = layoutDoc(
+      docOf({ type: 'shape', attrs: { shape: 'star' }, inlines: [text('')] }),
+      shaper,
+      resolver,
+      opt(1000),
+    );
     expect(L.overlays[0].w).toBe(200);
     expect(L.overlays[0].h).toBe(120);
   });
@@ -248,9 +292,9 @@ describe('doc-layout: 行内图片（行内原子）', () => {
     const box = L.inlineOverlays[0];
     expect(box.kind).toBe('image');
     expect(box.block).toBe(0);
-    expect(box.offset).toBe(2);  // 'ab' 之后
-    expect(box.w).toBe(20);      // dpr=1，显式 width
-    expect(box.h).toBe(30);      // 显式 height
+    expect(box.offset).toBe(2); // 'ab' 之后
+    expect(box.w).toBe(20); // dpr=1，显式 width
+    expect(box.h).toBe(30); // 显式 height
     // 文本字符产 caret 偏移；原子占 1 offset 但不产字形（仅产 inlineOverlay）
     const ln = L.lines[0];
     expect(ln.endOffset).toBe(5); // ab(2) + atom(1) + cd(2)
@@ -263,9 +307,9 @@ describe('doc-layout: 行内图片（行内原子）', () => {
     const c1 = caretAt(L, { block: 0, offset: 1 })!.x; // 原子左缘
     const c2 = caretAt(L, { block: 0, offset: 2 })!.x; // 原子右缘
     const c3 = caretAt(L, { block: 0, offset: 3 })!.x;
-    expect(c1 - c0).toBe(ADV);       // 'a' 宽
-    expect(c2 - c1).toBe(25);        // 原子显示宽
-    expect(c3 - c2).toBe(ADV);       // 'b' 宽
+    expect(c1 - c0).toBe(ADV); // 'a' 宽
+    expect(c2 - c1).toBe(25); // 原子显示宽
+    expect(c3 - c2).toBe(ADV); // 'b' 宽
     // 原子盒左缘 = caret offset 1 处 x
     expect(L.inlineOverlays[0].x).toBe(c1);
   });
@@ -309,10 +353,14 @@ describe('doc-layout 回归: LineBox minX/maxX 精确记录视觉行边界 (item
       expect(ln.rtl).toBe(true);
       // minX/maxX 是该行真实左右边界：所有 caret x 都落在 [minX, maxX] 内，
       // 且二者分别等于 xs 的最小/最大（此处简单 RTL 串中 caret 触达两端）。
-      const lo = Math.min(...ln.xs), hi = Math.max(...ln.xs);
+      const lo = Math.min(...ln.xs),
+        hi = Math.max(...ln.xs);
       expect(ln.minX).toBeLessThanOrEqual(lo);
       expect(ln.maxX).toBeGreaterThanOrEqual(hi);
-      for (const x of ln.xs) { expect(x).toBeGreaterThanOrEqual(ln.minX); expect(x).toBeLessThanOrEqual(ln.maxX); }
+      for (const x of ln.xs) {
+        expect(x).toBeGreaterThanOrEqual(ln.minX);
+        expect(x).toBeLessThanOrEqual(ln.maxX);
+      }
     }
   });
 
@@ -335,8 +383,8 @@ describe('doc-layout 回归: LineBox minX/maxX 精确记录视觉行边界 (item
   it('LTR 行 minX=startX、maxX=行末 caret（与 contentRight 选区延续不冲突）', () => {
     const L = layoutDoc(docOf(para([text('abcd')])), shaper, resolver, opt(1000));
     const ln = L.lines[0];
-    expect(ln.minX).toBe(0);                 // padL=0，左对齐
-    expect(ln.maxX).toBe(4 * ADV);           // 4 字宽
+    expect(ln.minX).toBe(0); // padL=0，左对齐
+    expect(ln.maxX).toBe(4 * ADV); // 4 字宽
     expect(ln.minX).toBe(Math.min(...ln.xs));
     expect(ln.maxX).toBe(Math.max(...ln.xs));
   });
@@ -371,11 +419,16 @@ describe('doc-layout 回归: offsets 升序 + nearestIndex 稳定 tie-break (ite
 
 describe('doc-layout 回归: TOC 行方向跟随目标 heading dir (item 5)', () => {
   it('RTL 标题 → 目录项 rtl=true；LTR 标题 → rtl=false', () => {
-    const L = layoutDoc(docOf(
-      block('heading', [text(HE)], { level: 1, dir: 'rtl' }),
-      block('heading', [text('B')], { level: 1 }),
-      { type: 'toc', attrs: {}, inlines: [text('')] },
-    ), shaper, resolver, opt(1000));
+    const L = layoutDoc(
+      docOf(block('heading', [text(HE)], { level: 1, dir: 'rtl' }), block('heading', [text('B')], { level: 1 }), {
+        type: 'toc',
+        attrs: {},
+        inlines: [text('')],
+      }),
+      shaper,
+      resolver,
+      opt(1000),
+    );
     const tocLines = L.lines.filter((l) => l.block === 2);
     expect(tocLines.length).toBe(2);
     // 第 1 个目录项指向 RTL 标题 → rtl=true；第 2 个指向 LTR 标题 → rtl=false
@@ -386,10 +439,12 @@ describe('doc-layout 回归: TOC 行方向跟随目标 heading dir (item 5)', ()
   });
 
   it('无标题占位目录行保持 rtl=false', () => {
-    const L = layoutDoc(docOf(
-      para([text('body')]),
-      { type: 'toc', attrs: {}, inlines: [text('')] },
-    ), shaper, resolver, opt(1000));
+    const L = layoutDoc(
+      docOf(para([text('body')]), { type: 'toc', attrs: {}, inlines: [text('')] }),
+      shaper,
+      resolver,
+      opt(1000),
+    );
     const tocLine = L.lines.find((l) => l.block === 1)!;
     expect(tocLine.rtl).toBe(false);
     expect(tocLine.tocTarget).toBeUndefined();
@@ -398,10 +453,15 @@ describe('doc-layout 回归: TOC 行方向跟随目标 heading dir (item 5)', ()
 
 describe('doc-layout: 媒体原子块（集群A）覆盖盒', () => {
   it('audio/attachment：满内容宽 + 固定高度，产出对应 kind 覆盖盒', () => {
-    const L = layoutDoc(docOf(
-      { type: 'audio', attrs: { src: 'a.mp3' }, inlines: [text('')] },
-      { type: 'attachment', attrs: { src: 'f.pdf', name: 'f.pdf' }, inlines: [text('')] },
-    ), shaper, resolver, opt(600));
+    const L = layoutDoc(
+      docOf(
+        { type: 'audio', attrs: { src: 'a.mp3' }, inlines: [text('')] },
+        { type: 'attachment', attrs: { src: 'f.pdf', name: 'f.pdf' }, inlines: [text('')] },
+      ),
+      shaper,
+      resolver,
+      opt(600),
+    );
     const audio = L.overlays.find((o) => o.block === 0)!;
     const attach = L.overlays.find((o) => o.block === 1)!;
     expect(audio.kind).toBe('audio');
@@ -415,10 +475,15 @@ describe('doc-layout: 媒体原子块（集群A）覆盖盒', () => {
   });
 
   it('video/iframe：用 attrs.width/height 定尺寸，按 align 水平定位', () => {
-    const L = layoutDoc(docOf(
-      { type: 'video', attrs: { src: 'v.mp4', width: 200, height: 100 }, inlines: [text('')] },
-      { type: 'iframe', attrs: { src: 'e.com', width: 200, height: 100, align: 'right' }, inlines: [text('')] },
-    ), shaper, resolver, opt(600));
+    const L = layoutDoc(
+      docOf(
+        { type: 'video', attrs: { src: 'v.mp4', width: 200, height: 100 }, inlines: [text('')] },
+        { type: 'iframe', attrs: { src: 'e.com', width: 200, height: 100, align: 'right' }, inlines: [text('')] },
+      ),
+      shaper,
+      resolver,
+      opt(600),
+    );
     const video = L.overlays.find((o) => o.block === 0)!;
     const iframe = L.overlays.find((o) => o.block === 1)!;
     expect(video.kind).toBe('video');
@@ -432,16 +497,17 @@ describe('doc-layout: 媒体原子块（集群A）覆盖盒', () => {
   });
 
   it('video/iframe 缺省尺寸时回退默认宽高（非 0）', () => {
-    const L = layoutDoc(docOf(
-      { type: 'video', attrs: { src: 'v.mp4' }, inlines: [text('')] },
-    ), shaper, resolver, opt(1000));
+    const L = layoutDoc(
+      docOf({ type: 'video', attrs: { src: 'v.mp4' }, inlines: [text('')] }),
+      shaper,
+      resolver,
+      opt(1000),
+    );
     const video = L.overlays.find((o) => o.block === 0)!;
     expect(video.w).toBeGreaterThan(0);
     expect(video.h).toBeGreaterThan(0);
   });
 });
-
-
 
 // —— 集群1 回归测试：功能性缩放（scale = deviceDpr × zoom）下坐标自洽 ——
 // 契约：布局以 dpr=scale 产坐标，布局 px 与 canvas 物理 px 同一坐标系（zoom 含在坐标值内）。
@@ -462,7 +528,9 @@ class ScaledFakeShaper implements Shaper {
 }
 
 describe('doc-layout: zoom≠1（dpr=scale）坐标自洽', () => {
-  const DEVICE_DPR = 2, ZOOM = 1.5, SCALE = DEVICE_DPR * ZOOM; // scale = 3
+  const DEVICE_DPR = 2,
+    ZOOM = 1.5,
+    SCALE = DEVICE_DPR * ZOOM; // scale = 3
   const PADL = 26 * SCALE;
   const optZ = (width: number): DocLayoutOpts => ({ width, padL: PADL, padT: PADL, dpr: SCALE });
   const zoomShaper = new ScaledFakeShaper(SCALE);
@@ -483,7 +551,8 @@ describe('doc-layout: zoom≠1（dpr=scale）坐标自洽', () => {
     const pos: Pos = { block: 0, offset: 4 };
     const c = caretAt(L, pos)!;
     // 屏幕 CSS 位置 = 布局 px ÷ deviceDpr（布局 px 即 canvas 物理 px）
-    const cssX = c.x / DEVICE_DPR, cssY = ((c.top + c.bottom) / 2) / DEVICE_DPR;
+    const cssX = c.x / DEVICE_DPR,
+      cssY = (c.top + c.bottom) / 2 / DEVICE_DPR;
     // 正确换算（eventXY：×deviceDpr）命中原 offset
     expect(hitTestDoc(L, cssX * DEVICE_DPR, cssY * DEVICE_DPR)).toEqual(pos);
     // 错误换算（×scale）：x 被多放大 zoom 倍 → 命中漂移到别的 offset
@@ -493,7 +562,9 @@ describe('doc-layout: zoom≠1（dpr=scale）坐标自洽', () => {
   it('原子块 overlay 盒按 scale 产出：尺寸 = attrs 逻辑值 × scale，且与保留行几何一致', () => {
     const L = layoutDoc(
       docOf({ type: 'image', attrs: { src: 'x.png', width: 100, height: 50 }, inlines: [text('')] }),
-      zoomShaper, resolver, optZ(2000),
+      zoomShaper,
+      resolver,
+      optZ(2000),
     );
     const box = L.overlays[0];
     expect(box.w).toBe(100 * SCALE);
@@ -506,7 +577,9 @@ describe('doc-layout: zoom≠1（dpr=scale）坐标自洽', () => {
   it('formula 实测高度以逻辑 px 回填：保留高度 = measuredH × scale（覆盖层 ÷scale 即还原闭环）', () => {
     const L = layoutDoc(
       docOf({ type: 'formula', attrs: { latex: 'x', measuredH: 80 }, inlines: [text('')] }),
-      zoomShaper, resolver, optZ(2000),
+      zoomShaper,
+      resolver,
+      optZ(2000),
     );
     expect(L.overlays[0].h).toBe(80 * SCALE);
   });
@@ -522,7 +595,9 @@ describe('doc-layout: zoom≠1（dpr=scale）坐标自洽', () => {
   it('行内原子盒按 scale 产出，且左缘与 caret 同步（行内图片覆盖层对齐）', () => {
     const L = layoutDoc(
       docOf(para([text('a'), inlineAtom('image', { src: 'x', width: 25, height: 20 }), text('b')])),
-      zoomShaper, resolver, optZ(2000),
+      zoomShaper,
+      resolver,
+      optZ(2000),
     );
     const box = L.inlineOverlays[0];
     expect(box.w).toBe(25 * SCALE);

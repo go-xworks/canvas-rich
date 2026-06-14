@@ -13,7 +13,11 @@ let seq = 0;
  * 表格结构 / 原子属性）必须调用；新建块无需调用（WeakMap 缺省版本 0，缓存天然 miss）。
  * @public
  */
-export function touchBlock(b: Block): void { versions.set(b, ++seq); }
+export function touchBlock(b: Block): void {
+  versions.set(b, ++seq);
+}
 
 /** 读取某块当前版本号（从未 touch 过的块恒为 0）。 @public */
-export function blockVersion(b: Block): number { return versions.get(b) ?? 0; }
+export function blockVersion(b: Block): number {
+  return versions.get(b) ?? 0;
+}

@@ -42,11 +42,13 @@ export interface FindBar {
 }
 
 // 控件样式（--rte-* 主题变量，与 prompt/工具栏一致）。
-const INPUT_CLS = 'h-[26px] px-2 rounded-md border border-[var(--rte-overlay-border)] '
-  + 'bg-[var(--rte-canvas)] text-[var(--rte-text)] text-[12px] outline-none appearance-none '
-  + 'focus:border-[var(--rte-accent)]';
-const BTN_CLS = 'px-1.5 h-[24px] rounded border-0 bg-transparent text-[12px] text-[var(--rte-chrome-fg)] '
-  + 'cursor-pointer appearance-none hover:bg-[var(--rte-chrome-hover)] disabled:opacity-40';
+const INPUT_CLS =
+  'h-[26px] px-2 rounded-md border border-[var(--rte-overlay-border)] ' +
+  'bg-[var(--rte-canvas)] text-[var(--rte-text)] text-[12px] outline-none appearance-none ' +
+  'focus:border-[var(--rte-accent)]';
+const BTN_CLS =
+  'px-1.5 h-[24px] rounded border-0 bg-transparent text-[12px] text-[var(--rte-chrome-fg)] ' +
+  'cursor-pointer appearance-none hover:bg-[var(--rte-chrome-hover)] disabled:opacity-40';
 
 /**
  * 创建挂到 host（编辑器容器）右上角的查找/替换浮条，返回 {@link FindBar} 句柄。
@@ -56,11 +58,14 @@ export function createFindBar(host: HTMLElement, deps: FindBarDeps): FindBar {
   const bar = document.createElement('div');
   bar.setAttribute('role', 'search');
   bar.setAttribute('aria-label', '查找与替换');
-  bar.className = 'absolute top-2 right-6 z-40 hidden items-center gap-1 px-2 py-1.5 rounded-lg font-sans '
-    + 'bg-[var(--rte-overlay-bg)] border border-[var(--rte-overlay-border)] shadow-[var(--rte-shadow)]';
+  bar.className =
+    'absolute top-2 right-6 z-40 hidden items-center gap-1 px-2 py-1.5 rounded-lg font-sans ' +
+    'bg-[var(--rte-overlay-bg)] border border-[var(--rte-overlay-border)] shadow-[var(--rte-shadow)]';
 
   const queryInput = document.createElement('input');
-  queryInput.type = 'text'; queryInput.placeholder = '查找'; queryInput.spellcheck = false;
+  queryInput.type = 'text';
+  queryInput.placeholder = '查找';
+  queryInput.spellcheck = false;
   queryInput.setAttribute('aria-label', '查找');
   queryInput.className = INPUT_CLS + ' w-[150px]';
   const countEl = document.createElement('span');
@@ -68,7 +73,10 @@ export function createFindBar(host: HTMLElement, deps: FindBarDeps): FindBar {
   countEl.textContent = '0/0';
   const mkBtn = (label: string, title: string): HTMLButtonElement => {
     const b = document.createElement('button');
-    b.type = 'button'; b.textContent = label; b.title = title; b.setAttribute('aria-label', title);
+    b.type = 'button';
+    b.textContent = label;
+    b.title = title;
+    b.setAttribute('aria-label', title);
     b.className = BTN_CLS;
     return b;
   };
@@ -77,7 +85,9 @@ export function createFindBar(host: HTMLElement, deps: FindBarDeps): FindBar {
   const sep = document.createElement('span');
   sep.className = 'w-px h-[18px] bg-[var(--rte-overlay-border)] mx-0.5';
   const replaceInput = document.createElement('input');
-  replaceInput.type = 'text'; replaceInput.placeholder = '替换为'; replaceInput.spellcheck = false;
+  replaceInput.type = 'text';
+  replaceInput.placeholder = '替换为';
+  replaceInput.spellcheck = false;
   replaceInput.setAttribute('aria-label', '替换为');
   replaceInput.className = INPUT_CLS + ' w-[120px]';
   const replaceBtn = mkBtn('替换', '替换当前命中');
@@ -105,7 +115,12 @@ export function createFindBar(host: HTMLElement, deps: FindBarDeps): FindBar {
 
   // 跳到第 i 个命中（循环回绕）：选中命中区间（anchor=起点、focus=终点）并滚入视口。
   const jumpTo = (i: number): void => {
-    if (matches.length === 0) { current = -1; updateCount(); deps.onMatchesChanged(); return; }
+    if (matches.length === 0) {
+      current = -1;
+      updateCount();
+      deps.onMatchesChanged();
+      return;
+    }
     current = ((i % matches.length) + matches.length) % matches.length;
     const m = matches[current];
     deps.rd.setSel({ block: m.block, offset: m.start });
@@ -128,12 +143,18 @@ export function createFindBar(host: HTMLElement, deps: FindBarDeps): FindBar {
   const search = (): void => {
     recompute();
     if (matches.length) jumpTo(firstMatchFromCaret());
-    else { current = -1; updateCount(); }
+    else {
+      current = -1;
+      updateCount();
+    }
   };
 
   const replaceCurrent = (): void => {
     if (matches.length === 0) return;
-    if (current < 0 || current >= matches.length) { jumpTo(firstMatchFromCaret()); return; }
+    if (current < 0 || current >= matches.length) {
+      jumpTo(firstMatchFromCaret());
+      return;
+    }
     const idx = current;
     const m = matches[idx];
     deps.rd.replaceTextRange(m.block, m.start, m.end, replaceInput.value);
@@ -171,13 +192,18 @@ export function createFindBar(host: HTMLElement, deps: FindBarDeps): FindBar {
     isOpen: () => openState,
     matches: () => matches,
     currentIndex: () => current,
-    refresh: () => { if (openState && query) recompute(); },
+    refresh: () => {
+      if (openState && query) recompute();
+    },
     next: () => jumpTo(current + 1),
     prev: () => jumpTo(current - 1),
   };
 
   // —— 事件接线 ——
-  queryInput.addEventListener('input', () => { query = queryInput.value; search(); });
+  queryInput.addEventListener('input', () => {
+    query = queryInput.value;
+    search();
+  });
   // 浮条内键盘不进编辑器；Esc 关闭对全条生效。⌘F/⌘P 在浮条内也接管并 preventDefault——
   // 焦点在查找/替换输入框时不得外溢给浏览器（原生查找条对 canvas 正文无效、原生打印输出空白，
   // 即缺陷 39/48 堵住的入口；焦点在编辑器时由 ime keydown 接管）：⌘F 重新聚焦查询框并全选，
@@ -196,13 +222,23 @@ export function createFindBar(host: HTMLElement, deps: FindBarDeps): FindBar {
       deps.printDoc();
       return;
     }
-    if (e.key === 'Escape') { e.preventDefault(); api.close(); }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      api.close();
+    }
   });
   queryInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); if (e.shiftKey) api.prev(); else api.next(); }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (e.shiftKey) api.prev();
+      else api.next();
+    }
   });
   replaceInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); replaceCurrent(); }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      replaceCurrent();
+    }
   });
   prevBtn.addEventListener('click', () => api.prev());
   nextBtn.addEventListener('click', () => api.next());

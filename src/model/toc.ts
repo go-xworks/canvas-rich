@@ -12,7 +12,12 @@ import { Doc, Block, blockText, genBlockId } from './schema';
  * id：该 heading 的稳定锚 id（与 attrs.id 一致）。
  * @public
  */
-export interface TocEntry { level: number; text: string; block: number; id: string }
+export interface TocEntry {
+  level: number;
+  text: string;
+  block: number;
+  id: string;
+}
 
 /** 把 heading 级别夹回 1..6（缺省 1）。 @internal */
 function headingLevel(b: Block): number {

@@ -13,7 +13,11 @@ export const HANDLE_DOT_PX = 14;
 const HANDLE_HIT_Y_OFFSET = 24;
 
 /** 选区一端的手柄锚点几何（CSS px，相对 editor 容器；x 为光标线、top/bottom 为行界）。 @internal */
-export interface HandleAnchor { x: number; top: number; bottom: number }
+export interface HandleAnchor {
+  x: number;
+  top: number;
+  bottom: number;
+}
 
 /** sync 输入：可见性 + 选区两端几何与文档位置（start ≤ end，已规范化）。 @internal */
 export interface SelectionHandleState {
@@ -48,12 +52,14 @@ export function createSelectionHandles(container: HTMLElement, deps: SelectionHa
   const mkHandle = (which: 'start' | 'end'): HTMLDivElement => {
     const hit = document.createElement('div');
     // touch-action:none：手柄拖动是持续 pointermove 流，禁掉浏览器平移手势接管（防 pointercancel 中断）
-    hit.style.cssText = `position:absolute;width:${HANDLE_HIT_PX}px;height:${HANDLE_HIT_PX}px;`
-      + `margin-left:${-HANDLE_HIT_PX / 2}px;display:none;touch-action:none;z-index:40;`;
+    hit.style.cssText =
+      `position:absolute;width:${HANDLE_HIT_PX}px;height:${HANDLE_HIT_PX}px;` +
+      `margin-left:${-HANDLE_HIT_PX / 2}px;display:none;touch-action:none;z-index:40;`;
     const dot = document.createElement('div');
-    dot.style.cssText = `position:absolute;left:50%;top:0;width:${HANDLE_DOT_PX}px;height:${HANDLE_DOT_PX}px;`
-      + `margin-left:${-HANDLE_DOT_PX / 2}px;border-radius:50%;background:var(--rte-accent);`
-      + 'box-shadow:0 1px 4px rgba(0,0,0,0.35);';
+    dot.style.cssText =
+      `position:absolute;left:50%;top:0;width:${HANDLE_DOT_PX}px;height:${HANDLE_DOT_PX}px;` +
+      `margin-left:${-HANDLE_DOT_PX / 2}px;border-radius:50%;background:var(--rte-accent);` +
+      'box-shadow:0 1px 4px rgba(0,0,0,0.35);';
     hit.appendChild(dot);
     hit.addEventListener('pointerdown', (e) => {
       if (!last) return;
@@ -69,7 +75,11 @@ export function createSelectionHandles(container: HTMLElement, deps: SelectionHa
     });
     const endDrag = (e: PointerEvent) => {
       if (drag?.which === which) drag = null;
-      try { hit.releasePointerCapture(e.pointerId); } catch { /* 未捕获时忽略 */ }
+      try {
+        hit.releasePointerCapture(e.pointerId);
+      } catch {
+        /* 未捕获时忽略 */
+      }
     };
     hit.addEventListener('pointerup', endDrag);
     hit.addEventListener('pointercancel', endDrag);
@@ -97,6 +107,8 @@ export function createSelectionHandles(container: HTMLElement, deps: SelectionHa
       place(startEl, state.start);
       place(endEl, state.end);
     },
-    dragging(): boolean { return drag !== null; },
+    dragging(): boolean {
+      return drag !== null;
+    },
   };
 }

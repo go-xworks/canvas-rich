@@ -28,7 +28,10 @@ describe('breakLines', () => {
     const its = items('ab\ncd'); // 下标: a0 b1 \n2 c3 d4
     const lines = breakLines(its, 1000);
     // 换行符并入其所在行的行尾
-    expect(lines).toEqual([[0, 1, 2], [3, 4]]);
+    expect(lines).toEqual([
+      [0, 1, 2],
+      [3, 4],
+    ]);
   });
 
   it('连续多个 \\n → 多个空行', () => {
@@ -42,7 +45,10 @@ describe('breakLines', () => {
     const its = items('ab cd'); // a0 b1 (space)2 c3 d4
     const lines = breakLines(its, 30);
     // 第一行含空格在末尾，"cd" 完整移到下一行（单词不拆）
-    expect(lines).toEqual([[0, 1, 2], [3, 4]]);
+    expect(lines).toEqual([
+      [0, 1, 2],
+      [3, 4],
+    ]);
   });
 
   it('宽度溢出、无空格（全是连续窄字符） → 硬断成多行', () => {
@@ -78,6 +84,10 @@ describe('breakLines', () => {
     // 行3: c5(10) c6(20) 结束 -> [5,6]
     const its = items('a bb cc');
     const lines = breakLines(its, 30);
-    expect(lines).toEqual([[0, 1], [2, 3, 4], [5, 6]]);
+    expect(lines).toEqual([
+      [0, 1],
+      [2, 3, 4],
+      [5, 6],
+    ]);
   });
 });

@@ -69,7 +69,9 @@ export class TouchGesture {
   }
 
   /** 当前判型。 @public */
-  get mode(): TouchMode { return this.modeState; }
+  get mode(): TouchMode {
+    return this.modeState;
+  }
 
   /** 单指按下：进入 pending 并启动长按计时。 @public */
   down(x: number, y: number): void {
@@ -113,7 +115,10 @@ export class TouchGesture {
   }
 
   private stopTimer(): void {
-    if (this.cancelTimer) { this.cancelTimer(); this.cancelTimer = null; }
+    if (this.cancelTimer) {
+      this.cancelTimer();
+      this.cancelTimer = null;
+    }
   }
 }
 
@@ -139,7 +144,11 @@ export function pinchZoom(zoom0: number, d0: number, d: number, min = 0.5, max =
  * @public
  */
 export function visibleCanvasHeightDev(
-  canvasTopCss: number, canvasHeightDev: number, vvOffsetTop: number, vvHeight: number, dpr: number,
+  canvasTopCss: number,
+  canvasHeightDev: number,
+  vvOffsetTop: number,
+  vvHeight: number,
+  dpr: number,
 ): number {
   const visCss = vvOffsetTop + vvHeight - canvasTopCss;
   return clamp(Math.round(visCss * dpr), 0, canvasHeightDev);

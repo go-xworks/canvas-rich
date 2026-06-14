@@ -214,7 +214,8 @@ describe('段落排版 setter（块级，进撤销栈）', () => {
   it('setSpaceBefore / setSpaceAfter 夹到 ≥0', () => {
     const rd = rdOf(para([text('a')]));
     rd.setSel({ block: 0, offset: 0 });
-    rd.setSpaceBefore(12); rd.setSpaceAfter(20);
+    rd.setSpaceBefore(12);
+    rd.setSpaceAfter(20);
     expect(rd.doc.blocks[0].attrs.spaceBefore).toBe(12);
     expect(rd.doc.blocks[0].attrs.spaceAfter).toBe(20);
     rd.setSpaceBefore(-5);

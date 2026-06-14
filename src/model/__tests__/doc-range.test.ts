@@ -19,11 +19,7 @@ describe('sliceDocRange — 同块/跨块', () => {
   });
 
   it('跨块：首块切尾、末块切头、中间块整块，类型/attrs 保留', () => {
-    const d = doc(
-      block('heading', [text('Title')], { level: 2 }),
-      para([text('middle')]),
-      para([text('world')]),
-    );
+    const d = doc(block('heading', [text('Title')], { level: 2 }), para([text('middle')]), para([text('world')]));
     const frag = sliceDocRange(d, { block: 0, offset: 2 }, { block: 2, offset: 3 });
     expect(frag.blocks.map(blockText)).toEqual(['tle', 'middle', 'wor']);
     expect(frag.blocks[0].type).toBe('heading');
@@ -52,8 +48,15 @@ describe('sliceDocRange — 原子块/表格', () => {
   });
 
   it('范围内的表格整块保留且与原文档零共享（深拷隔离）', () => {
-    const rows: TableCell[][] = [[cell('r0c0'), cell('r0c1')], [cell('r1c0'), cell('r1c1')]];
-    const d = doc(para([text('a')]), block('table', [text('')], { rows, merges: [{ r: 0, c: 0, rowspan: 1, colspan: 2 }] }), para([text('b')]));
+    const rows: TableCell[][] = [
+      [cell('r0c0'), cell('r0c1')],
+      [cell('r1c0'), cell('r1c1')],
+    ];
+    const d = doc(
+      para([text('a')]),
+      block('table', [text('')], { rows, merges: [{ r: 0, c: 0, rowspan: 1, colspan: 2 }] }),
+      para([text('b')]),
+    );
     const frag = sliceDocRange(d, { block: 0, offset: 1 }, { block: 2, offset: 0 });
     const t = frag.blocks[1];
     expect(t.type).toBe('table');

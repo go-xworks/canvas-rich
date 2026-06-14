@@ -36,10 +36,7 @@ describe('findMatches', () => {
   });
 
   it('原子块（图片/表格）跳过', () => {
-    const d = doc(
-      block('image', [text('')], { src: 'data:image/png;base64,img' }),
-      para([text('img')]),
-    );
+    const d = doc(block('image', [text('')], { src: 'data:image/png;base64,img' }), para([text('img')]));
     expect(findMatches(d, 'img')).toEqual([{ block: 1, start: 0, end: 3 }]);
   });
 
@@ -124,14 +121,20 @@ describe('RichDoc.replaceAllTextRanges', () => {
     rd.replaceAllTextRanges(findMatches(rd.doc, 'cat'), 'dog');
     const b = rd.doc.blocks[0];
     expect(blockText(b)).toBe('dog dog');
-    expect(hasMarkType(b.inlines[0].marks, 'bold')).toBe(true);   // 'dog '（首命中承袭 bold）
+    expect(hasMarkType(b.inlines[0].marks, 'bold')).toBe(true); // 'dog '（首命中承袭 bold）
     const last = b.inlines[b.inlines.length - 1];
-    expect(hasMarkType(last.marks, 'bold')).toBe(false);          // 第二命中无 mark
+    expect(hasMarkType(last.marks, 'bold')).toBe(false); // 第二命中无 mark
   });
 
   it('原子块/越界区间跳过；全为非法时不入撤销栈', () => {
     const rd = new RichDoc(doc(block('image', [text('')], { src: '' }), para([text('ab')])));
-    rd.replaceAllTextRanges([{ block: 0, start: 0, end: 1 }, { block: 1, start: 0, end: 99 }], 'x');
+    rd.replaceAllTextRanges(
+      [
+        { block: 0, start: 0, end: 1 },
+        { block: 1, start: 0, end: 99 },
+      ],
+      'x',
+    );
     expect(rd.canUndo).toBe(false);
     expect(blockText(rd.doc.blocks[1])).toBe('ab');
   });

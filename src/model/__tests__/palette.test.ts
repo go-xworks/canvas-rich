@@ -49,7 +49,18 @@ describe('applyCanvasTheme', () => {
   afterEach(() => applyCanvasTheme('light'));
 
   const KEYS: (keyof typeof LIGHT)[] = [
-    'light', 'muted', 'title', 'h2', 'link', 'code', 'codeText', 'codeBg', 'bg', 'selection', 'caret', 'marker',
+    'light',
+    'muted',
+    'title',
+    'h2',
+    'link',
+    'code',
+    'codeText',
+    'codeBg',
+    'bg',
+    'selection',
+    'caret',
+    'marker',
     'pageGap',
   ];
 
@@ -81,9 +92,9 @@ describe('applyCanvasTheme', () => {
   it('暗色具体值：bg 为深底、caret/title 为浅色（深底可见）', () => {
     applyCanvasTheme('dark');
     expect(C.bg).toEqual([0.102, 0.106, 0.133, 1]); // #1a1b22
-    expect(C.caret[0]).toBeGreaterThan(0.9);  // 浅光标
-    expect(C.title[0]).toBeGreaterThan(0.9);  // 浅 H1
-    expect(C.light[0]).toBeGreaterThan(0.8);  // 浅正文
+    expect(C.caret[0]).toBeGreaterThan(0.9); // 浅光标
+    expect(C.title[0]).toBeGreaterThan(0.9); // 浅 H1
+    expect(C.light[0]).toBeGreaterThan(0.8); // 浅正文
   });
 
   it('亮色具体值：bg 为白底、caret/title 为深色（白底可见）', () => {

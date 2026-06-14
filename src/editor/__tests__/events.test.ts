@@ -72,8 +72,13 @@ describe('createEmitter', () => {
     const bus = createEmitter();
     const seen: string[] = [];
     let offSelf: (() => void) | null = null;
-    offSelf = bus.on('doc:changed', () => { seen.push('self'); offSelf?.(); });
-    bus.on('doc:changed', () => { seen.push('other'); });
+    offSelf = bus.on('doc:changed', () => {
+      seen.push('self');
+      offSelf?.();
+    });
+    bus.on('doc:changed', () => {
+      seen.push('other');
+    });
     bus.emit('doc:changed');
     expect(seen).toEqual(['self', 'other']); // 本轮两个都触发
     seen.length = 0;
@@ -84,7 +89,9 @@ describe('createEmitter', () => {
   it('emit 快照遍历：回调内新增订阅不在本轮触发', () => {
     const bus = createEmitter();
     const late = vi.fn();
-    bus.on('doc:changed', () => { bus.on('doc:changed', late); });
+    bus.on('doc:changed', () => {
+      bus.on('doc:changed', late);
+    });
     bus.emit('doc:changed');
     expect(late).not.toHaveBeenCalled(); // 本轮快照不含 late
     bus.emit('doc:changed');

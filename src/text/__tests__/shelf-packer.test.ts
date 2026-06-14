@@ -21,8 +21,14 @@ const PAD = 2;
 // 含 PAD 边距的占位盒是否重叠（同页才比较）
 function overlaps(a: { slot: PackSlot; w: number; h: number }, b: { slot: PackSlot; w: number; h: number }): boolean {
   if (a.slot.page !== b.slot.page) return false;
-  const ax0 = a.slot.ox - PAD, ay0 = a.slot.oy - PAD, ax1 = a.slot.ox + a.w + PAD, ay1 = a.slot.oy + a.h + PAD;
-  const bx0 = b.slot.ox - PAD, by0 = b.slot.oy - PAD, bx1 = b.slot.ox + b.w + PAD, by1 = b.slot.oy + b.h + PAD;
+  const ax0 = a.slot.ox - PAD,
+    ay0 = a.slot.oy - PAD,
+    ax1 = a.slot.ox + a.w + PAD,
+    ay1 = a.slot.oy + a.h + PAD;
+  const bx0 = b.slot.ox - PAD,
+    by0 = b.slot.oy - PAD,
+    bx1 = b.slot.ox + b.w + PAD,
+    by1 = b.slot.oy + b.h + PAD;
   return ax0 < bx1 && bx0 < ax1 && ay0 < by1 && by0 < ay1;
 }
 
@@ -73,7 +79,7 @@ describe('ShelfPacker: 槽位分配不变量', () => {
     const packer = new ShelfPacker(64, 2, PAD);
     expect(packer.alloc(58, 58)).not.toBeNull(); // 填满 page0
     expect(packer.alloc(58, 58)).not.toBeNull(); // 填满 page1
-    expect(packer.alloc(30, 30)).toBeNull();     // 两页全满 → null
+    expect(packer.alloc(30, 30)).toBeNull(); // 两页全满 → null
     expect(packer.pageCount).toBe(2);
     packer.reset();
     expect(packer.pageCount).toBe(1);
@@ -108,12 +114,15 @@ describe('unionRect: 脏区并集', () => {
   });
 
   it('相离矩形并集为包围盒', () => {
-    expect(unionRect({ x: 0, y: 0, w: 10, h: 10 }, { x: 20, y: 30, w: 5, h: 5 }))
-      .toEqual({ x: 0, y: 0, w: 25, h: 35 });
+    expect(unionRect({ x: 0, y: 0, w: 10, h: 10 }, { x: 20, y: 30, w: 5, h: 5 })).toEqual({ x: 0, y: 0, w: 25, h: 35 });
   });
 
   it('包含关系并集为外接矩形本身', () => {
-    expect(unionRect({ x: 0, y: 0, w: 100, h: 100 }, { x: 10, y: 10, w: 5, h: 5 }))
-      .toEqual({ x: 0, y: 0, w: 100, h: 100 });
+    expect(unionRect({ x: 0, y: 0, w: 100, h: 100 }, { x: 10, y: 10, w: 5, h: 5 })).toEqual({
+      x: 0,
+      y: 0,
+      w: 100,
+      h: 100,
+    });
   });
 });

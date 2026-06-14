@@ -4,10 +4,18 @@ import { AtlasRect } from '../render/renderer';
 // 不触碰 canvas/GPU —— GlyphAtlas 持有它做槽位分配，使打包不变量可以在 node 环境直接单测。
 
 /** 一次槽位分配结果：页号 + 内容左上角（页内坐标，已含内边距）。 @public */
-export interface PackSlot { page: number; ox: number; oy: number }
+export interface PackSlot {
+  page: number;
+  ox: number;
+  oy: number;
+}
 
 // 单页货架游标：penX/penY 为当前架行的写入点（含边距），shelfH 为当前架行高（含边距）。
-interface PageCursor { penX: number; penY: number; shelfH: number }
+interface PageCursor {
+  penX: number;
+  penY: number;
+  shelfH: number;
+}
 
 /** 并集两个矩形（a 可为 null 表示空），用于累积每页脏区。 @public */
 export function unionRect(a: AtlasRect | null, b: AtlasRect): AtlasRect {
@@ -39,13 +47,17 @@ export class ShelfPacker {
   }
 
   /** 当前已开页数。 @public */
-  get pageCount(): number { return this.cursors.length; }
+  get pageCount(): number {
+    return this.cursors.length;
+  }
 
   /**
    * 单个槽允许的最大内容边长：双侧 pad + 行首/架顶 pad 各留一份。
    * 不变量：w,h ≤ maxContent 的分配在空页上必然成功（巨字形夹紧到该值即不再有尺寸性失败）。 @public
    */
-  get maxContent(): number { return this.pageSize - this.pad * 3; }
+  get maxContent(): number {
+    return this.pageSize - this.pad * 3;
+  }
 
   /**
    * 为 w×h 的内容分配一个槽，返回内容左上角与页号；尺寸超限（应先夹紧）或全部页满返回 null。
@@ -58,7 +70,11 @@ export class ShelfPacker {
     for (;;) {
       const page = this.cursors.length - 1;
       const c = this.cursors[page];
-      if (c.penX + bw > this.pageSize) { c.penX = this.pad; c.penY += c.shelfH; c.shelfH = 0; } // 行满换架
+      if (c.penX + bw > this.pageSize) {
+        c.penX = this.pad;
+        c.penY += c.shelfH;
+        c.shelfH = 0;
+      } // 行满换架
       if (c.penY + bh <= this.pageSize) {
         const ox = c.penX + this.pad;
         const oy = c.penY + this.pad;

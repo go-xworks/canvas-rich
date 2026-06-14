@@ -1,6 +1,18 @@
 // model 层：行内序列（一个 block 的 inlines）按块内字符偏移的纯函数操作集合，
 // 是 schema 之上、editor 命令之下的不可变文本编辑原语。
-import { Inline, Mark, MarkType, text, marksEqual, isInclusive, hasMarkType, withMark, withoutMark, isInlineAtom, cloneInline } from './schema';
+import {
+  Inline,
+  Mark,
+  MarkType,
+  text,
+  marksEqual,
+  isInclusive,
+  hasMarkType,
+  withMark,
+  withoutMark,
+  isInlineAtom,
+  cloneInline,
+} from './schema';
 
 // 行内序列（一个 block 的 inlines）按「块内字符偏移」的纯操作。
 // 所有写操作出口都过 normalizeInlines：合并相邻同-marks 段 + 删空段，保证唯一表示。
@@ -41,10 +53,14 @@ function sliceInline(inl: Inline, relStart: number, relEnd: number): Inline {
 export function normalizeInlines(inlines: Inline[]): Inline[] {
   const out: Inline[] = [];
   for (const inl of inlines) {
-    if (isInlineAtom(inl)) { out.push(cloneInline(inl)); continue; } // 原子：原样保留，不删不并
+    if (isInlineAtom(inl)) {
+      out.push(cloneInline(inl));
+      continue;
+    } // 原子：原样保留，不删不并
     if (inl.text === '') continue; // 删空段
     const last = out[out.length - 1];
-    if (last && !isInlineAtom(last) && marksEqual(last.marks, inl.marks)) last.text += inl.text; // 合并同 marks
+    if (last && !isInlineAtom(last) && marksEqual(last.marks, inl.marks))
+      last.text += inl.text; // 合并同 marks
     else out.push({ kind: 'text', text: inl.text, marks: inl.marks });
   }
   if (out.length === 0) out.push(text('')); // 至少保留一个空段承载光标
@@ -69,9 +85,11 @@ export function sliceInlines(inlines: Inline[], from: number, to: number): Inlin
   const out: Inline[] = [];
   let pos = 0;
   for (const inl of inlines) {
-    const a = pos, b = pos + inl.text.length;
+    const a = pos,
+      b = pos + inl.text.length;
     pos = b;
-    const s = Math.max(from, a), e = Math.min(to, b);
+    const s = Math.max(from, a),
+      e = Math.min(to, b);
     if (s < e) out.push(sliceInline(inl, s - a, e - a)); // 原子整段命中（长度 1，s<e ⇒ 整段）
     if (pos >= to) break;
   }
@@ -109,11 +127,22 @@ export function splitInlines(inlines: Inline[], at: number): [Inline[], Inline[]
 // 区间 [from,to) 是否「全部」含某 mark（用于 toggle 判定：全有则移除，否则添加）
 export function rangeHasMark(inlines: Inline[], from: number, to: number, type: MarkType): boolean {
   if (from >= to) return false;
-  let pos = 0, covered = true, any = false;
+  let pos = 0,
+    covered = true,
+    any = false;
   for (const inl of inlines) {
-    const a = pos, b = pos + inl.text.length; pos = b;
-    const s = Math.max(from, a), e = Math.min(to, b);
-    if (s < e) { any = true; if (!hasMarkType(inl.marks, type)) { covered = false; break; } }
+    const a = pos,
+      b = pos + inl.text.length;
+    pos = b;
+    const s = Math.max(from, a),
+      e = Math.min(to, b);
+    if (s < e) {
+      any = true;
+      if (!hasMarkType(inl.marks, type)) {
+        covered = false;
+        break;
+      }
+    }
     if (pos >= to) break;
   }
   return any && covered;
@@ -129,11 +158,20 @@ export function applyMark(inlines: Inline[], from: number, to: number, mark: Mar
   const out: Inline[] = [];
   let pos = 0;
   for (const inl of inlines) {
-    const a = pos, b = pos + inl.text.length; pos = b;
-    const s = Math.max(from, a), e = Math.min(to, b);
-    if (s >= e) { out.push(inl); continue; }
+    const a = pos,
+      b = pos + inl.text.length;
+    pos = b;
+    const s = Math.max(from, a),
+      e = Math.min(to, b);
+    if (s >= e) {
+      out.push(inl);
+      continue;
+    }
     // 行内原子不参与字符级 mark：命中时原样保留（不染色、不切片）
-    if (isInlineAtom(inl)) { out.push(cloneInline(inl)); continue; }
+    if (isInlineAtom(inl)) {
+      out.push(cloneInline(inl));
+      continue;
+    }
     // 段被 [from,to) 切成最多三块：左外 / 中(命中) / 右外
     if (s > a) out.push({ kind: 'text', text: inl.text.slice(0, s - a), marks: inl.marks });
     const midMarks = add ? withMark(inl.marks, mark) : withoutMark(inl.marks, mark.type);

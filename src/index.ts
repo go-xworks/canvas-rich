@@ -16,8 +16,21 @@ export type { EditorOptions, EditorInstance, ViewMode, ShaperKind } from './edit
 
 // —— 文档模型类型（消费者读 getDoc 结果 / 构造 initialDoc 用）——
 export type {
-  Doc, Block, Inline, Mark, BlockType, MarkType, BlockAttrs, BlockAlign,
-  TableCell, CellMerge, InlineAtom, InlineAtomKind, InlineAtomAttrs, TextRun, ShapeKind,
+  Doc,
+  Block,
+  Inline,
+  Mark,
+  BlockType,
+  MarkType,
+  BlockAttrs,
+  BlockAlign,
+  TableCell,
+  CellMerge,
+  InlineAtom,
+  InlineAtomKind,
+  InlineAtomAttrs,
+  TextRun,
+  ShapeKind,
 } from './model/schema';
 export type { Style } from './types';
 

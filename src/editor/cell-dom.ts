@@ -91,7 +91,8 @@ function withCellSpanStyle(base: Mark[], el: CellDomNode): Mark[] {
   if (!st) return base;
   let marks = base;
   if (st.color && isSafeCssColor(st.color)) marks = withMark(marks, { type: 'color', attrs: { color: st.color } });
-  if (st.fontFamily && isSafeFontFamily(st.fontFamily)) marks = withMark(marks, { type: 'fontFamily', attrs: { fontFamily: st.fontFamily } });
+  if (st.fontFamily && isSafeFontFamily(st.fontFamily))
+    marks = withMark(marks, { type: 'fontFamily', attrs: { fontFamily: st.fontFamily } });
   if (st.fontSize) {
     const size = fontSizeFromCss(st.fontSize);
     if (size) marks = withMark(marks, { type: 'fontSize', attrs: { size } });

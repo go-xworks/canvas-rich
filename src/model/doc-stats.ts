@@ -9,7 +9,10 @@ import { Doc, blockTextLen } from './schema';
  * chars：拼接全部块文本后的字符长度（原子块文本通常为空，计 0）。
  * @public
  */
-export interface DocStats { blocks: number; chars: number }
+export interface DocStats {
+  blocks: number;
+  chars: number;
+}
 
 /**
  * 统计文档块数与字符数（纯函数，只读）。

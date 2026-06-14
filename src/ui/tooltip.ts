@@ -16,8 +16,10 @@ export interface TooltipSpec {
  */
 export function attachTooltip(el: HTMLElement, spec: TooltipSpec): void {
   el.dataset.tipTitle = spec.title;
-  if (spec.shortcut) el.dataset.tipKey = spec.shortcut; else delete el.dataset.tipKey;
-  if (spec.desc) el.dataset.tipDesc = spec.desc; else delete el.dataset.tipDesc;
+  if (spec.shortcut) el.dataset.tipKey = spec.shortcut;
+  else delete el.dataset.tipKey;
+  if (spec.desc) el.dataset.tipDesc = spec.desc;
+  else delete el.dataset.tipDesc;
   el.title = spec.shortcut ? `${spec.title} ${spec.shortcut}` : spec.title;
 }
 
@@ -34,10 +36,11 @@ export function installTooltips(delay = 350): void {
 
   const tip = document.createElement('div');
   tip.setAttribute('role', 'tooltip');
-  tip.style.cssText = 'position:fixed;z-index:90;max-width:260px;padding:7px 10px;border-radius:7px;'
-    + 'background:var(--rte-overlay-bg,#fff);color:var(--rte-text,#1f2430);'
-    + 'border:1px solid var(--rte-overlay-border,#e3e5e9);box-shadow:var(--rte-shadow,0 8px 24px rgba(15,17,23,.12));'
-    + 'font:12px/1.45 system-ui,sans-serif;pointer-events:none;opacity:0;transition:opacity .12s;display:none';
+  tip.style.cssText =
+    'position:fixed;z-index:90;max-width:260px;padding:7px 10px;border-radius:7px;' +
+    'background:var(--rte-overlay-bg,#fff);color:var(--rte-text,#1f2430);' +
+    'border:1px solid var(--rte-overlay-border,#e3e5e9);box-shadow:var(--rte-shadow,0 8px 24px rgba(15,17,23,.12));' +
+    'font:12px/1.45 system-ui,sans-serif;pointer-events:none;opacity:0;transition:opacity .12s;display:none';
   document.body.appendChild(tip);
 
   let timer = 0;
@@ -45,7 +48,10 @@ export function installTooltips(delay = 350): void {
 
   const hide = (): void => {
     cur = null;
-    if (timer) { clearTimeout(timer); timer = 0; }
+    if (timer) {
+      clearTimeout(timer);
+      timer = 0;
+    }
     tip.style.opacity = '0';
     tip.style.display = 'none';
   };
@@ -56,27 +62,35 @@ export function installTooltips(delay = 350): void {
     tip.innerHTML = '';
     const head = document.createElement('div');
     head.style.cssText = 'display:flex;align-items:center;gap:10px;font-weight:600;white-space:nowrap';
-    const t = document.createElement('span'); t.textContent = title; head.appendChild(t);
+    const t = document.createElement('span');
+    t.textContent = title;
+    head.appendChild(t);
     if (el.dataset.tipKey) {
-      const k = document.createElement('span'); k.textContent = el.dataset.tipKey;
+      const k = document.createElement('span');
+      k.textContent = el.dataset.tipKey;
       k.style.cssText = 'margin-left:auto;color:var(--rte-muted,#6b7280);font-weight:500;font-size:11px';
       head.appendChild(k);
     }
     tip.appendChild(head);
     if (el.dataset.tipDesc) {
-      const d = document.createElement('div'); d.textContent = el.dataset.tipDesc;
+      const d = document.createElement('div');
+      d.textContent = el.dataset.tipDesc;
       d.style.cssText = 'margin-top:3px;color:var(--rte-muted,#6b7280);white-space:normal';
       tip.appendChild(d);
     }
     // 先显示量尺寸，再贴元素下方并夹到视口内（下方放不下则翻到上方）
-    tip.style.display = 'block'; tip.style.opacity = '0';
+    tip.style.display = 'block';
+    tip.style.opacity = '0';
     const r = el.getBoundingClientRect();
     const tr = tip.getBoundingClientRect();
     let x = Math.max(6, Math.min(r.left, window.innerWidth - tr.width - 6));
     let y = r.bottom + 6;
     if (y + tr.height > window.innerHeight - 6) y = r.top - tr.height - 6;
-    tip.style.left = `${x}px`; tip.style.top = `${y}px`;
-    requestAnimationFrame(() => { if (cur === el) tip.style.opacity = '1'; });
+    tip.style.left = `${x}px`;
+    tip.style.top = `${y}px`;
+    requestAnimationFrame(() => {
+      if (cur === el) tip.style.opacity = '1';
+    });
   };
 
   document.addEventListener('mouseover', (e) => {
@@ -85,7 +99,9 @@ export function installTooltips(delay = 350): void {
     if (!el || el === cur) return;
     cur = el;
     if (timer) clearTimeout(timer);
-    timer = window.setTimeout(() => { if (cur === el) show(el); }, delay);
+    timer = window.setTimeout(() => {
+      if (cur === el) show(el);
+    }, delay);
   });
   document.addEventListener('mouseout', (e) => {
     const t = e.target as HTMLElement | null;

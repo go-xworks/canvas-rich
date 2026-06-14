@@ -8,16 +8,21 @@ import { scanToc } from '../model/toc';
  * 大纲面板句柄：以最新文档刷新 heading 列表。
  * @internal
  */
-export interface Outline { update(doc: Doc): void }
+export interface Outline {
+  update(doc: Doc): void;
+}
 
 /**
  * 大纲面板回调集合。
  * onJump：点击某条目时回调其 heading 块下标，宿主据此移动光标 / 滚入视口。
  * @internal
  */
-export interface OutlineHooks { onJump(blockIndex: number): void }
+export interface OutlineHooks {
+  onJump(blockIndex: number): void;
+}
 
-const ITEM = 'block w-full text-left bg-transparent border-0 appearance-none cursor-pointer rounded-md px-2 py-1 text-[13px] text-[var(--rte-chrome-fg)] truncate hover:bg-[var(--rte-chrome-hover)]';
+const ITEM =
+  'block w-full text-left bg-transparent border-0 appearance-none cursor-pointer rounded-md px-2 py-1 text-[13px] text-[var(--rte-chrome-fg)] truncate hover:bg-[var(--rte-chrome-hover)]';
 const EMPTY = 'px-2 py-2 text-[12px] text-[var(--rte-muted)]';
 
 /**

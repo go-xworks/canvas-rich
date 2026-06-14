@@ -1,6 +1,14 @@
 import { describe, it, expect } from 'vitest';
 import {
-  markOrder, isNonInclusive, isInclusive, sortMarks, inlineAtom, cloneInline, MarkType, Mark, InlineAtom,
+  markOrder,
+  isNonInclusive,
+  isInclusive,
+  sortMarks,
+  inlineAtom,
+  cloneInline,
+  MarkType,
+  Mark,
+  InlineAtom,
 } from '../schema';
 
 // schema marks helper 单测：markOrder/isNonInclusive 封装内部常量、与 sortMarks/isInclusive 的一致性，
@@ -35,8 +43,18 @@ describe('isNonInclusive / isInclusive', () => {
 
   it('isInclusive 与 isNonInclusive 严格互为反义', () => {
     const all: MarkType[] = [
-      'bold', 'italic', 'underline', 'strikethrough', 'highlight', 'code', 'color', 'link',
-      'fontFamily', 'fontSize', 'superscript', 'subscript',
+      'bold',
+      'italic',
+      'underline',
+      'strikethrough',
+      'highlight',
+      'code',
+      'color',
+      'link',
+      'fontFamily',
+      'fontSize',
+      'superscript',
+      'subscript',
     ];
     for (const t of all) expect(isInclusive(t)).toBe(!isNonInclusive(t));
   });

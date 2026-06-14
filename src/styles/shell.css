@@ -22,10 +22,10 @@
   --rte-text: #1f2430;
   --rte-muted: #6b7280;
   --rte-scrim: rgba(31, 35, 41, 0.45);
-  --rte-shadow: 0 8px 24px rgba(15, 17, 23, 0.10);
+  --rte-shadow: 0 8px 24px rgba(15, 17, 23, 0.1);
 }
 /* 暗色主题令牌（DOM 外壳：工具栏/面板/弹层/覆盖层）。深底 #1a1b22，与 model/palette.ts 的 DARK 令牌成对。 */
-html[data-theme="dark"] {
+html[data-theme='dark'] {
   --rte-canvas: #1a1b22;
   --rte-chrome-bg: #1f2027;
   --rte-chrome-fg: #c6cdd9;
@@ -44,38 +44,110 @@ html[data-theme="dark"] {
   --rte-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
 }
 /* 外壳根：填满宿主 target（消费者给 target 定尺寸；示例给 #app position:fixed;inset:0）。 */
-.rte-shell { width: 100%; height: 100%; display: flex; flex-direction: column; background: var(--rte-canvas); }
-.rte-shell .rte-toolbar { flex: 0 0 auto; }
+.rte-shell {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--rte-canvas);
+}
+.rte-shell .rte-toolbar {
+  flex: 0 0 auto;
+}
 /* 中部横向区：左大纲面板 | 中编辑器。min-height:0 让其内部可正确 flex 收缩。 */
-.rte-shell .rte-body { flex: 1 1 auto; display: flex; flex-direction: row; min-height: 0; }
-.rte-shell .rte-editor { flex: 1 1 auto; position: relative; min-width: 0; min-height: 0; background: var(--rte-canvas); }
+.rte-shell .rte-body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: row;
+  min-height: 0;
+}
+.rte-shell .rte-editor {
+  flex: 1 1 auto;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  background: var(--rte-canvas);
+}
 /* 左大纲面板：固定宽，可折叠（.collapsed → 宽 0 隐藏内容）。 */
 .rte-shell .rte-left-panel {
-  flex: 0 0 auto; width: 240px; min-height: 0; overflow: hidden;
-  background: var(--rte-chrome-bg); display: flex; flex-direction: column;
+  flex: 0 0 auto;
+  width: 240px;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--rte-chrome-bg);
+  display: flex;
+  flex-direction: column;
   border-right: 1px solid var(--rte-chrome-border);
 }
-.rte-shell .rte-left-panel.collapsed { width: 0; border: 0; }
-.rte-shell .rte-left-panel.collapsed > * { display: none; }
+.rte-shell .rte-left-panel.collapsed {
+  width: 0;
+  border: 0;
+}
+.rte-shell .rte-left-panel.collapsed > * {
+  display: none;
+}
 .rte-shell .rte-panel-head {
-  flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between;
-  gap: 6px; padding: 8px 10px; border-bottom: 1px solid var(--rte-chrome-border);
-  font: 12px/1.2 system-ui, sans-serif; color: var(--rte-muted);
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--rte-chrome-border);
+  font:
+    12px/1.2 system-ui,
+    sans-serif;
+  color: var(--rte-muted);
 }
 .rte-shell .rte-panel-collapse {
-  appearance: none; border: 0; background: transparent; cursor: pointer;
-  color: var(--rte-muted); font-size: 14px; line-height: 1; padding: 2px 6px; border-radius: 4px;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: var(--rte-muted);
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 4px;
 }
-.rte-shell .rte-panel-collapse:hover { background: var(--rte-chrome-hover); }
-.rte-shell .rte-panel-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; overflow: auto; }
-.rte-shell .rte-status-bar { flex: 0 0 auto; }
+.rte-shell .rte-panel-collapse:hover {
+  background: var(--rte-chrome-hover);
+}
+.rte-shell .rte-panel-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+.rte-shell .rte-status-bar {
+  flex: 0 0 auto;
+}
 /* touch-action:none：触摸语义全部自管（单指平移/长按选词/双指捏合，见 editor/touch 触屏分流），
    浏览器手势不得中途 pointercancel 接管。作用域到 .rte-shell 防污染宿主页面其它 canvas。 */
-.rte-shell canvas { display: block; width: 100%; height: 100%; outline: none; cursor: text; touch-action: none; }
+.rte-shell canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  outline: none;
+  cursor: text;
+  touch-action: none;
+}
 /* 隐藏输入代理：承接键盘 + 输入法(IME)。每实例独立，定位由渲染帧用 canvas 视口偏移换算。 */
 .rte-shell .rte-ime {
-  position: fixed; top: 0; left: 0; width: 1px; height: 1px;
-  opacity: 0; border: 0; padding: 0; margin: 0; resize: none;
-  overflow: hidden; white-space: pre; z-index: -1; color: transparent;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  resize: none;
+  overflow: hidden;
+  white-space: pre;
+  z-index: -1;
+  color: transparent;
   background: transparent;
 }

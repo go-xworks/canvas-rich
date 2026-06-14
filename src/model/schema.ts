@@ -12,54 +12,126 @@ export const ATOM_PLACEHOLDER = '￼';
 
 /** 行内区间属性（mark）的类型枚举。 @public */
 export type MarkType =
-  | 'bold' | 'italic' | 'underline' | 'strikethrough' | 'highlight' | 'code' | 'color' | 'link'
-  | 'fontFamily' | 'fontSize' | 'superscript' | 'subscript';
+  | 'bold'
+  | 'italic'
+  | 'underline'
+  | 'strikethrough'
+  | 'highlight'
+  | 'code'
+  | 'color'
+  | 'link'
+  | 'fontFamily'
+  | 'fontSize'
+  | 'superscript'
+  | 'subscript';
 // 规范化排序用的固定次序：使「同内容」的 marks 数组有唯一表示，便于相等比较与合并。
 // fontFamily/fontSize 排在字符外观类之后、装饰类之前；上/下标互斥，放末尾装饰段。
 const MARK_ORDER: MarkType[] = [
-  'fontFamily', 'fontSize', 'bold', 'italic', 'underline', 'strikethrough',
-  'highlight', 'code', 'color', 'superscript', 'subscript', 'link',
+  'fontFamily',
+  'fontSize',
+  'bold',
+  'italic',
+  'underline',
+  'strikethrough',
+  'highlight',
+  'code',
+  'color',
+  'superscript',
+  'subscript',
+  'link',
 ];
 // 非包含 mark：在其右边界打字「不」继承（link/code 末尾继续输入不会被染色）。
 const NON_INCLUSIVE: ReadonlySet<MarkType> = new Set<MarkType>(['link', 'code']);
 
 /** 单个行内 mark：类型 + 可选属性（如 color/link 的值）。 @public */
-export interface Mark { type: MarkType; attrs?: Record<string, string> }
+export interface Mark {
+  type: MarkType;
+  attrs?: Record<string, string>;
+}
 
 /** 文本段：携带一组 marks 的纯文本片段，行内序列的最小单元。 @public */
-export interface TextRun { kind: 'text'; text: string; marks: Mark[] }
+export interface TextRun {
+  kind: 'text';
+  text: string;
+  marks: Mark[];
+}
 
 /** 行内原子的种类（当前仅行内图片；预留 mention 等扩展）。 @public */
 export type InlineAtomKind = 'image';
 /** 行内原子属性（行内图片：src + 可选显示尺寸 CSS px）。 @public */
-export interface InlineAtomAttrs { src?: string; width?: number; height?: number }
+export interface InlineAtomAttrs {
+  src?: string;
+  width?: number;
+  height?: number;
+}
 /**
  * 行内原子：嵌入文字行内、占 1 个 UTF-16 offset 的不可分割单元（如行内图片）。
  * `text` 恒为 ATOM_PLACEHOLDER（长度 1），复用 TextRun 的偏移计量路径；
  * `marks` 类型固定为 `readonly []`（空只读元组）：在类型层强制「原子不参与字符级 mark」
  * 的不变量——既不能写入也无法变异，构造器/拷贝路径只能给空数组。区别于块级 image 原子块。 @public
  */
-export interface InlineAtom { kind: 'atom'; atom: InlineAtomKind; attrs: InlineAtomAttrs; text: string; marks: readonly [] }
+export interface InlineAtom {
+  kind: 'atom';
+  atom: InlineAtomKind;
+  attrs: InlineAtomAttrs;
+  text: string;
+  marks: readonly [];
+}
 /** 行内节点联合类型：文本段或行内原子。 @public */
 export type Inline = TextRun | InlineAtom;
 
 /** 类型守卫：判定行内节点是否为行内原子。 @public */
-export function isInlineAtom(inl: Inline): inl is InlineAtom { return inl.kind === 'atom'; }
+export function isInlineAtom(inl: Inline): inl is InlineAtom {
+  return inl.kind === 'atom';
+}
 
 /** 块级节点的类型枚举。 @public */
-export type BlockType = 'paragraph' | 'heading' | 'bullet_item' | 'ordered_item' | 'task_item' | 'blockquote' | 'code_block' | 'image' | 'formula' | 'table' | 'toc' | 'shape' | 'audio' | 'video' | 'iframe' | 'attachment' | 'signature' | 'seal' | 'textbox';
+export type BlockType =
+  | 'paragraph'
+  | 'heading'
+  | 'bullet_item'
+  | 'ordered_item'
+  | 'task_item'
+  | 'blockquote'
+  | 'code_block'
+  | 'image'
+  | 'formula'
+  | 'table'
+  | 'toc'
+  | 'shape'
+  | 'audio'
+  | 'video'
+  | 'iframe'
+  | 'attachment'
+  | 'signature'
+  | 'seal'
+  | 'textbox';
 
 /** 形状原子块支持的几何种类（attrs.shape）。 @public */
 export type ShapeKind =
-  | 'line' | 'rect' | 'rounded-rect' | 'ellipse' | 'triangle' | 'diamond' | 'star' | 'arrow' | 'divider';
+  | 'line'
+  | 'rect'
+  | 'rounded-rect'
+  | 'ellipse'
+  | 'triangle'
+  | 'diamond'
+  | 'star'
+  | 'arrow'
+  | 'divider';
 /** 判定块类型是否为列表项（委托块行为注册表 SSOT）。 @public */
 // 委托给块行为注册表（SSOT），避免多处重复枚举
-export function isListType(t: BlockType): boolean { return isList(t); }
+export function isListType(t: BlockType): boolean {
+  return isList(t);
+}
 /** 判定块类型是否为原子块（不可编辑内联文本）。 @public */
-export function isAtomBlock(t: BlockType): boolean { return isAtom(t); }
+export function isAtomBlock(t: BlockType): boolean {
+  return isAtom(t);
+}
 let _idc = 0;
 /** 生成进程内单调递增的稳定块 id。 @public */
-export function genBlockId(): string { return 'blk' + (++_idc); } // 稳定块 id（覆盖层按 id 缓存，跨 undo 不丢）
+export function genBlockId(): string {
+  return 'blk' + ++_idc;
+} // 稳定块 id（覆盖层按 id 缓存，跨 undo 不丢）
 
 /** 块级水平对齐：左/中/右 + 两端对齐(justify)/分散对齐(distribute)。 @public */
 export type BlockAlign = 'left' | 'center' | 'right' | 'justify' | 'distribute';
@@ -68,56 +140,81 @@ export type BlockAlign = 'left' | 'center' | 'right' | 'justify' | 'distribute';
  * 表格合并区：以锚点单元格 (r,c) 为左上角、跨 rowspan 行 × colspan 列的矩形。
  * 锚点格保留内容并渲染为 td[rowSpan][colSpan]；被覆盖的格不渲染。 @public
  */
-export interface CellMerge { r: number; c: number; rowspan: number; colspan: number }
+export interface CellMerge {
+  r: number;
+  c: number;
+  rowspan: number;
+  colspan: number;
+}
 
 /**
  * 表格单元格（v2 富文本）：行内序列承载完整 marks（粗/斜/下划线/删除线/高亮/颜色/代码/
  * 链接/字号/字体族）；换行 = inlines 文本中的 '\n'（覆盖层渲染为 <br>）。 @public
  */
-export interface TableCell { inlines: Inline[] }
+export interface TableCell {
+  inlines: Inline[];
+}
 
 /** 列表/任务项嵌套深度上限（0..MAX_LIST_DEPTH）。 @public */
 export const MAX_LIST_DEPTH = 5;
 
 /** 块级属性集合（id/对齐/书写方向/段落排版/原子块专属字段等）。 @public */
 export interface BlockAttrs {
-  id?: string;                          // 稳定 id（原子块覆盖层缓存键 / heading 锚点 / TOC 跳转目标）
-  level?: 1 | 2 | 3 | 4 | 5 | 6; align?: BlockAlign;
-  depth?: number;                       // 列表/任务项嵌套深度（0..MAX_LIST_DEPTH，缩进 = 基础 + depth*step）
-  checked?: boolean;                    // task_item：勾选态（marker ☐/☑）
-  dir?: 'ltr' | 'rtl';                  // 书写方向（文字方向）
+  id?: string; // 稳定 id（原子块覆盖层缓存键 / heading 锚点 / TOC 跳转目标）
+  level?: 1 | 2 | 3 | 4 | 5 | 6;
+  align?: BlockAlign;
+  depth?: number; // 列表/任务项嵌套深度（0..MAX_LIST_DEPTH，缩进 = 基础 + depth*step）
+  checked?: boolean; // task_item：勾选态（marker ☐/☑）
+  dir?: 'ltr' | 'rtl'; // 书写方向（文字方向）
   // —— 段落排版（覆盖块主题默认；未设置则回退主题值）——
-  lineHeight?: number;                  // 行距倍数（1 / 1.15 / 1.5 / 2），乘以行自然行高
-  spaceBefore?: number; spaceAfter?: number; // 段前/段后间距（逻辑 px，覆盖主题默认）
-  indent?: number;                      // 左缩进（逻辑 px，覆盖主题默认）
-  letterSpacing?: number;               // 字间距（逻辑 px，逐元素 advance 追加）
-  src?: string; width?: number; height?: number;  // image / shape / audio / video / iframe / attachment / signature（媒体或 iframe URL / 签名 PNG dataURL + 显示尺寸 CSS px）
-  name?: string;                        // attachment（文件名，渲染文件卡片标题 + 下载链接 download 属性）
-  text?: string;                        // seal（印章文字：单位/公司名，沿圆环弧排布，随之重绘 SVG）
-  content?: string;                     // textbox（可编辑浮动文本框的纯文本内容 v1；contenteditable 回写）
-  shape?: ShapeKind;                    // shape（几何种类，Canvas2D 描边/填充绘制）
-  latex?: string;                       // formula
-  rows?: TableCell[][];                 // table（v2：富文本单元格，cell.inlines 携带行内 marks 与 '\n' 换行）
-  colWidths?: number[];                 // table：各列宽（逻辑 px，缺省等分/auto；拖拽列边界提交）
-  rowHeights?: number[];                // table：各行高（逻辑 px，缺省 auto；拖拽行边界提交）
-  merges?: CellMerge[];                 // table：合并区（锚点 r/c + rowspan/colspan），被覆盖格不渲染
-  measuredH?: number;                   // 覆盖层实测高度（逻辑 px），回填给布局
+  lineHeight?: number; // 行距倍数（1 / 1.15 / 1.5 / 2），乘以行自然行高
+  spaceBefore?: number;
+  spaceAfter?: number; // 段前/段后间距（逻辑 px，覆盖主题默认）
+  indent?: number; // 左缩进（逻辑 px，覆盖主题默认）
+  letterSpacing?: number; // 字间距（逻辑 px，逐元素 advance 追加）
+  src?: string;
+  width?: number;
+  height?: number; // image / shape / audio / video / iframe / attachment / signature（媒体或 iframe URL / 签名 PNG dataURL + 显示尺寸 CSS px）
+  name?: string; // attachment（文件名，渲染文件卡片标题 + 下载链接 download 属性）
+  text?: string; // seal（印章文字：单位/公司名，沿圆环弧排布，随之重绘 SVG）
+  content?: string; // textbox（可编辑浮动文本框的纯文本内容 v1；contenteditable 回写）
+  shape?: ShapeKind; // shape（几何种类，Canvas2D 描边/填充绘制）
+  latex?: string; // formula
+  rows?: TableCell[][]; // table（v2：富文本单元格，cell.inlines 携带行内 marks 与 '\n' 换行）
+  colWidths?: number[]; // table：各列宽（逻辑 px，缺省等分/auto；拖拽列边界提交）
+  rowHeights?: number[]; // table：各行高（逻辑 px，缺省 auto；拖拽行边界提交）
+  merges?: CellMerge[]; // table：合并区（锚点 r/c + rowspan/colspan），被覆盖格不渲染
+  measuredH?: number; // 覆盖层实测高度（逻辑 px），回填给布局
 }
 /** 块级节点：类型 + 属性 + 行内序列。 @public */
-export interface Block { type: BlockType; attrs: BlockAttrs; inlines: Inline[] }
+export interface Block {
+  type: BlockType;
+  attrs: BlockAttrs;
+  inlines: Inline[];
+}
 
 /** 文档根节点：块的有序列表。 @public */
-export interface Doc { blocks: Block[] }
+export interface Doc {
+  blocks: Block[];
+}
 
 // —— 构造器 ——
 /** 构造一个文本段，marks 自动规范化排序。 @public */
 export const text = (s: string, marks: Mark[] = []): TextRun => ({ kind: 'text', text: s, marks: sortMarks(marks) });
 /** 构造一个行内原子（占 1 offset、不可分割）；text 固定为占位符、marks 恒空。 @public */
-export const inlineAtom = (atom: InlineAtomKind, attrs: InlineAtomAttrs): InlineAtom =>
-  ({ kind: 'atom', atom, attrs: { ...attrs }, text: ATOM_PLACEHOLDER, marks: [] as const });
+export const inlineAtom = (atom: InlineAtomKind, attrs: InlineAtomAttrs): InlineAtom => ({
+  kind: 'atom',
+  atom,
+  attrs: { ...attrs },
+  text: ATOM_PLACEHOLDER,
+  marks: [] as const,
+});
 /** 构造一个块；空行内序列回退为单个空文本段以承载光标。 @public */
-export const block = (type: BlockType, inlines: Inline[], attrs: BlockAttrs = {}): Block =>
-  ({ type, attrs, inlines: inlines.length ? inlines : [text('')] });
+export const block = (type: BlockType, inlines: Inline[], attrs: BlockAttrs = {}): Block => ({
+  type,
+  attrs,
+  inlines: inlines.length ? inlines : [text('')],
+});
 /** 构造一个段落块（block 的便捷封装）。 @public */
 export const para = (inlines: Inline[], attrs: BlockAttrs = {}): Block => block('paragraph', inlines, attrs);
 /** 构造一个表格单元格：以纯文本初始化（缺省空格子，inlines 为单个空文本段承载光标）。 @public */
@@ -164,16 +261,22 @@ export function cloneCell(c: TableCell): TableCell {
  * 取某 mark 类型在规范化排序中的次序权（越小越靠前；未登记类型回退 -1，排最前）。
  * 封装内部 {@link MARK_ORDER}，使外部按权排序而非直接触碰常量。 @public
  */
-export function markOrder(t: MarkType): number { return MARK_ORDER.indexOf(t); }
+export function markOrder(t: MarkType): number {
+  return MARK_ORDER.indexOf(t);
+}
 
 /**
  * 判定 mark 是否为「非包含型」：在其右边界打字**不**继承（link/code）。
  * 封装内部 {@link NON_INCLUSIVE}；与 {@link isInclusive} 互为反义。 @public
  */
-export function isNonInclusive(t: MarkType): boolean { return NON_INCLUSIVE.has(t); }
+export function isNonInclusive(t: MarkType): boolean {
+  return NON_INCLUSIVE.has(t);
+}
 
 /** 判定 mark 是否为包含型（右边界打字会继承；link/code 不继承）。 @public */
-export function isInclusive(t: MarkType): boolean { return !isNonInclusive(t); }
+export function isInclusive(t: MarkType): boolean {
+  return !isNonInclusive(t);
+}
 
 /** 按固定次序排序 marks，使同内容数组有唯一表示便于比较。 @public */
 export function sortMarks(marks: Mark[]): Mark[] {
@@ -266,7 +369,13 @@ export function cloneBlockAttrs(attrs: BlockAttrs): BlockAttrs {
  * 表格 rows 经 {@link cloneBlockAttrs} 逐 cell 深拷（单元格编辑不污染撤销栈）。 @public
  */
 export function cloneDoc(d: Doc): Doc {
-  return { blocks: d.blocks.map((b) => ({ type: b.type, attrs: cloneBlockAttrs(b.attrs), inlines: b.inlines.map(cloneInline) })) };
+  return {
+    blocks: d.blocks.map((b) => ({
+      type: b.type,
+      attrs: cloneBlockAttrs(b.attrs),
+      inlines: b.inlines.map(cloneInline),
+    })),
+  };
 }
 
 // —— 反序列化防线（localStorage 草稿 / 用户模板 / 外部 JSON）——
@@ -304,7 +413,11 @@ export function isBlockShape(v: unknown): v is Block {
   if (!isPlainObjectShape(b.attrs)) return false;
   if (!Array.isArray(b.inlines) || !b.inlines.every(isInlineShape)) return false;
   const a = b.attrs as BlockAttrs;
-  if (a.rows !== undefined && !(Array.isArray(a.rows) && a.rows.every((row) => Array.isArray(row) && row.every(isCellShape)))) return false;
+  if (
+    a.rows !== undefined &&
+    !(Array.isArray(a.rows) && a.rows.every((row) => Array.isArray(row) && row.every(isCellShape)))
+  )
+    return false;
   if (a.colWidths !== undefined && !Array.isArray(a.colWidths)) return false;
   if (a.rowHeights !== undefined && !Array.isArray(a.rowHeights)) return false;
   if (a.merges !== undefined && !(Array.isArray(a.merges) && a.merges.every(isPlainObjectShape))) return false;

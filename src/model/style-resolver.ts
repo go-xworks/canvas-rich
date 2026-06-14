@@ -13,7 +13,13 @@ import { meta } from './block-specs';
  * 由布局层乘以行内字号施加到 baselineY。
  * @public
  */
-export interface ResolvedRun { style: Style; underline: RGBA | null; strike: RGBA | null; highlight: RGBA | null; baselineShift: number }
+export interface ResolvedRun {
+  style: Style;
+  underline: RGBA | null;
+  strike: RGBA | null;
+  highlight: RGBA | null;
+  baselineShift: number;
+}
 
 /** 上/下标的字号缩放系数（相对所在 run 的字号）。 @public */
 export const SUBSUP_SCALE = 0.8;
@@ -36,9 +42,14 @@ export const MAX_FONT_SIZE = 400;
 export interface ResolvedBlock {
   base: Style;
   align: BlockAlign;
-  indent: number; spaceBefore: number; spaceAfter: number;
-  marker: string | null; ordered: boolean; background: RGBA | null;
-  lineHeight: number; letterSpacing: number;
+  indent: number;
+  spaceBefore: number;
+  spaceAfter: number;
+  marker: string | null;
+  ordered: boolean;
+  background: RGBA | null;
+  lineHeight: number;
+  letterSpacing: number;
 }
 
 /**
@@ -88,8 +99,11 @@ export class StyleResolver {
       indent: nonNegNum(a.indent, t.indent),
       spaceBefore: nonNegNum(a.spaceBefore, t.spaceBefore),
       spaceAfter: nonNegNum(a.spaceAfter, t.spaceAfter),
-      marker: t.marker, ordered: t.ordered, background: t.background,
-      lineHeight, letterSpacing,
+      marker: t.marker,
+      ordered: t.ordered,
+      background: t.background,
+      lineHeight,
+      letterSpacing,
     };
   }
 
@@ -108,22 +122,39 @@ export class StyleResolver {
 
     if (hasMarkType(marks, 'bold')) style.bold = true;
     if (hasMarkType(marks, 'italic')) style.italic = true;
-    if (hasMarkType(marks, 'code')) { style.fontFamily = 'ui-monospace, monospace'; style.color = [...C.code] as RGBA; }
+    if (hasMarkType(marks, 'code')) {
+      style.fontFamily = 'ui-monospace, monospace';
+      style.color = [...C.code] as RGBA;
+    }
     // 字体族/字号行内 mark：优先级 mark > block > default（覆盖块主题，含 code 的等宽默认）。
     const ff = getMark(marks, 'fontFamily');
     if (ff?.attrs?.fontFamily) style.fontFamily = resolveFontFamily(ff.attrs.fontFamily);
     const fs = getMark(marks, 'fontSize');
-    if (fs?.attrs?.size) { const n = parseFloat(fs.attrs.size); if (Number.isFinite(n) && n > 0) style.fontSize = Math.min(n, MAX_FONT_SIZE); }
+    if (fs?.attrs?.size) {
+      const n = parseFloat(fs.attrs.size);
+      if (Number.isFinite(n) && n > 0) style.fontSize = Math.min(n, MAX_FONT_SIZE);
+    }
     const hl = getMark(marks, 'highlight');
-    if (hl) { const c = hl.attrs?.color ? parseHex(hl.attrs.color, [1, 0.85, 0.25, 1]) : [1, 0.85, 0.25, 1]; highlight = [c[0], c[1], c[2], 0.4]; }
+    if (hl) {
+      const c = hl.attrs?.color ? parseHex(hl.attrs.color, [1, 0.85, 0.25, 1]) : [1, 0.85, 0.25, 1];
+      highlight = [c[0], c[1], c[2], 0.4];
+    }
     const color = getMark(marks, 'color');
     if (color?.attrs?.color) style.color = parseHex(color.attrs.color, style.color);
     if (hasMarkType(marks, 'underline')) underline = style.color as RGBA;
     if (hasMarkType(marks, 'strikethrough')) strike = style.color as RGBA;
     // 上/下标（互斥）：字号×0.8，并记录基线偏移比例供布局层施加（上标上移、下标下移）。
-    if (hasMarkType(marks, 'superscript')) { style.fontSize *= SUBSUP_SCALE; baselineShift = SUPERSCRIPT_SHIFT; }
-    else if (hasMarkType(marks, 'subscript')) { style.fontSize *= SUBSUP_SCALE; baselineShift = SUBSCRIPT_SHIFT; }
-    if (hasMarkType(marks, 'link')) { style.color = [...C.link] as RGBA; underline = C.link; }
+    if (hasMarkType(marks, 'superscript')) {
+      style.fontSize *= SUBSUP_SCALE;
+      baselineShift = SUPERSCRIPT_SHIFT;
+    } else if (hasMarkType(marks, 'subscript')) {
+      style.fontSize *= SUBSUP_SCALE;
+      baselineShift = SUBSCRIPT_SHIFT;
+    }
+    if (hasMarkType(marks, 'link')) {
+      style.color = [...C.link] as RGBA;
+      underline = C.link;
+    }
 
     return { style, underline, strike, highlight, baselineShift };
   }

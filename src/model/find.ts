@@ -3,7 +3,11 @@
 import { Doc, blockText, isAtomBlock } from './schema';
 
 /** 单个查找命中：块号 + 块内 UTF-16 区间 [start,end)。 @public */
-export interface FindMatch { block: number; start: number; end: number }
+export interface FindMatch {
+  block: number;
+  start: number;
+  end: number;
+}
 
 /**
  * 全文查找（纯函数）：逐块在纯文本上匹配 query，大小写不敏感（toLowerCase 双侧折叠），

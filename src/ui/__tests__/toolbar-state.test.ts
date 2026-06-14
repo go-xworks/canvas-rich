@@ -1,7 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import {
-  buildToolbarState, isToolbarStateEqual,
-  blockValueOf, activeFontSize, activeFontFamily, activeColor, activeHighlight,
+  buildToolbarState,
+  isToolbarStateEqual,
+  blockValueOf,
+  activeFontSize,
+  activeFontFamily,
+  activeColor,
+  activeHighlight,
 } from '../toolbar-state';
 import type { ToolbarState } from '../toolbar';
 import { RichDoc } from '../../model/rich-document';
@@ -18,12 +23,14 @@ function docOf(): Doc {
     blocks: [
       block('heading', [text('Title')], { level: 2 }),
       para([text('plain '), text('bold', [{ type: 'bold' }])]),
-      para([text('styled', [
-        { type: 'fontSize', attrs: { size: '22' } },
-        { type: 'fontFamily', attrs: { fontFamily: 'serif' } },
-        { type: 'color', attrs: { color: '#ff0000' } },
-        { type: 'highlight', attrs: { color: '#ffff00' } },
-      ])]),
+      para([
+        text('styled', [
+          { type: 'fontSize', attrs: { size: '22' } },
+          { type: 'fontFamily', attrs: { fontFamily: 'serif' } },
+          { type: 'color', attrs: { color: '#ff0000' } },
+          { type: 'highlight', attrs: { color: '#ffff00' } },
+        ]),
+      ]),
     ],
   };
 }

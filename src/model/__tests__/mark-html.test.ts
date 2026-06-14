@@ -9,9 +9,18 @@ import { MarkType } from '../schema';
 
 // Record<MarkType, true> 强制穷举：schema 新增 mark 类型时此处编译失败，提醒补映射表。
 const ALL_MARKS: Record<MarkType, true> = {
-  bold: true, italic: true, underline: true, strikethrough: true, highlight: true,
-  code: true, color: true, link: true, fontFamily: true, fontSize: true,
-  superscript: true, subscript: true,
+  bold: true,
+  italic: true,
+  underline: true,
+  strikethrough: true,
+  highlight: true,
+  code: true,
+  color: true,
+  link: true,
+  fontFamily: true,
+  fontSize: true,
+  superscript: true,
+  subscript: true,
 };
 
 describe('mark 覆盖完整性', () => {

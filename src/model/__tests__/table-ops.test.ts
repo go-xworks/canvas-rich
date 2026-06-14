@@ -1,14 +1,25 @@
 import { describe, it, expect } from 'vitest';
 import { RichDoc } from '../rich-document';
 import {
-  MIN_CELL_PX, tableColCount, normalizeRect, mergesIntersect, sanitizeMerges,
-  adjustMergesOnInsertRow, adjustMergesOnDeleteRow, adjustMergesOnInsertCol, adjustMergesOnDeleteCol,
+  MIN_CELL_PX,
+  tableColCount,
+  normalizeRect,
+  mergesIntersect,
+  sanitizeMerges,
+  adjustMergesOnInsertRow,
+  adjustMergesOnDeleteRow,
+  adjustMergesOnInsertCol,
+  adjustMergesOnDeleteCol,
 } from '../table-utils';
 import { Doc, Block, CellMerge, cellsFromStrings, cellText } from '../schema';
 
 // —— helpers ——
 // 富单元格迁移：构造仍用字符串二维数组（经 cellsFromStrings 升格），断言经 rowsText 摘回纯文本。
-const tableBlock = (rows: string[][]): Block => ({ type: 'table', attrs: { rows: cellsFromStrings(rows), id: 'tbl' }, inlines: [{ kind: 'text', text: '', marks: [] }] });
+const tableBlock = (rows: string[][]): Block => ({
+  type: 'table',
+  attrs: { rows: cellsFromStrings(rows), id: 'tbl' },
+  inlines: [{ kind: 'text', text: '', marks: [] }],
+});
 const rdWithTable = (rows: string[][]): RichDoc => new RichDoc({ blocks: [tableBlock(rows)] } as Doc);
 const attrsOf = (rd: RichDoc) => rd.doc.blocks[0].attrs;
 const rowsText = (rd: RichDoc): string[][] => (attrsOf(rd).rows ?? []).map((row) => row.map(cellText));
@@ -73,31 +84,52 @@ describe('sanitizeMerges（导出/渲染前防御，集群3）', () => {
 
 describe('mergeCells', () => {
   it('normalizes the rect, joins non-empty contents into the anchor, clears others', () => {
-    const rd = rdWithTable([['A', 'B', 'C'], ['D', 'E', 'F'], ['G', 'H', 'I']]);
+    const rd = rdWithTable([
+      ['A', 'B', 'C'],
+      ['D', 'E', 'F'],
+      ['G', 'H', 'I'],
+    ]);
     // pass endpoints out of order to exercise normalization
     rd.mergeCells(0, 1, 1, 0, 0);
     const a = attrsOf(rd);
     expect(a.merges).toEqual([{ r: 0, c: 0, rowspan: 2, colspan: 2 }]);
     // anchor holds joined non-empty cells (row-major), covered cells cleared
-    expect(rowsText(rd)).toEqual([['A B D E', '', 'C'], ['', '', 'F'], ['G', 'H', 'I']]);
+    expect(rowsText(rd)).toEqual([
+      ['A B D E', '', 'C'],
+      ['', '', 'F'],
+      ['G', 'H', 'I'],
+    ]);
   });
 
   it('ignores a degenerate 1x1 merge (records nothing, no snapshot)', () => {
-    const rd = rdWithTable([['A', 'B'], ['C', 'D']]);
+    const rd = rdWithTable([
+      ['A', 'B'],
+      ['C', 'D'],
+    ]);
     rd.mergeCells(0, 0, 0, 0, 0);
     expect(attrsOf(rd).merges).toBeUndefined();
     expect(rd.canUndo).toBe(false);
   });
 
   it('clamps endpoints beyond the table bounds before merging', () => {
-    const rd = rdWithTable([['A', 'B'], ['C', 'D']]);
+    const rd = rdWithTable([
+      ['A', 'B'],
+      ['C', 'D'],
+    ]);
     rd.mergeCells(0, 0, 0, 99, 99); // (0,0)..(1,1) after clamp → whole table
     expect(attrsOf(rd).merges).toEqual([{ r: 0, c: 0, rowspan: 2, colspan: 2 }]);
-    expect(rowsText(rd)).toEqual([['A B C D', ''], ['', '']]);
+    expect(rowsText(rd)).toEqual([
+      ['A B C D', ''],
+      ['', ''],
+    ]);
   });
 
   it('removes an old merge that the new rect intersects (no overlap invariant)', () => {
-    const rd = rdWithTable([['A', 'B', 'C'], ['D', 'E', 'F'], ['G', 'H', 'I']]);
+    const rd = rdWithTable([
+      ['A', 'B', 'C'],
+      ['D', 'E', 'F'],
+      ['G', 'H', 'I'],
+    ]);
     rd.mergeCells(0, 0, 0, 0, 1); // merge (0,0)-(0,1) horizontally
     expect(attrsOf(rd).merges).toEqual([{ r: 0, c: 0, rowspan: 1, colspan: 2 }]);
     rd.mergeCells(0, 0, 0, 1, 1); // larger rect overlapping the first
@@ -105,7 +137,10 @@ describe('mergeCells', () => {
   });
 
   it('undo restores rows and merges to the pre-merge state', () => {
-    const rd = rdWithTable([['A', 'B'], ['C', 'D']]);
+    const rd = rdWithTable([
+      ['A', 'B'],
+      ['C', 'D'],
+    ]);
     const before = rowsText(rd);
     rd.mergeCells(0, 0, 0, 1, 1);
     expect(attrsOf(rd).merges).toHaveLength(1);
@@ -115,7 +150,9 @@ describe('mergeCells', () => {
   });
 
   it('does nothing on a non-table block', () => {
-    const rd = new RichDoc({ blocks: [{ type: 'paragraph', attrs: {}, inlines: [{ kind: 'text', text: 'x', marks: [] }] }] } as Doc);
+    const rd = new RichDoc({
+      blocks: [{ type: 'paragraph', attrs: {}, inlines: [{ kind: 'text', text: 'x', marks: [] }] }],
+    } as Doc);
     rd.mergeCells(0, 0, 0, 1, 1);
     expect(rd.canUndo).toBe(false);
   });
@@ -123,7 +160,10 @@ describe('mergeCells', () => {
 
 describe('splitCell', () => {
   it('removes the merge at the anchor, restoring independent cells', () => {
-    const rd = rdWithTable([['A', 'B'], ['C', 'D']]);
+    const rd = rdWithTable([
+      ['A', 'B'],
+      ['C', 'D'],
+    ]);
     rd.mergeCells(0, 0, 0, 1, 1);
     expect(attrsOf(rd).merges).toHaveLength(1);
     rd.splitCell(0, 0, 0);
@@ -131,7 +171,10 @@ describe('splitCell', () => {
   });
 
   it('is a no-op (no snapshot) when (r,c) is not a merge anchor', () => {
-    const rd = rdWithTable([['A', 'B'], ['C', 'D']]);
+    const rd = rdWithTable([
+      ['A', 'B'],
+      ['C', 'D'],
+    ]);
     rd.mergeCells(0, 0, 0, 1, 1); // anchor at (0,0)
     const undoDepthBefore = rd.canUndo;
     rd.splitCell(0, 1, 1); // not an anchor
@@ -140,7 +183,10 @@ describe('splitCell', () => {
   });
 
   it('undo re-applies the merge after a split', () => {
-    const rd = rdWithTable([['A', 'B'], ['C', 'D']]);
+    const rd = rdWithTable([
+      ['A', 'B'],
+      ['C', 'D'],
+    ]);
     rd.mergeCells(0, 0, 0, 1, 1);
     rd.splitCell(0, 0, 0);
     expect(attrsOf(rd).merges).toEqual([]);
@@ -151,13 +197,19 @@ describe('splitCell', () => {
 
 describe('setColWidth / setRowHeight', () => {
   it('sets a column width, padding colWidths to the column count', () => {
-    const rd = rdWithTable([['A', 'B', 'C'], ['D', 'E', 'F']]);
+    const rd = rdWithTable([
+      ['A', 'B', 'C'],
+      ['D', 'E', 'F'],
+    ]);
     rd.setColWidth(0, 1, 120);
     expect(attrsOf(rd).colWidths).toEqual([0, 120, 0]);
   });
 
   it('clamps width and height to the minimum cell size', () => {
-    const rd = rdWithTable([['A', 'B'], ['C', 'D']]);
+    const rd = rdWithTable([
+      ['A', 'B'],
+      ['C', 'D'],
+    ]);
     rd.setColWidth(0, 0, 5);
     rd.setRowHeight(0, 1, 1);
     expect(attrsOf(rd).colWidths![0]).toBe(MIN_CELL_PX);
@@ -171,7 +223,10 @@ describe('setColWidth / setRowHeight', () => {
   });
 
   it('ignores out-of-range column/row indices (no snapshot)', () => {
-    const rd = rdWithTable([['A', 'B'], ['C', 'D']]);
+    const rd = rdWithTable([
+      ['A', 'B'],
+      ['C', 'D'],
+    ]);
     rd.setColWidth(0, 9, 100);
     rd.setRowHeight(0, 9, 100);
     expect(rd.canUndo).toBe(false);
@@ -263,14 +318,28 @@ describe('adjustMergesOnDeleteCol', () => {
 
 describe('insertRow', () => {
   it('inserts an empty row above the given row, aligned to the column count', () => {
-    const rd = rdWithTable([['A', 'B'], ['C', 'D']]);
+    const rd = rdWithTable([
+      ['A', 'B'],
+      ['C', 'D'],
+    ]);
     rd.insertRow(0, 1, 'above');
-    expect(rowsText(rd)).toEqual([['A', 'B'], ['', ''], ['C', 'D']]);
+    expect(rowsText(rd)).toEqual([
+      ['A', 'B'],
+      ['', ''],
+      ['C', 'D'],
+    ]);
   });
   it('inserts an empty row below the given row', () => {
-    const rd = rdWithTable([['A', 'B'], ['C', 'D']]);
+    const rd = rdWithTable([
+      ['A', 'B'],
+      ['C', 'D'],
+    ]);
     rd.insertRow(0, 0, 'below');
-    expect(rowsText(rd)).toEqual([['A', 'B'], ['', ''], ['C', 'D']]);
+    expect(rowsText(rd)).toEqual([
+      ['A', 'B'],
+      ['', ''],
+      ['C', 'D'],
+    ]);
   });
   it('splices a 0 (auto) into rowHeights at the insertion index', () => {
     const rd = rdWithTable([['A'], ['B'], ['C']]);
@@ -279,7 +348,11 @@ describe('insertRow', () => {
     expect(attrsOf(rd).rowHeights).toEqual([40, 0, 0, 0]);
   });
   it('grows a merge whose span contains the insertion point', () => {
-    const rd = rdWithTable([['A', 'B'], ['C', 'D'], ['E', 'F']]);
+    const rd = rdWithTable([
+      ['A', 'B'],
+      ['C', 'D'],
+      ['E', 'F'],
+    ]);
     rd.mergeCells(0, 0, 0, 2, 0); // column 0, rows 0..2 → rowspan 3
     rd.insertRow(0, 1, 'above'); // insert inside the span
     expect(attrsOf(rd).merges).toEqual([{ r: 0, c: 0, rowspan: 4, colspan: 1 }]);
@@ -290,18 +363,31 @@ describe('insertRow', () => {
     expect(rd.canUndo).toBe(false);
   });
   it('undo restores the original rows', () => {
-    const rd = rdWithTable([['A', 'B'], ['C', 'D']]);
+    const rd = rdWithTable([
+      ['A', 'B'],
+      ['C', 'D'],
+    ]);
     rd.insertRow(0, 0, 'below');
     rd.undo();
-    expect(rowsText(rd)).toEqual([['A', 'B'], ['C', 'D']]);
+    expect(rowsText(rd)).toEqual([
+      ['A', 'B'],
+      ['C', 'D'],
+    ]);
   });
 });
 
 describe('deleteRow', () => {
   it('removes the given row', () => {
-    const rd = rdWithTable([['A', 'B'], ['C', 'D'], ['E', 'F']]);
+    const rd = rdWithTable([
+      ['A', 'B'],
+      ['C', 'D'],
+      ['E', 'F'],
+    ]);
     rd.deleteRow(0, 1);
-    expect(rowsText(rd)).toEqual([['A', 'B'], ['E', 'F']]);
+    expect(rowsText(rd)).toEqual([
+      ['A', 'B'],
+      ['E', 'F'],
+    ]);
   });
   it('splices the corresponding rowHeights entry out', () => {
     const rd = rdWithTable([['A'], ['B'], ['C']]);
@@ -310,7 +396,11 @@ describe('deleteRow', () => {
     expect(attrsOf(rd).rowHeights).toEqual([0, 0]);
   });
   it('shrinks a merge spanning the deleted row', () => {
-    const rd = rdWithTable([['A', 'B'], ['C', 'D'], ['E', 'F']]);
+    const rd = rdWithTable([
+      ['A', 'B'],
+      ['C', 'D'],
+      ['E', 'F'],
+    ]);
     rd.mergeCells(0, 0, 0, 2, 0); // rowspan 3 on column 0
     rd.deleteRow(0, 1);
     expect(attrsOf(rd).merges).toEqual([{ r: 0, c: 0, rowspan: 2, colspan: 1 }]);
@@ -322,23 +412,41 @@ describe('deleteRow', () => {
     expect(rd.canUndo).toBe(false);
   });
   it('undo restores the deleted row', () => {
-    const rd = rdWithTable([['A', 'B'], ['C', 'D']]);
+    const rd = rdWithTable([
+      ['A', 'B'],
+      ['C', 'D'],
+    ]);
     rd.deleteRow(0, 0);
     rd.undo();
-    expect(rowsText(rd)).toEqual([['A', 'B'], ['C', 'D']]);
+    expect(rowsText(rd)).toEqual([
+      ['A', 'B'],
+      ['C', 'D'],
+    ]);
   });
 });
 
 describe('insertCol', () => {
   it('inserts an empty column to the left of the given column', () => {
-    const rd = rdWithTable([['A', 'B'], ['C', 'D']]);
+    const rd = rdWithTable([
+      ['A', 'B'],
+      ['C', 'D'],
+    ]);
     rd.insertCol(0, 1, 'left');
-    expect(rowsText(rd)).toEqual([['A', '', 'B'], ['C', '', 'D']]);
+    expect(rowsText(rd)).toEqual([
+      ['A', '', 'B'],
+      ['C', '', 'D'],
+    ]);
   });
   it('inserts an empty column to the right of the given column', () => {
-    const rd = rdWithTable([['A', 'B'], ['C', 'D']]);
+    const rd = rdWithTable([
+      ['A', 'B'],
+      ['C', 'D'],
+    ]);
     rd.insertCol(0, 0, 'right');
-    expect(rowsText(rd)).toEqual([['A', '', 'B'], ['C', '', 'D']]);
+    expect(rowsText(rd)).toEqual([
+      ['A', '', 'B'],
+      ['C', '', 'D'],
+    ]);
   });
   it('splices a 0 (auto) into colWidths at the insertion index', () => {
     const rd = rdWithTable([['A', 'B', 'C']]);
@@ -347,7 +455,10 @@ describe('insertCol', () => {
     expect(attrsOf(rd).colWidths).toEqual([60, 0, 0, 0]);
   });
   it('grows a merge whose span contains the insertion point', () => {
-    const rd = rdWithTable([['A', 'B', 'C'], ['D', 'E', 'F']]);
+    const rd = rdWithTable([
+      ['A', 'B', 'C'],
+      ['D', 'E', 'F'],
+    ]);
     rd.mergeCells(0, 0, 0, 0, 2); // row 0, cols 0..2 → colspan 3
     rd.insertCol(0, 1, 'left'); // insert inside the span
     expect(attrsOf(rd).merges).toEqual([{ r: 0, c: 0, rowspan: 1, colspan: 4 }]);
@@ -358,18 +469,30 @@ describe('insertCol', () => {
     expect(rd.canUndo).toBe(false);
   });
   it('undo restores the original columns', () => {
-    const rd = rdWithTable([['A', 'B'], ['C', 'D']]);
+    const rd = rdWithTable([
+      ['A', 'B'],
+      ['C', 'D'],
+    ]);
     rd.insertCol(0, 0, 'right');
     rd.undo();
-    expect(rowsText(rd)).toEqual([['A', 'B'], ['C', 'D']]);
+    expect(rowsText(rd)).toEqual([
+      ['A', 'B'],
+      ['C', 'D'],
+    ]);
   });
 });
 
 describe('deleteCol', () => {
   it('removes the given column from every row', () => {
-    const rd = rdWithTable([['A', 'B', 'C'], ['D', 'E', 'F']]);
+    const rd = rdWithTable([
+      ['A', 'B', 'C'],
+      ['D', 'E', 'F'],
+    ]);
     rd.deleteCol(0, 1);
-    expect(rowsText(rd)).toEqual([['A', 'C'], ['D', 'F']]);
+    expect(rowsText(rd)).toEqual([
+      ['A', 'C'],
+      ['D', 'F'],
+    ]);
   });
   it('splices the corresponding colWidths entry out', () => {
     const rd = rdWithTable([['A', 'B', 'C']]);
@@ -378,7 +501,10 @@ describe('deleteCol', () => {
     expect(attrsOf(rd).colWidths).toEqual([0, 0]);
   });
   it('shrinks a merge spanning the deleted column', () => {
-    const rd = rdWithTable([['A', 'B', 'C'], ['D', 'E', 'F']]);
+    const rd = rdWithTable([
+      ['A', 'B', 'C'],
+      ['D', 'E', 'F'],
+    ]);
     rd.mergeCells(0, 0, 0, 0, 2); // colspan 3 on row 0
     rd.deleteCol(0, 1);
     expect(attrsOf(rd).merges).toEqual([{ r: 0, c: 0, rowspan: 1, colspan: 2 }]);
@@ -390,13 +516,21 @@ describe('deleteCol', () => {
     expect(rd.canUndo).toBe(false);
   });
   it('undo restores the deleted column', () => {
-    const rd = rdWithTable([['A', 'B'], ['C', 'D']]);
+    const rd = rdWithTable([
+      ['A', 'B'],
+      ['C', 'D'],
+    ]);
     rd.deleteCol(0, 0);
     rd.undo();
-    expect(rowsText(rd)).toEqual([['A', 'B'], ['C', 'D']]);
+    expect(rowsText(rd)).toEqual([
+      ['A', 'B'],
+      ['C', 'D'],
+    ]);
   });
   it('does nothing on a non-table block', () => {
-    const rd = new RichDoc({ blocks: [{ type: 'paragraph', attrs: {}, inlines: [{ kind: 'text', text: 'x', marks: [] }] }] } as Doc);
+    const rd = new RichDoc({
+      blocks: [{ type: 'paragraph', attrs: {}, inlines: [{ kind: 'text', text: 'x', marks: [] }] }],
+    } as Doc);
     rd.deleteCol(0, 0);
     rd.insertRow(0, 0, 'below');
     expect(rd.canUndo).toBe(false);

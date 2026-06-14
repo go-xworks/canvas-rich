@@ -7,10 +7,16 @@
  * word 粒度另读 index（段起始 UTF-16 偏移）与 isWordLike（空白/标点为 false）。
  * @public
  */
-export interface SegmentData { segment: string; index: number; isWordLike?: boolean }
+export interface SegmentData {
+  segment: string;
+  index: number;
+  isWordLike?: boolean;
+}
 
 /** Intl.Segmenter 实例最小面。 @public */
-export interface IntlSegmenter { segment(input: string): Iterable<SegmentData>; }
+export interface IntlSegmenter {
+  segment(input: string): Iterable<SegmentData>;
+}
 
 /** Intl.Segmenter 构造器最小面（new (locales?, { granularity })）。 @public */
 export interface SegmenterCtor {

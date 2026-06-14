@@ -99,11 +99,18 @@ export const BUILTIN_TEMPLATES: DocTemplate[] = [
 export const USER_TEMPLATES_KEY = 'rte.userTemplates';
 
 /** 序列化存储的用户模板项：名称 + 文档快照。 @public */
-export interface StoredTemplate { name: string; doc: Doc }
+export interface StoredTemplate {
+  name: string;
+  doc: Doc;
+}
 
 // 安全取 localStorage（SSR/单测/隐私模式下不存在则返回 null）。
 function ls(): Storage | null {
-  try { return typeof localStorage !== 'undefined' ? localStorage : null; } catch { return null; }
+  try {
+    return typeof localStorage !== 'undefined' ? localStorage : null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -136,7 +143,9 @@ export function loadUserTemplates(): StoredTemplate[] {
       out.push({ name: t.name, doc: { blocks } });
     }
     return out;
-  } catch { return []; }
+  } catch {
+    return [];
+  }
 }
 
 /**
@@ -148,7 +157,13 @@ export function saveUserTemplate(name: string, doc: Doc): StoredTemplate[] {
   const list = loadUserTemplates().filter((t) => t.name !== name);
   list.push({ name, doc });
   const store = ls();
-  if (store) { try { store.setItem(USER_TEMPLATES_KEY, JSON.stringify(list)); } catch { /* 配额/隐私模式 */ } }
+  if (store) {
+    try {
+      store.setItem(USER_TEMPLATES_KEY, JSON.stringify(list));
+    } catch {
+      /* 配额/隐私模式 */
+    }
+  }
   return list;
 }
 

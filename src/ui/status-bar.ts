@@ -29,9 +29,10 @@ export interface StatusBar {
 const SEG = 'inline-flex items-center gap-1 text-[12px] text-[var(--rte-muted)]';
 const VAL = 'text-[var(--rte-chrome-fg)] tabular-nums';
 // 缩放小按钮（−/＋/百分比）：方形透明底，hover 提亮，不抢编辑器焦点。
-const ZBTN = 'w-[20px] h-[20px] rounded bg-transparent border-0 appearance-none cursor-pointer '
-  + 'inline-flex items-center justify-center text-[13px] leading-none text-[var(--rte-chrome-fg)] '
-  + 'hover:bg-[var(--rte-chrome-hover)]';
+const ZBTN =
+  'w-[20px] h-[20px] rounded bg-transparent border-0 appearance-none cursor-pointer ' +
+  'inline-flex items-center justify-center text-[13px] leading-none text-[var(--rte-chrome-fg)] ' +
+  'hover:bg-[var(--rte-chrome-hover)]';
 
 /**
  * 创建底部状态栏：挂入 host，显示段落数 / 字数 / 缩放（可交互步进与复位）/ 视图模式。
@@ -39,21 +40,31 @@ const ZBTN = 'w-[20px] h-[20px] rounded bg-transparent border-0 appearance-none 
  */
 export function createStatusBar(host: HTMLElement, hooks: StatusBarHooks): StatusBar {
   const bar = document.createElement('div');
-  bar.className = 'flex items-center gap-4 px-3 h-7 bg-[var(--rte-chrome-bg)] border-t border-[var(--rte-chrome-border)] select-none';
+  bar.className =
+    'flex items-center gap-4 px-3 h-7 bg-[var(--rte-chrome-bg)] border-t border-[var(--rte-chrome-border)] select-none';
 
   const seg = (label: string): { wrap: HTMLDivElement; val: HTMLSpanElement } => {
-    const wrap = document.createElement('div'); wrap.className = SEG;
-    const lab = document.createElement('span'); lab.textContent = label;
-    const val = document.createElement('span'); val.className = VAL;
+    const wrap = document.createElement('div');
+    wrap.className = SEG;
+    const lab = document.createElement('span');
+    lab.textContent = label;
+    const val = document.createElement('span');
+    val.className = VAL;
     wrap.append(lab, val);
     return { wrap, val };
   };
   const zoomBtn = (text: string, title: string, fn: () => void): HTMLButtonElement => {
     const b = document.createElement('button');
-    b.type = 'button'; b.className = ZBTN; b.textContent = text; b.title = title;
+    b.type = 'button';
+    b.className = ZBTN;
+    b.textContent = text;
+    b.title = title;
     b.setAttribute('aria-label', title);
     b.addEventListener('mousedown', (e) => e.preventDefault()); // 不让点击夺走 ime 焦点
-    b.addEventListener('click', (e) => { e.preventDefault(); fn(); });
+    b.addEventListener('click', (e) => {
+      e.preventDefault();
+      fn();
+    });
     return b;
   };
 
@@ -64,14 +75,17 @@ export function createStatusBar(host: HTMLElement, hooks: StatusBarHooks): Statu
   save.className = 'inline-flex items-center text-[12px] text-[var(--rte-muted)]';
   save.textContent = '已保存';
   // 缩放控件：−（-10%）/ 百分比（点击回 100%）/ ＋（+10%）。
-  const zoomWrap = document.createElement('div'); zoomWrap.className = SEG;
-  const zoomLab = document.createElement('span'); zoomLab.textContent = '缩放';
+  const zoomWrap = document.createElement('div');
+  zoomWrap.className = SEG;
+  const zoomLab = document.createElement('span');
+  zoomLab.textContent = '缩放';
   const minus = zoomBtn('−', '缩小 10%（⌘-）', () => hooks.onZoomDelta(-10));
   const pct = zoomBtn('100%', '恢复 100%（⌘0）', () => hooks.onZoomReset());
   pct.className = ZBTN + ' w-auto px-1 text-[12px] tabular-nums';
   const plus = zoomBtn('＋', '放大 10%（⌘+）', () => hooks.onZoomDelta(10));
   zoomWrap.append(zoomLab, minus, pct, plus);
-  const sp = document.createElement('div'); sp.className = 'flex-1';
+  const sp = document.createElement('div');
+  sp.className = 'flex-1';
   const view = seg('视图');
   bar.append(paras.wrap, words.wrap, save, zoomWrap, sp, view.wrap);
   host.appendChild(bar);

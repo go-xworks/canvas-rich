@@ -13,15 +13,18 @@ const blockSummary = (b: Block): { type: string; text: string; attrs: BlockAttrs
 const inlineSummary = (inls: Inline[]): [string, string][] =>
   inls.map((r) => [r.text, r.marks.map((m) => m.type).join(',')]);
 // 把富单元格 rows 摘回纯文本二维数组（断言迁移：rows 已升级为 TableCell[][]）。
-const rowsText = (rows: TableCell[][] | undefined): string[][] =>
-  (rows ?? []).map((row) => row.map(cellText));
+const rowsText = (rows: TableCell[][] | undefined): string[][] => (rows ?? []).map((row) => row.map(cellText));
 
 describe('parseMarkdown — 块级', () => {
   it('标题 # .. ###### → heading level 1-6', () => {
     const doc = parseMarkdown('# H1\n## H2\n### H3\n#### H4\n##### H5\n###### H6');
     expect(doc.blocks.map((b) => [b.type, b.attrs.level])).toEqual([
-      ['heading', 1], ['heading', 2], ['heading', 3],
-      ['heading', 4], ['heading', 5], ['heading', 6],
+      ['heading', 1],
+      ['heading', 2],
+      ['heading', 3],
+      ['heading', 4],
+      ['heading', 5],
+      ['heading', 6],
     ]);
     expect(doc.blocks[0].inlines.map((r) => r.text).join('')).toBe('H1');
   });
@@ -29,7 +32,9 @@ describe('parseMarkdown — 块级', () => {
   it('无序列表 -/*/+ → bullet_item', () => {
     const doc = parseMarkdown('- a\n* b\n+ c');
     expect(doc.blocks.map(blockSummary).map((b) => [b.type, b.text])).toEqual([
-      ['bullet_item', 'a'], ['bullet_item', 'b'], ['bullet_item', 'c'],
+      ['bullet_item', 'a'],
+      ['bullet_item', 'b'],
+      ['bullet_item', 'c'],
     ]);
   });
 
@@ -42,7 +47,9 @@ describe('parseMarkdown — 块级', () => {
   it('任务列表 - [ ] / - [x] → task_item + checked', () => {
     const doc = parseMarkdown('- [ ] todo\n- [x] done\n- [X] DONE');
     expect(doc.blocks.map((b) => [b.type, b.attrs.checked])).toEqual([
-      ['task_item', false], ['task_item', true], ['task_item', true],
+      ['task_item', false],
+      ['task_item', true],
+      ['task_item', true],
     ]);
     expect(doc.blocks[0].inlines.map((r) => r.text).join('')).toBe('todo');
   });
@@ -86,15 +93,25 @@ describe('parseMarkdown — 行内 marks', () => {
   it('**粗** *斜* ~~删~~ `码` ==高亮==', () => {
     const doc = parseMarkdown('a **b** c *d* e ~~f~~ g `h` i ==j==');
     expect(inlineSummary(doc.blocks[0].inlines)).toEqual([
-      ['a ', ''], ['b', 'bold'], [' c ', ''], ['d', 'italic'], [' e ', ''],
-      ['f', 'strikethrough'], [' g ', ''], ['h', 'code'], [' i ', ''], ['j', 'highlight'],
+      ['a ', ''],
+      ['b', 'bold'],
+      [' c ', ''],
+      ['d', 'italic'],
+      [' e ', ''],
+      ['f', 'strikethrough'],
+      [' g ', ''],
+      ['h', 'code'],
+      [' i ', ''],
+      ['j', 'highlight'],
     ]);
   });
 
   it('__粗__ 与 _斜_ 下划线定界符', () => {
     const doc = parseMarkdown('__bold__ and _italic_');
     expect(inlineSummary(doc.blocks[0].inlines)).toEqual([
-      ['bold', 'bold'], [' and ', ''], ['italic', 'italic'],
+      ['bold', 'bold'],
+      [' and ', ''],
+      ['italic', 'italic'],
     ]);
   });
 
@@ -134,7 +151,9 @@ describe('parseMarkdown — 行内 marks', () => {
   it('toHtml 对程序化构造的危险 href 兜底不产 <a>（导出防线）', () => {
     // 绕过导入直接构造带危险 href 的 link mark，验证导出端独立防护
     const doc = parseMarkdown('x');
-    doc.blocks[0].inlines = [{ kind: 'text', text: 'x', marks: [{ type: 'link', attrs: { href: 'javascript:alert(1)' } }] }];
+    doc.blocks[0].inlines = [
+      { kind: 'text', text: 'x', marks: [{ type: 'link', attrs: { href: 'javascript:alert(1)' } }] },
+    ];
     const html = toHtml(doc);
     expect(html).not.toContain('javascript:');
     expect(html).not.toContain('<a ');
@@ -189,12 +208,19 @@ describe('parseMarkdown — 块级图片与表格', () => {
   it('管道表格 → table 块（rows 矩形）', () => {
     const doc = parseMarkdown('| h1 | h2 |\n| --- | --- |\n| a | b |\n| c | d |');
     expect(doc.blocks[0].type).toBe('table');
-    expect(rowsText(doc.blocks[0].attrs.rows)).toEqual([['h1', 'h2'], ['a', 'b'], ['c', 'd']]);
+    expect(rowsText(doc.blocks[0].attrs.rows)).toEqual([
+      ['h1', 'h2'],
+      ['a', 'b'],
+      ['c', 'd'],
+    ]);
   });
 
   it('表格行列数不齐 → 补空串成矩形', () => {
     const doc = parseMarkdown('| a | b | c |\n| --- | --- | --- |\n| 1 | 2 |');
-    expect(rowsText(doc.blocks[0].attrs.rows)).toEqual([['a', 'b', 'c'], ['1', '2', '']]);
+    expect(rowsText(doc.blocks[0].attrs.rows)).toEqual([
+      ['a', 'b', 'c'],
+      ['1', '2', ''],
+    ]);
   });
 
   it('缺分隔行的管道行不识别为表格（降级段落）', () => {
@@ -204,13 +230,19 @@ describe('parseMarkdown — 块级图片与表格', () => {
 
   it('单元格内 <br>（含 <br/> 与大写）还原为 \\n（与导出互逆）', () => {
     const doc = parseMarkdown('| a<br>b | c<br/>d |\n| --- | --- |\n| e<BR>f |  |');
-    expect(rowsText(doc.blocks[0].attrs.rows)).toEqual([['a\nb', 'c\nd'], ['e\nf', '']]);
+    expect(rowsText(doc.blocks[0].attrs.rows)).toEqual([
+      ['a\nb', 'c\nd'],
+      ['e\nf', ''],
+    ]);
   });
 
   it('含换行单元格的 MD 表格 round-trip 保真（\\n ↔ <br>）', () => {
     const md = '| a<br>b | c |\n| --- | --- |\n| d | e<br><br>f |';
     const doc = parseMarkdown(md);
-    expect(rowsText(doc.blocks[0].attrs.rows)).toEqual([['a\nb', 'c'], ['d', 'e\n\nf']]);
+    expect(rowsText(doc.blocks[0].attrs.rows)).toEqual([
+      ['a\nb', 'c'],
+      ['d', 'e\n\nf'],
+    ]);
     expect(toMarkdown(doc)).toBe(md); // 导出端 '\n' → '<br>'，往返幂等
   });
 });
@@ -237,9 +269,17 @@ describe('parseMarkdown ↔ toMarkdown round-trip', () => {
   it('块类型与 attrs 正确还原', () => {
     const doc = parseMarkdown(canonical);
     expect(doc.blocks.map((b) => b.type)).toEqual([
-      'heading', 'paragraph', 'bullet_item', 'bullet_item',
-      'ordered_item', 'ordered_item', 'task_item', 'task_item',
-      'blockquote', 'code_block', 'code_block',
+      'heading',
+      'paragraph',
+      'bullet_item',
+      'bullet_item',
+      'ordered_item',
+      'ordered_item',
+      'task_item',
+      'task_item',
+      'blockquote',
+      'code_block',
+      'code_block',
     ]);
     expect(doc.blocks[0].attrs.level).toBe(1);
     expect(doc.blocks.filter((b) => b.type === 'task_item').map((b) => b.attrs.checked)).toEqual([false, true]);
@@ -266,12 +306,13 @@ describe('parseMarkdown ↔ toMarkdown round-trip', () => {
 
   it('行内/块级图片与表格的块类型还原', () => {
     const doc = parseMarkdown(extras);
-    expect(doc.blocks.map((b) => b.type)).toEqual([
-      'paragraph', 'paragraph', 'image', 'paragraph', 'table',
-    ]);
+    expect(doc.blocks.map((b) => b.type)).toEqual(['paragraph', 'paragraph', 'image', 'paragraph', 'table']);
     expect(doc.blocks[2].attrs.src).toBe('https://e.com/block.png');
     expect(doc.blocks[3].inlines.some((r) => r.kind === 'atom')).toBe(true);
-    expect(rowsText(doc.blocks[4].attrs.rows)).toEqual([['h1', 'h2'], ['a', 'b']]);
+    expect(rowsText(doc.blocks[4].attrs.rows)).toEqual([
+      ['h1', 'h2'],
+      ['a', 'b'],
+    ]);
   });
 });
 
@@ -283,38 +324,63 @@ describeHtml('parseHtml — 浏览器 DOMParser 路径', () => {
   it('h1-h6 / p / blockquote', () => {
     const doc = parseHtml('<h1>T</h1><h3>S</h3><p>body</p><blockquote>q</blockquote>');
     expect(doc.blocks.map((b) => [b.type, b.attrs.level ?? null, b.inlines.map((r) => r.text).join('')])).toEqual([
-      ['heading', 1, 'T'], ['heading', 3, 'S'], ['paragraph', null, 'body'], ['blockquote', null, 'q'],
+      ['heading', 1, 'T'],
+      ['heading', 3, 'S'],
+      ['paragraph', null, 'body'],
+      ['blockquote', null, 'q'],
     ]);
   });
 
   it('ul / ol / li → bullet_item / ordered_item', () => {
     const doc = parseHtml('<ul><li>a</li><li>b</li></ul><ol><li>c</li></ol>');
     expect(doc.blocks.map((b) => [b.type, b.inlines.map((r) => r.text).join('')])).toEqual([
-      ['bullet_item', 'a'], ['bullet_item', 'b'], ['ordered_item', 'c'],
+      ['bullet_item', 'a'],
+      ['bullet_item', 'b'],
+      ['ordered_item', 'c'],
     ]);
   });
 
   it('GFM 任务列表 checkbox → task_item + checked', () => {
-    const doc = parseHtml('<ul><li><input type="checkbox" disabled /> open</li>'
-      + '<li><input type="checkbox" disabled checked /> done</li></ul>');
-    expect(doc.blocks.map((b) => [b.type, b.attrs.checked, b.inlines.map((r) => r.text).join('').trim()])).toEqual([
-      ['task_item', false, 'open'], ['task_item', true, 'done'],
+    const doc = parseHtml(
+      '<ul><li><input type="checkbox" disabled /> open</li>' +
+        '<li><input type="checkbox" disabled checked /> done</li></ul>',
+    );
+    expect(
+      doc.blocks.map((b) => [
+        b.type,
+        b.attrs.checked,
+        b.inlines
+          .map((r) => r.text)
+          .join('')
+          .trim(),
+      ]),
+    ).toEqual([
+      ['task_item', false, 'open'],
+      ['task_item', true, 'done'],
     ]);
   });
 
   it('pre>code → 逐行 code_block', () => {
     const doc = parseHtml('<pre><code>x = 1\ny = 2</code></pre>');
     expect(doc.blocks.map((b) => [b.type, b.inlines[0].text])).toEqual([
-      ['code_block', 'x = 1'], ['code_block', 'y = 2'],
+      ['code_block', 'x = 1'],
+      ['code_block', 'y = 2'],
     ]);
   });
 
   it('strong/em/u/s/code/mark/sup/sub 行内 marks', () => {
-    const doc = parseHtml('<p><strong>b</strong><em>i</em><u>u</u><s>s</s>'
-      + '<code>c</code><mark>h</mark><sup>p</sup><sub>q</sub></p>');
+    const doc = parseHtml(
+      '<p><strong>b</strong><em>i</em><u>u</u><s>s</s>' + '<code>c</code><mark>h</mark><sup>p</sup><sub>q</sub></p>',
+    );
     expect(inlineSummary(doc.blocks[0].inlines)).toEqual([
-      ['b', 'bold'], ['i', 'italic'], ['u', 'underline'], ['s', 'strikethrough'],
-      ['c', 'code'], ['h', 'highlight'], ['p', 'superscript'], ['q', 'subscript'],
+      ['b', 'bold'],
+      ['i', 'italic'],
+      ['u', 'underline'],
+      ['s', 'strikethrough'],
+      ['c', 'code'],
+      ['h', 'highlight'],
+      ['p', 'superscript'],
+      ['q', 'subscript'],
     ]);
   });
 
@@ -367,14 +433,18 @@ describeHtml('parseHtml — 浏览器 DOMParser 路径', () => {
 
   it('<table> colspan/rowspan → table 块 + merges（网格重建）', () => {
     const doc = parseHtml(
-      '<table>'
-      + '<tr><td colspan="2">A</td><td>B</td></tr>'
-      + '<tr><td rowspan="2">C</td><td>D</td><td>E</td></tr>'
-      + '<tr><td>F</td><td>G</td></tr>'
-      + '</table>',
+      '<table>' +
+        '<tr><td colspan="2">A</td><td>B</td></tr>' +
+        '<tr><td rowspan="2">C</td><td>D</td><td>E</td></tr>' +
+        '<tr><td>F</td><td>G</td></tr>' +
+        '</table>',
     );
     expect(doc.blocks[0].type).toBe('table');
-    expect(rowsText(doc.blocks[0].attrs.rows)).toEqual([['A', '', 'B'], ['C', 'D', 'E'], ['', 'F', 'G']]);
+    expect(rowsText(doc.blocks[0].attrs.rows)).toEqual([
+      ['A', '', 'B'],
+      ['C', 'D', 'E'],
+      ['', 'F', 'G'],
+    ]);
     expect(doc.blocks[0].attrs.merges).toEqual([
       { r: 0, c: 0, rowspan: 1, colspan: 2 },
       { r: 1, c: 0, rowspan: 2, colspan: 1 },
@@ -383,26 +453,33 @@ describeHtml('parseHtml — 浏览器 DOMParser 路径', () => {
 
   it('简单 <table> 无合并 → 仅 rows', () => {
     const doc = parseHtml('<table><tr><td>a</td><td>b</td></tr><tr><td>c</td><td>d</td></tr></table>');
-    expect(rowsText(doc.blocks[0].attrs.rows)).toEqual([['a', 'b'], ['c', 'd']]);
+    expect(rowsText(doc.blocks[0].attrs.rows)).toEqual([
+      ['a', 'b'],
+      ['c', 'd'],
+    ]);
     expect(doc.blocks[0].attrs.merges).toBeUndefined();
   });
 
   it('toHtml→parseHtml 往返保 fontFamily/fontSize/上标/高亮（idempotent）', () => {
-    const html = toHtml(parseHtml(
-      '<p>p <span style="font-family:Georgia">s</span> '
-      + '<span style="font-size:24px">b</span> <sup>u</sup> <mark>h</mark></p>',
-    ));
+    const html = toHtml(
+      parseHtml(
+        '<p>p <span style="font-family:Georgia">s</span> ' +
+          '<span style="font-size:24px">b</span> <sup>u</sup> <mark>h</mark></p>',
+      ),
+    );
     expect(toHtml(parseHtml(html))).toBe(html);
   });
 
   it('toHtml→parseHtml 表格往返幂等（含 colspan/rowspan）', () => {
-    const html = toHtml(parseHtml(
-      '<table>'
-      + '<tr><td colspan="2">A</td><td>B</td></tr>'
-      + '<tr><td rowspan="2">C</td><td>D</td><td>E</td></tr>'
-      + '<tr><td>F</td><td>G</td></tr>'
-      + '</table>',
-    ));
+    const html = toHtml(
+      parseHtml(
+        '<table>' +
+          '<tr><td colspan="2">A</td><td>B</td></tr>' +
+          '<tr><td rowspan="2">C</td><td>D</td><td>E</td></tr>' +
+          '<tr><td>F</td><td>G</td></tr>' +
+          '</table>',
+      ),
+    );
     expect(toHtml(parseHtml(html))).toBe(html);
   });
 

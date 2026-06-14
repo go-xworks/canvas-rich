@@ -6,7 +6,19 @@ import { buildPageRuns, buildQuadMesh, FLOATS_PER_VERT, VERTS_PER_QUAD } from '.
 // 这是「背景→选区→字形→装饰→光标」z 序与 AA 混色顺序正确性的前提。
 
 const quad = (page: number): Quad => ({
-  x: 0, y: 0, w: 1, h: 1, u0: 0, v0: 0, u1: 1, v1: 1, r: 1, g: 1, b: 1, a: 1, page,
+  x: 0,
+  y: 0,
+  w: 1,
+  h: 1,
+  u0: 0,
+  v0: 0,
+  u1: 1,
+  v1: 1,
+  r: 1,
+  g: 1,
+  b: 1,
+  a: 1,
+  page,
 });
 
 describe('buildPageRuns: 相邻同页切段（保序）', () => {
@@ -15,8 +27,7 @@ describe('buildPageRuns: 相邻同页切段（保序）', () => {
   });
 
   it('全部同页 → 单段全量', () => {
-    expect(buildPageRuns([quad(0), quad(0), quad(0)]))
-      .toEqual([{ page: 0, start: 0, count: 3 }]);
+    expect(buildPageRuns([quad(0), quad(0), quad(0)])).toEqual([{ page: 0, start: 0, count: 3 }]);
   });
 
   it('混页序列：只在页号变化处切段，绝不重排（同页号可出现在多段）', () => {

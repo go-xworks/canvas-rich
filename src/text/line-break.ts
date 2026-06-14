@@ -28,7 +28,9 @@ export function breakLines(items: BreakItem[], maxWidth: number): number[][] {
     if (items[i].isNewline) {
       line.push(i);
       lines.push(line);
-      line = []; lineW = 0; lastSpaceInLine = -1;
+      line = [];
+      lineW = 0;
+      lastSpaceInLine = -1;
       continue;
     }
     const adv = items[i].advance;
@@ -45,7 +47,9 @@ export function breakLines(items: BreakItem[], maxWidth: number): number[][] {
       } else {
         // 无可折空格：硬断
         lines.push(line);
-        line = []; lineW = 0; lastSpaceInLine = -1;
+        line = [];
+        lineW = 0;
+        lastSpaceInLine = -1;
       }
     }
     line.push(i);

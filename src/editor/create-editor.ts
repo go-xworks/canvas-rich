@@ -23,7 +23,9 @@
  * 聚合工具栏/弹层/覆盖层/面板成实例——这是唯一被许可的向上依赖，仅限本文件与 editor-shell.ts；
  * editor/ 其余模块仍受单向规则约束（不 import ui/，装配面经 CommandContext 注入）。仅装配，业务下沉。
  */
-import '../styles/lib.css'; // 库样式入口（shell 外壳 + chrome 用到的 tailwind utility；cssCodeSplit:false 合并为 style.css，sideEffects 保不被 tree-shake）
+// 库样式（外壳 + chrome 的 tailwind utility）作为独立产物 dist/style.css 单独发布（@tailwindcss/cli 编译，
+// 见 package.json build），消费者 `import 'canvas-rich/style.css'`。此处不 import CSS——保持 JS bundle 由
+// tsdown 纯打 JS（tsdown 不跑 tailwind）；示例侧由 examples/main.ts import 同一入口，经 Vite 插件供 dev 样式。
 import { GlyphAtlas } from '../text/glyph-atlas';
 import { createRenderer } from '../render/create-renderer';
 import type { Renderer } from '../render/renderer';
@@ -39,7 +41,16 @@ import { RichDoc, Pos, comparePos } from '../model/rich-document';
 import { inlineAtomSrcAt } from '../model/inlines';
 import { StyleResolver } from '../model/style-resolver';
 import { C, applyCanvasTheme, activeTheme, ThemeName } from '../model/palette';
-import { layoutDoc, caretAt, caretLine, nearestLine, hitTestDoc, selectionRects, visibleLineRange, DocLayout } from '../text/doc-layout';
+import {
+  layoutDoc,
+  caretAt,
+  caretLine,
+  nearestLine,
+  hitTestDoc,
+  selectionRects,
+  visibleLineRange,
+  DocLayout,
+} from '../text/doc-layout';
 import { BlockLayoutCache } from '../text/block-layout-cache';
 import { paginateLayout, PageRect } from '../text/paginate';
 import { clamp } from '../shared/util';
@@ -56,8 +67,26 @@ import { createOverlayManager } from '../ui/overlays';
 import { createAriaTree } from '../ui/aria';
 import { createOutline, Outline } from '../ui/outline';
 import { createStatusBar, StatusBar } from '../ui/status-bar';
-import { commands, keymap, keyCombo, SELF_FINALIZING, NAV_AFFINITY, VIEW_ONLY, READONLY_SAFE, CommandContext, CommandArg } from './commands';
-import { TouchGesture, pointerDist, pinchZoom, visibleCanvasHeightDev, decayVelocity, exceedsThreshold, DRAG_TEXT_MIN_PX } from './touch';
+import {
+  commands,
+  keymap,
+  keyCombo,
+  SELF_FINALIZING,
+  NAV_AFFINITY,
+  VIEW_ONLY,
+  READONLY_SAFE,
+  CommandContext,
+  CommandArg,
+} from './commands';
+import {
+  TouchGesture,
+  pointerDist,
+  pinchZoom,
+  visibleCanvasHeightDev,
+  decayVelocity,
+  exceedsThreshold,
+  DRAG_TEXT_MIN_PX,
+} from './touch';
 import { wordRangeAt } from '../model/word-boundary';
 import { createSelectionHandles, SelectionHandleState } from '../ui/selection-handles';
 import { createFindBar } from '../ui/find-bar';
@@ -165,8 +194,14 @@ export interface EditorInstance {
 export function createEditor(target: HTMLElement, options: EditorOptions = {}): EditorInstance {
   // —— 选项归一化（纯函数，node 可测，见 normalize-options）——
   const {
-    showToolbar, showOutline, showStatusBar, enableContextMenu, showFindBar,
-    persistDraft, readOnly, defaultShaper: DEFAULT_SHAPER,
+    showToolbar,
+    showOutline,
+    showStatusBar,
+    enableContextMenu,
+    showFindBar,
+    persistDraft,
+    readOnly,
+    defaultShaper: DEFAULT_SHAPER,
   } = normalizeEditorOptions(options);
 
   // —— 装配层 UI 常量（逻辑 px / ms；使用处 ×dpr 折算设备 px）——
@@ -192,7 +227,9 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
   const PAGE_MIN_X = 8;
   const PAGE_SHADOW_W = 2;
   const PAGE_SHADOW_ALPHA = 0.18;
-  const ZOOM_MIN = 0.5, ZOOM_MAX = 2, ZOOM_STEP = 0.1;
+  const ZOOM_MIN = 0.5,
+    ZOOM_MAX = 2,
+    ZOOM_STEP = 0.1;
   const MOD_NAV_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'Backspace', 'Delete']);
 
   // —— 销毁/监听统一管理 ——
@@ -241,7 +278,7 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
   const init = initialDocAndSel();
   const rd = new RichDoc(init.doc);
   if (init.sel) {
-    rd.setSel(init.sel.anchor);          // setSel 内部 clamp：草稿选区越界时夹回合法范围
+    rd.setSel(init.sel.anchor); // setSel 内部 clamp：草稿选区越界时夹回合法范围
     rd.setSel(init.sel.focus, true);
   } else {
     rd.setSel(rd.docEnd());
@@ -300,40 +337,81 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
       const pageX = Math.max(PAGE_MIN_X * scale, (canvas.width - pageWDev) / 2);
       layoutPadL = pageX + PAGE_MARGIN * scale;
       const opt = { width: 2 * pageX + pageWDev, padL: layoutPadL, padT: (PAGE_GAP + PAGE_MARGIN) * scale, dpr: scale };
-      layoutCache.beginPass({ width: opt.width, padL: opt.padL, padT: opt.padT, scale, shaper: activeShaper, theme: activeTheme(), atlasGen: atlas.generation });
+      layoutCache.beginPass({
+        width: opt.width,
+        padL: opt.padL,
+        padT: opt.padT,
+        scale,
+        shaper: activeShaper,
+        theme: activeTheme(),
+        atlasGen: atlas.generation,
+      });
       const raw = layoutDoc(rd.doc, activeShaper, resolver, opt, layoutCache);
       const paged = paginateLayout(raw, {
-        pageX, pageW: pageWDev, pageH: PAGE_H * scale,
-        marginTop: PAGE_MARGIN * scale, marginBottom: PAGE_MARGIN * scale,
-        gap: PAGE_GAP * scale, padT: (PAGE_GAP + PAGE_MARGIN) * scale,
+        pageX,
+        pageW: pageWDev,
+        pageH: PAGE_H * scale,
+        marginTop: PAGE_MARGIN * scale,
+        marginBottom: PAGE_MARGIN * scale,
+        gap: PAGE_GAP * scale,
+        padT: (PAGE_GAP + PAGE_MARGIN) * scale,
       });
       cached = paged.layout;
       pages = paged.pages;
     } else {
       layoutPadL = PAD * scale;
       const opt = { width: canvas.width, padL: layoutPadL, padT: PAD * scale, dpr: scale };
-      layoutCache.beginPass({ width: opt.width, padL: opt.padL, padT: opt.padT, scale, shaper: activeShaper, theme: activeTheme(), atlasGen: atlas.generation });
+      layoutCache.beginPass({
+        width: opt.width,
+        padL: opt.padL,
+        padT: opt.padT,
+        scale,
+        shaper: activeShaper,
+        theme: activeTheme(),
+        atlasGen: atlas.generation,
+      });
       cached = layoutDoc(rd.doc, activeShaper, resolver, opt, layoutCache);
       pages = [];
     }
     const lns = cached.lines;
     lineTops = new Float64Array(lns.length);
     lineBottoms = new Float64Array(lns.length);
-    for (let i = 0; i < lns.length; i++) { lineTops[i] = lns[i].top; lineBottoms[i] = lns[i].bottom; }
+    for (let i = 0; i < lns.length; i++) {
+      lineTops[i] = lns[i].top;
+      lineBottoms[i] = lns[i].bottom;
+    }
     dirty = false;
   }
-  function viewChanged() { bus.emit('selection:changed'); }
-  function markDirty() { bus.emit('doc:changed'); }
-  function viewModeChanged() { bus.emit('view:changed'); }
-  function afterNav(aff: 'before' | 'after') { goalX = null; caretAffinity = aff; followCaret = true; viewChanged(); }
-  function afterEdit() { goalX = null; caretAffinity = 'after'; followCaret = true; markDirty(); }
+  function viewChanged() {
+    bus.emit('selection:changed');
+  }
+  function markDirty() {
+    bus.emit('doc:changed');
+  }
+  function viewModeChanged() {
+    bus.emit('view:changed');
+  }
+  function afterNav(aff: 'before' | 'after') {
+    goalX = null;
+    caretAffinity = aff;
+    followCaret = true;
+    viewChanged();
+  }
+  function afterEdit() {
+    goalX = null;
+    caretAffinity = 'after';
+    followCaret = true;
+    markDirty();
+  }
 
   // —— 滚动 ——
   function docPixelHeight() {
     if (!cached) return 0;
     return viewMode === 'word' ? cached.contentHeight : cached.contentHeight + 2 * PAD * dpr * zoom;
   }
-  function clampScroll() { scrollY = Math.round(Math.max(0, Math.min(Math.max(0, docPixelHeight() - canvas.height), scrollY))); }
+  function clampScroll() {
+    scrollY = Math.round(Math.max(0, Math.min(Math.max(0, docPixelHeight() - canvas.height), scrollY)));
+  }
   function effectiveViewHeightDev(): number {
     const vv = window.visualViewport;
     if (!vv) return canvas.height;
@@ -342,7 +420,8 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
   }
   function ensureCaretVisible() {
     if (!cached) return;
-    const c = caretAt(cached, rd.focus, caretAffinity); if (!c) return;
+    const c = caretAt(cached, rd.focus, caretAffinity);
+    if (!c) return;
     const m = CARET_FOLLOW_MARGIN * dpr;
     const viewH = effectiveViewHeightDev();
     if (c.top - scrollY < m) scrollY = c.top - m;
@@ -360,12 +439,14 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
     const docH = docPixelHeight();
     if (docH <= canvas.height + 1) return null;
     const trackH = canvas.height;
-    const thumbH = Math.max(SCROLLBAR_MIN_THUMB * dpr, trackH * canvas.height / docH);
+    const thumbH = Math.max(SCROLLBAR_MIN_THUMB * dpr, (trackH * canvas.height) / docH);
     const maxScroll = docH - canvas.height;
     const thumbY = maxScroll > 0 ? (scrollY / maxScroll) * (trackH - thumbH) : 0;
     return { x: canvas.width - SCROLLBAR_RIGHT * dpr, y: thumbY, w: SCROLLBAR_W * dpr, h: thumbH };
   }
-  function isFocusAtom(): boolean { return rd.isCollapsed && isAtomBlock(rd.focusBlock().type); }
+  function isFocusAtom(): boolean {
+    return rd.isCollapsed && isAtomBlock(rd.focusBlock().type);
+  }
 
   function resize() {
     dpr = Math.max(1, window.devicePixelRatio || 1);
@@ -376,11 +457,17 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
     dirty = true;
   }
   window.addEventListener('resize', resize, { signal: sig });
-  const editorResizeObserver = new ResizeObserver(() => { if (renderer && !destroyed) resize(); });
+  const editorResizeObserver = new ResizeObserver(() => {
+    if (renderer && !destroyed) resize();
+  });
 
   let blinkStart = performance.now();
-  function resetBlink() { blinkStart = performance.now(); }
-  function caretVisible() { return ((performance.now() - blinkStart) % CARET_BLINK_PERIOD_MS) < CARET_BLINK_VISIBLE_MS; }
+  function resetBlink() {
+    blinkStart = performance.now();
+  }
+  function caretVisible() {
+    return (performance.now() - blinkStart) % CARET_BLINK_PERIOD_MS < CARET_BLINK_VISIBLE_MS;
+  }
 
   // —— GPU 上下文丢失恢复 ——
   let rebuildingRenderer = false;
@@ -402,10 +489,27 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
     }
   }
   function watchRendererLost(): void {
-    renderer.lost?.then(() => { if (destroyed) return; console.warn('[renderer] GPU 设备丢失，重建渲染器'); void rebuildRenderer(); });
+    renderer.lost?.then(() => {
+      if (destroyed) return;
+      console.warn('[renderer] GPU 设备丢失，重建渲染器');
+      void rebuildRenderer();
+    });
   }
-  canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); console.warn('[renderer] WebGL 上下文丢失'); }, { signal: sig });
-  canvas.addEventListener('webglcontextrestored', () => { void rebuildRenderer(); }, { signal: sig });
+  canvas.addEventListener(
+    'webglcontextlost',
+    (e) => {
+      e.preventDefault();
+      console.warn('[renderer] WebGL 上下文丢失');
+    },
+    { signal: sig },
+  );
+  canvas.addEventListener(
+    'webglcontextrestored',
+    () => {
+      void rebuildRenderer();
+    },
+    { signal: sig },
+  );
 
   // —— 渲染循环 ——
   let lastScrollY = -1;
@@ -415,10 +519,19 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
 
   function frame() {
     if (destroyed) return; // 销毁后早退：停止主循环（rafId 已 cancel，双保险）
-    if (dirty || !cached) { relayout(); needRender = true; }
-    if (atlas.consumeReset()) { dirty = true; needRender = true; }
+    if (dirty || !cached) {
+      relayout();
+      needRender = true;
+    }
+    if (atlas.consumeReset()) {
+      dirty = true;
+      needRender = true;
+    }
     const L = cached!;
-    if (followCaret) { ensureCaretVisible(); followCaret = false; }
+    if (followCaret) {
+      ensureCaretVisible();
+      followCaret = false;
+    }
     clampScroll();
     const caretOn = rd.isCollapsed && caretVisible() && !tableFocused && !isFocusAtom();
     const selSig = `${rd.anchor.block}:${rd.anchor.offset}:${rd.focus.block}:${rd.focus.offset}:${scrollDrag ? 1 : 0}:${caretAffinity}`;
@@ -431,14 +544,46 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
     const wu = atlas.whiteUV;
     quads.length = 0;
     const solid = (x: number, y: number, w: number, h: number, c: [number, number, number, number]) => {
-      const x0 = Math.round(x), y0 = Math.round(y - scrollY);
-      const x1 = Math.round(x + w), y1 = Math.round(y - scrollY + h);
-      quads.push({ x: x0, y: y0, w: x1 - x0, h: y1 - y0, u0: wu.u, v0: wu.v, u1: wu.u, v1: wu.v, r: c[0], g: c[1], b: c[2], a: c[3], page: 0 });
+      const x0 = Math.round(x),
+        y0 = Math.round(y - scrollY);
+      const x1 = Math.round(x + w),
+        y1 = Math.round(y - scrollY + h);
+      quads.push({
+        x: x0,
+        y: y0,
+        w: x1 - x0,
+        h: y1 - y0,
+        u0: wu.u,
+        v0: wu.v,
+        u1: wu.u,
+        v1: wu.v,
+        r: c[0],
+        g: c[1],
+        b: c[2],
+        a: c[3],
+        page: 0,
+      });
     };
     const solidScreen = (x: number, y: number, w: number, h: number, c: [number, number, number, number]) => {
-      const x0 = Math.round(x), y0 = Math.round(y);
-      const x1 = Math.round(x + w), y1 = Math.round(y + h);
-      quads.push({ x: x0, y: y0, w: x1 - x0, h: y1 - y0, u0: wu.u, v0: wu.v, u1: wu.u, v1: wu.v, r: c[0], g: c[1], b: c[2], a: c[3], page: 0 });
+      const x0 = Math.round(x),
+        y0 = Math.round(y);
+      const x1 = Math.round(x + w),
+        y1 = Math.round(y + h);
+      quads.push({
+        x: x0,
+        y: y0,
+        w: x1 - x0,
+        h: y1 - y0,
+        u0: wu.u,
+        v0: wu.v,
+        u1: wu.u,
+        v1: wu.v,
+        r: c[0],
+        g: c[1],
+        b: c[2],
+        a: c[3],
+        page: 0,
+      });
     };
 
     const viewBottom = scrollY + canvas.height;
@@ -457,10 +602,15 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
       }
     }
 
-    for (const bg of L.backgrounds) { if (yVisible(bg.y, bg.h)) solid(bg.x, bg.y, bg.w, bg.h, bg.color); }
+    for (const bg of L.backgrounds) {
+      if (yVisible(bg.y, bg.h)) solid(bg.x, bg.y, bg.w, bg.h, bg.color);
+    }
     for (let i = i0; i < i1; i++) {
       const ln = L.lines[i];
-      for (let k = ln.hlStart ?? 0, e = ln.hlEnd ?? 0; k < e; k++) { const hl = L.highlights[k]; solid(hl.x, hl.y, hl.w, hl.h, hl.color); }
+      for (let k = ln.hlStart ?? 0, e = ln.hlEnd ?? 0; k < e; k++) {
+        const hl = L.highlights[k];
+        solid(hl.x, hl.y, hl.w, hl.h, hl.color);
+      }
     }
     const fMatches = findBar.matches();
     if (fMatches.length) {
@@ -471,7 +621,13 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
         if (mi === fCur) continue;
         const m = fMatches[mi];
         if (m.block < blockLo || m.block > blockHi) continue;
-        for (const r of selectionRects(L, { block: m.block, offset: m.start }, { block: m.block, offset: m.end }, i0, i1))
+        for (const r of selectionRects(
+          L,
+          { block: m.block, offset: m.start },
+          { block: m.block, offset: m.end },
+          i0,
+          i1,
+        ))
           solid(r.x, r.y, r.w, r.h, C.findMatch);
       }
     }
@@ -484,21 +640,40 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
       for (let k = ln.glyphStart ?? 0, e = ln.glyphEnd ?? 0; k < e; k++) {
         const g = L.glyphs[k];
         quads.push({
-          x: Math.round(g.penX), y: Math.round(g.baselineY - g.info.bearingY - scrollY), w: g.info.w, h: g.info.h,
-          u0: g.info.u0, v0: g.info.v0, u1: g.info.u1, v1: g.info.v1,
-          r: g.color[0], g: g.color[1], b: g.color[2], a: g.color[3], page: g.info.page,
+          x: Math.round(g.penX),
+          y: Math.round(g.baselineY - g.info.bearingY - scrollY),
+          w: g.info.w,
+          h: g.info.h,
+          u0: g.info.u0,
+          v0: g.info.v0,
+          u1: g.info.u1,
+          v1: g.info.v1,
+          r: g.color[0],
+          g: g.color[1],
+          b: g.color[2],
+          a: g.color[3],
+          page: g.info.page,
         });
       }
     }
     for (let i = i0; i < i1; i++) {
       const ln = L.lines[i];
-      for (let k = ln.decoStart ?? 0, e = ln.decoEnd ?? 0; k < e; k++) { const u = L.decorations[k]; solid(u.x, u.y, u.w, u.h, u.color); }
+      for (let k = ln.decoStart ?? 0, e = ln.decoEnd ?? 0; k < e; k++) {
+        const u = L.decorations[k];
+        solid(u.x, u.y, u.w, u.h, u.color);
+      }
     }
     const focusAtom = isFocusAtom();
     if (caretOn) {
       const c = caretAt(L, rd.focus, caretAffinity);
       if (c) {
-        solid(c.x, c.top + CARET_INSET * dpr, Math.max(1, Math.round(CARET_W * dpr)), (c.bottom - c.top) - 2 * CARET_INSET * dpr, C.caret);
+        solid(
+          c.x,
+          c.top + CARET_INSET * dpr,
+          Math.max(1, Math.round(CARET_W * dpr)),
+          c.bottom - c.top - 2 * CARET_INSET * dpr,
+          C.caret,
+        );
         const cr = canvas.getBoundingClientRect();
         ime.style.left = Math.round(cr.left + c.x / dpr) + 'px';
         ime.style.top = Math.round(cr.top + (c.top - scrollY) / dpr) + 'px';
@@ -511,34 +686,80 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
     overlayMgr.sync(rd.doc, L.overlays, scrollY, L.dpr, focusAtom && !tableFocused ? rd.focus.block : -1);
     overlayMgr.syncInline(L.inlineOverlays, inlineImageSrc, scrollY, L.dpr);
     selHandles.sync(selectionHandleState(L));
-    lastScrollY = scrollY; lastCaretOn = caretOn; lastSelSig = selSig;
+    lastScrollY = scrollY;
+    lastCaretOn = caretOn;
+    lastSelSig = selSig;
     needRender = false;
     rafId = requestAnimationFrame(frame);
   }
 
   // —— 原子块覆盖层（图片 / 公式 / 表格）——
   const overlayMgr = createOverlayManager(editorEl, {
-    onTableEdit: () => { if (readOnly) return; markDirty(); },
-    onTextboxEdit: () => { if (readOnly) return; markDirty(); },
-    onAtomEdit: (blockIndex, kind) => { if (readOnly) return; atomDialogs.editAtom(blockIndex, kind); },
-    onMeasured: (blockIndex, hLogical) => { if (rd.setMeasuredHeight(blockIndex, hLogical)) dirty = true; },
-    onMeasuredResize: () => { needRender = true; },
-    onCellFocus: (blockIndex) => { tableFocused = true; rd.setSel({ block: blockIndex, offset: 0 }); },
-    onCellBlur: () => { tableFocused = false; ime.focus({ preventScroll: true }); },
-    onImageResize: (blockIndex, w, h) => { if (readOnly) return; rd.setImageSize(blockIndex, w, h); afterEdit(); },
-    onBlockMove: (blockIndex, clientY, phase) => { if (readOnly) return; handleBlockMove(blockIndex, clientY, phase); },
-    onColResize: (blockIndex, col, w) => { if (readOnly) return; rd.setColWidth(blockIndex, col, w); afterEdit(); },
-    onRowResize: (blockIndex, row, h) => { if (readOnly) return; rd.setRowHeight(blockIndex, row, h); afterEdit(); },
-    onTableMerge: (blockIndex, r0, c0, r1, c1) => { if (readOnly) return; rd.mergeCells(blockIndex, r0, c0, r1, c1); afterEdit(); },
-    onTableSplit: (blockIndex, r, c) => { if (readOnly) return; rd.splitCell(blockIndex, r, c); afterEdit(); },
+    onTableEdit: () => {
+      if (readOnly) return;
+      markDirty();
+    },
+    onTextboxEdit: () => {
+      if (readOnly) return;
+      markDirty();
+    },
+    onAtomEdit: (blockIndex, kind) => {
+      if (readOnly) return;
+      atomDialogs.editAtom(blockIndex, kind);
+    },
+    onMeasured: (blockIndex, hLogical) => {
+      if (rd.setMeasuredHeight(blockIndex, hLogical)) dirty = true;
+    },
+    onMeasuredResize: () => {
+      needRender = true;
+    },
+    onCellFocus: (blockIndex) => {
+      tableFocused = true;
+      rd.setSel({ block: blockIndex, offset: 0 });
+    },
+    onCellBlur: () => {
+      tableFocused = false;
+      ime.focus({ preventScroll: true });
+    },
+    onImageResize: (blockIndex, w, h) => {
+      if (readOnly) return;
+      rd.setImageSize(blockIndex, w, h);
+      afterEdit();
+    },
+    onBlockMove: (blockIndex, clientY, phase) => {
+      if (readOnly) return;
+      handleBlockMove(blockIndex, clientY, phase);
+    },
+    onColResize: (blockIndex, col, w) => {
+      if (readOnly) return;
+      rd.setColWidth(blockIndex, col, w);
+      afterEdit();
+    },
+    onRowResize: (blockIndex, row, h) => {
+      if (readOnly) return;
+      rd.setRowHeight(blockIndex, row, h);
+      afterEdit();
+    },
+    onTableMerge: (blockIndex, r0, c0, r1, c1) => {
+      if (readOnly) return;
+      rd.mergeCells(blockIndex, r0, c0, r1, c1);
+      afterEdit();
+    },
+    onTableSplit: (blockIndex, r, c) => {
+      if (readOnly) return;
+      rd.splitCell(blockIndex, r, c);
+      afterEdit();
+    },
     onTableRowOp: (blockIndex, row, op) => {
       if (readOnly) return;
-      if (op === 'delete') rd.deleteRow(blockIndex, row); else rd.insertRow(blockIndex, row, op);
+      if (op === 'delete') rd.deleteRow(blockIndex, row);
+      else rd.insertRow(blockIndex, row, op);
       afterEdit();
     },
     onTableColOp: (blockIndex, col, op) => {
       if (readOnly) return;
-      if (op === 'delete') rd.deleteCol(blockIndex, col); else rd.insertCol(blockIndex, col, op);
+      if (op === 'delete') rd.deleteCol(blockIndex, col);
+      else rd.insertCol(blockIndex, col, op);
       afterEdit();
     },
   });
@@ -550,7 +771,8 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
 
   // —— 图片拖动重排：落点指示线 + 提交 ——
   const dropLine = document.createElement('div');
-  dropLine.style.cssText = 'position:absolute;left:8px;right:8px;height:2px;border-radius:1px;background:var(--rte-accent);display:none;pointer-events:none;z-index:30';
+  dropLine.style.cssText =
+    'position:absolute;left:8px;right:8px;height:2px;border-radius:1px;background:var(--rte-accent);display:none;pointer-events:none;z-index:30';
   editorEl.appendChild(dropLine);
   let dropTarget = -1;
   function handleBlockMove(from: number, clientY: number, phase: 'move' | 'drop') {
@@ -558,11 +780,14 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
     const gap = gapAtY(cached, rd.blockCount, (clientY - rect.top) * dpr + scrollY);
     if (phase === 'move') {
       dropTarget = gap;
-      dropLine.style.top = ((gapYDevice(cached, rd.blockCount, gap) - scrollY) / dpr) + 'px';
+      dropLine.style.top = (gapYDevice(cached, rd.blockCount, gap) - scrollY) / dpr + 'px';
       dropLine.style.display = '';
     } else {
       dropLine.style.display = 'none';
-      if (dropTarget >= 0) { rd.moveBlock(from, dropTarget); afterEdit(); }
+      if (dropTarget >= 0) {
+        rd.moveBlock(from, dropTarget);
+        afterEdit();
+      }
       dropTarget = -1;
     }
   }
@@ -585,7 +810,9 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
     const { px, py } = eventXY(e);
     return posAtDevice(px, py);
   }
-  function overScrollbar(px: number): boolean { return !!scrollbarThumb() && px >= canvas.width - SCROLLBAR_HIT_W * dpr; }
+  function overScrollbar(px: number): boolean {
+    return !!scrollbarThumb() && px >= canvas.width - SCROLLBAR_HIT_W * dpr;
+  }
   function posWithinSelection(pos: Pos): boolean {
     if (rd.isCollapsed) return false;
     const { from, to } = rd.range();
@@ -614,9 +841,14 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
   let inertiaV = 0;
   let inertiaLastT = 0;
   let inertiaRunning = false;
-  function stopInertia() { inertiaV = 0; }
+  function stopInertia() {
+    inertiaV = 0;
+  }
   function inertiaStep() {
-    if (destroyed || !inertiaV || touchGesture.mode !== 'idle' || pinch) { inertiaRunning = false; return; }
+    if (destroyed || !inertiaV || touchGesture.mode !== 'idle' || pinch) {
+      inertiaRunning = false;
+      return;
+    }
     const now = performance.now();
     const dt = now - inertiaLastT;
     inertiaLastT = now;
@@ -624,7 +856,8 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
     clampScroll();
     needRender = true;
     inertiaV = decayVelocity(inertiaV, dt);
-    if (inertiaV) requestAnimationFrame(inertiaStep); else inertiaRunning = false;
+    if (inertiaV) requestAnimationFrame(inertiaStep);
+    else inertiaRunning = false;
   }
   function startInertia(v: number) {
     inertiaV = v;
@@ -657,7 +890,8 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
     const pt = touchPoints.get(e.pointerId);
     if (!pt) return;
     const { px, py } = eventXY(e);
-    pt.x = px; pt.y = py;
+    pt.x = px;
+    pt.y = py;
     if (pinch) {
       if (touchPoints.size >= 2) {
         const [a, b] = [...touchPoints.values()];
@@ -674,7 +908,7 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
       const now = performance.now();
       const dt = Math.max(1, now - lastPanTime);
       lastPanTime = now;
-      panVelocity = 0.8 * panVelocity + 0.2 * (r.dy * 16.7 / dt);
+      panVelocity = 0.8 * panVelocity + 0.2 * ((r.dy * 16.7) / dt);
     } else if (r.mode === 'select') {
       rd.setSel(posAtDevice(px, py), true);
       viewChanged();
@@ -683,9 +917,19 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
   function onTouchTap(e: PointerEvent) {
     const { px, py } = eventXY(e);
     const tocHit = tocLineHit(cached, py + scrollY);
-    if (tocHit >= 0) { rd.setSel({ block: tocHit, offset: 0 }); afterNav('after'); return; }
+    if (tocHit >= 0) {
+      rd.setSel({ block: tocHit, offset: 0 });
+      afterNav('after');
+      return;
+    }
     const taskHit = taskCheckboxHit(cached, rd.doc, resolver, layoutPadL, dpr * zoom, px, py + scrollY);
-    if (taskHit >= 0) { if (!readOnly) { rd.toggleTaskChecked(taskHit); afterEdit(); } return; }
+    if (taskHit >= 0) {
+      if (!readOnly) {
+        rd.toggleTaskChecked(taskHit);
+        afterEdit();
+      }
+      return;
+    }
     ime.focus({ preventScroll: true });
     rd.setSel(posAtDevice(px, py));
     goalX = null;
@@ -693,8 +937,15 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
   }
   function onTouchUp(e: PointerEvent) {
     touchPoints.delete(e.pointerId);
-    try { canvas.releasePointerCapture(e.pointerId); } catch { /* 未捕获时忽略 */ }
-    if (pinch) { if (touchPoints.size < 2) pinch = null; return; }
+    try {
+      canvas.releasePointerCapture(e.pointerId);
+    } catch {
+      /* 未捕获时忽略 */
+    }
+    if (pinch) {
+      if (touchPoints.size < 2) pinch = null;
+      return;
+    }
     if (e.pointerId !== gesturePointerId) return;
     gesturePointerId = -1;
     const mode = touchGesture.up();
@@ -708,14 +959,18 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
   let dragTextActive = false;
   let dropPos: Pos | null = null;
   const dragCaretEl = document.createElement('div');
-  dragCaretEl.style.cssText = 'position:absolute;width:2px;background:var(--rte-accent);display:none;pointer-events:none;z-index:30';
+  dragCaretEl.style.cssText =
+    'position:absolute;width:2px;background:var(--rte-accent);display:none;pointer-events:none;z-index:30';
   editorEl.appendChild(dragCaretEl);
   function syncDragCaret() {
     const c = dropPos && cached ? caretAt(cached, dropPos, caretAffinity) : null;
-    if (!c) { dragCaretEl.style.display = 'none'; return; }
-    dragCaretEl.style.left = (c.x / dpr) + 'px';
-    dragCaretEl.style.top = ((c.top - scrollY) / dpr) + 'px';
-    dragCaretEl.style.height = ((c.bottom - c.top) / dpr) + 'px';
+    if (!c) {
+      dragCaretEl.style.display = 'none';
+      return;
+    }
+    dragCaretEl.style.left = c.x / dpr + 'px';
+    dragCaretEl.style.top = (c.top - scrollY) / dpr + 'px';
+    dragCaretEl.style.height = (c.bottom - c.top) / dpr + 'px';
     dragCaretEl.style.display = '';
   }
   function resetDragText() {
@@ -725,86 +980,167 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
     dragCaretEl.style.display = 'none';
   }
 
-  canvas.addEventListener('pointerdown', (e) => {
-    lastPointerType = e.pointerType;
-    stopInertia();
-    if (e.pointerType === 'touch') { onTouchDown(e); return; }
-    ime.focus({ preventScroll: true });
-    const { px, py } = eventXY(e);
-    if (overScrollbar(px)) { scrollDrag = { startY: py, startScroll: scrollY }; canvas.setPointerCapture(e.pointerId); return; }
-    const tocHit = tocLineHit(cached, py + scrollY);
-    if (tocHit >= 0) { rd.setSel({ block: tocHit, offset: 0 }); afterNav('after'); canvas.setPointerCapture(e.pointerId); return; }
-    const taskHit = taskCheckboxHit(cached, rd.doc, resolver, layoutPadL, dpr * zoom, px, py + scrollY);
-    if (taskHit >= 0) { if (!readOnly) { rd.toggleTaskChecked(taskHit); afterEdit(); } canvas.setPointerCapture(e.pointerId); return; }
-    const pos = posFromEvent(e);
-    if (e.metaKey || e.ctrlKey) {
-      const href = rd.linkHrefAt(pos);
-      if (href && /^(https?:|mailto:)/i.test(href.trim())) {
-        window.open(href.trim(), '_blank', 'noopener,noreferrer');
-        canvas.setPointerCapture(e.pointerId); return;
+  canvas.addEventListener(
+    'pointerdown',
+    (e) => {
+      lastPointerType = e.pointerType;
+      stopInertia();
+      if (e.pointerType === 'touch') {
+        onTouchDown(e);
+        return;
       }
-    }
-    if (e.button !== 0) {
-      if (!posWithinSelection(pos)) { rd.setSel(pos); viewChanged(); }
-      return;
-    }
-    if (!e.shiftKey && posWithinSelection(pos)) {
-      pendingSelDown = { pos, x: e.clientX, y: e.clientY };
+      ime.focus({ preventScroll: true });
+      const { px, py } = eventXY(e);
+      if (overScrollbar(px)) {
+        scrollDrag = { startY: py, startScroll: scrollY };
+        canvas.setPointerCapture(e.pointerId);
+        return;
+      }
+      const tocHit = tocLineHit(cached, py + scrollY);
+      if (tocHit >= 0) {
+        rd.setSel({ block: tocHit, offset: 0 });
+        afterNav('after');
+        canvas.setPointerCapture(e.pointerId);
+        return;
+      }
+      const taskHit = taskCheckboxHit(cached, rd.doc, resolver, layoutPadL, dpr * zoom, px, py + scrollY);
+      if (taskHit >= 0) {
+        if (!readOnly) {
+          rd.toggleTaskChecked(taskHit);
+          afterEdit();
+        }
+        canvas.setPointerCapture(e.pointerId);
+        return;
+      }
+      const pos = posFromEvent(e);
+      if (e.metaKey || e.ctrlKey) {
+        const href = rd.linkHrefAt(pos);
+        if (href && /^(https?:|mailto:)/i.test(href.trim())) {
+          window.open(href.trim(), '_blank', 'noopener,noreferrer');
+          canvas.setPointerCapture(e.pointerId);
+          return;
+        }
+      }
+      if (e.button !== 0) {
+        if (!posWithinSelection(pos)) {
+          rd.setSel(pos);
+          viewChanged();
+        }
+        return;
+      }
+      if (!e.shiftKey && posWithinSelection(pos)) {
+        pendingSelDown = { pos, x: e.clientX, y: e.clientY };
+        canvas.setPointerCapture(e.pointerId);
+        return;
+      }
+      rd.setSel(pos, e.shiftKey);
+      dragging = true;
+      goalX = null;
       canvas.setPointerCapture(e.pointerId);
-      return;
-    }
-    rd.setSel(pos, e.shiftKey);
-    dragging = true; goalX = null;
-    canvas.setPointerCapture(e.pointerId);
-    viewChanged();
-  }, { signal: sig });
-  canvas.addEventListener('pointermove', (e) => {
-    if (e.pointerType === 'touch') { onTouchMove(e); return; }
-    if (scrollDrag) { scrollY = scrollDrag.startScroll + (eventXY(e).py - scrollDrag.startY) * (docPixelHeight() / canvas.height); clampScroll(); return; }
-    if (pendingSelDown) {
-      if (!readOnly && !dragTextActive && exceedsThreshold(e.clientX - pendingSelDown.x, e.clientY - pendingSelDown.y, DRAG_TEXT_MIN_PX)) dragTextActive = true;
-      if (dragTextActive) { dropPos = posFromEvent(e); syncDragCaret(); }
-      return;
-    }
-    if (dragging) { rd.setSel(posFromEvent(e), true); viewChanged(); }
-  }, { signal: sig });
-  canvas.addEventListener('pointerup', (e) => {
-    if (e.pointerType === 'touch') { onTouchUp(e); return; }
-    if (pendingSelDown) {
-      const clickPos = pendingSelDown.pos;
-      const commitDrop = dragTextActive ? dropPos : null;
-      resetDragText();
-      if (commitDrop) {
-        if (rd.moveSelTo(commitDrop)) afterEdit(); else viewChanged();
-      } else {
-        rd.setSel(clickPos);
+      viewChanged();
+    },
+    { signal: sig },
+  );
+  canvas.addEventListener(
+    'pointermove',
+    (e) => {
+      if (e.pointerType === 'touch') {
+        onTouchMove(e);
+        return;
+      }
+      if (scrollDrag) {
+        scrollY = scrollDrag.startScroll + (eventXY(e).py - scrollDrag.startY) * (docPixelHeight() / canvas.height);
+        clampScroll();
+        return;
+      }
+      if (pendingSelDown) {
+        if (
+          !readOnly &&
+          !dragTextActive &&
+          exceedsThreshold(e.clientX - pendingSelDown.x, e.clientY - pendingSelDown.y, DRAG_TEXT_MIN_PX)
+        )
+          dragTextActive = true;
+        if (dragTextActive) {
+          dropPos = posFromEvent(e);
+          syncDragCaret();
+        }
+        return;
+      }
+      if (dragging) {
+        rd.setSel(posFromEvent(e), true);
         viewChanged();
       }
-    }
-    dragging = false; scrollDrag = null;
-    try { canvas.releasePointerCapture(e.pointerId); } catch { /* */ }
-  }, { signal: sig });
-  canvas.addEventListener('pointercancel', (e) => {
-    touchPoints.delete(e.pointerId);
-    if (touchPoints.size < 2) pinch = null;
-    if (e.pointerId === gesturePointerId) { gesturePointerId = -1; touchGesture.cancel(); }
-    dragging = false;
-    scrollDrag = null;
-    resetDragText();
-    try { canvas.releasePointerCapture(e.pointerId); } catch { /* */ }
-  }, { signal: sig });
-  canvas.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    if (lastPointerType === 'touch') return;
-    if (e.detail !== 2 && e.detail !== 3) return;
-    const pos = posFromEvent(e);
-    if (e.detail === 2) selectWordAt(pos);
-    else { rd.setSel({ block: pos.block, offset: 0 }); rd.setSel({ block: pos.block, offset: rd.blockLen(pos.block) }, true); }
-    pendingSelDown = null;
-    dragging = false;
-    goalX = null;
-    viewChanged();
-  }, { signal: sig });
+    },
+    { signal: sig },
+  );
+  canvas.addEventListener(
+    'pointerup',
+    (e) => {
+      if (e.pointerType === 'touch') {
+        onTouchUp(e);
+        return;
+      }
+      if (pendingSelDown) {
+        const clickPos = pendingSelDown.pos;
+        const commitDrop = dragTextActive ? dropPos : null;
+        resetDragText();
+        if (commitDrop) {
+          if (rd.moveSelTo(commitDrop)) afterEdit();
+          else viewChanged();
+        } else {
+          rd.setSel(clickPos);
+          viewChanged();
+        }
+      }
+      dragging = false;
+      scrollDrag = null;
+      try {
+        canvas.releasePointerCapture(e.pointerId);
+      } catch {
+        /* */
+      }
+    },
+    { signal: sig },
+  );
+  canvas.addEventListener(
+    'pointercancel',
+    (e) => {
+      touchPoints.delete(e.pointerId);
+      if (touchPoints.size < 2) pinch = null;
+      if (e.pointerId === gesturePointerId) {
+        gesturePointerId = -1;
+        touchGesture.cancel();
+      }
+      dragging = false;
+      scrollDrag = null;
+      resetDragText();
+      try {
+        canvas.releasePointerCapture(e.pointerId);
+      } catch {
+        /* */
+      }
+    },
+    { signal: sig },
+  );
+  canvas.addEventListener(
+    'mousedown',
+    (e) => {
+      e.preventDefault();
+      if (lastPointerType === 'touch') return;
+      if (e.detail !== 2 && e.detail !== 3) return;
+      const pos = posFromEvent(e);
+      if (e.detail === 2) selectWordAt(pos);
+      else {
+        rd.setSel({ block: pos.block, offset: 0 });
+        rd.setSel({ block: pos.block, offset: rd.blockLen(pos.block) }, true);
+      }
+      pendingSelDown = null;
+      dragging = false;
+      goalX = null;
+      viewChanged();
+    },
+    { signal: sig },
+  );
 
   // —— 触屏选区手柄 ——
   const selHandles = createSelectionHandles(editorEl, {
@@ -835,41 +1171,78 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
   }
 
   // 滚轮滚动；ctrl+wheel = 功能性缩放
-  editorEl.addEventListener('wheel', (e) => {
-    if (e.ctrlKey) { setZoom(zoom - e.deltaY * 0.01); e.preventDefault(); return; }
-    let d = e.deltaY;
-    if (e.deltaMode === 1) d *= WHEEL_LINE_PX; else if (e.deltaMode === 2) d *= canvas.clientHeight;
-    scrollY += d * dpr; clampScroll(); e.preventDefault();
-  }, { passive: false, signal: sig });
+  editorEl.addEventListener(
+    'wheel',
+    (e) => {
+      if (e.ctrlKey) {
+        setZoom(zoom - e.deltaY * 0.01);
+        e.preventDefault();
+        return;
+      }
+      let d = e.deltaY;
+      if (e.deltaMode === 1) d *= WHEEL_LINE_PX;
+      else if (e.deltaMode === 2) d *= canvas.clientHeight;
+      scrollY += d * dpr;
+      clampScroll();
+      e.preventDefault();
+    },
+    { passive: false, signal: sig },
+  );
 
   // 右键菜单
-  canvas.addEventListener('contextmenu', (e) => {
-    e.preventDefault();
-    if (lastPointerType === 'touch') return;
-    if (!enableContextMenu) return;
-    ime.focus({ preventScroll: true });
-    const pos = posFromEvent(e);
-    if (rd.isCollapsed) rd.setSel(pos);
-    else { const { from, to } = rd.range(); if (comparePos(pos, from) < 0 || comparePos(pos, to) > 0) rd.setSel(pos); }
-    viewChanged();
-    showContextMenu(e.clientX, e.clientY);
-  }, { signal: sig });
+  canvas.addEventListener(
+    'contextmenu',
+    (e) => {
+      e.preventDefault();
+      if (lastPointerType === 'touch') return;
+      if (!enableContextMenu) return;
+      ime.focus({ preventScroll: true });
+      const pos = posFromEvent(e);
+      if (rd.isCollapsed) rd.setSel(pos);
+      else {
+        const { from, to } = rd.range();
+        if (comparePos(pos, from) < 0 || comparePos(pos, to) > 0) rd.setSel(pos);
+      }
+      viewChanged();
+      showContextMenu(e.clientX, e.clientY);
+    },
+    { signal: sig },
+  );
 
   // —— 拖拽图片到编辑器 ——
-  editorEl.addEventListener('dragover', (e) => {
-    if (readOnly) return;
-    if (e.dataTransfer?.types.includes('Files')) { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }
-  }, { signal: sig });
-  editorEl.addEventListener('drop', (e) => {
-    if (readOnly) return;
-    const file = e.dataTransfer?.files?.[0];
-    if (!file || !file.type.startsWith('image/')) return;
-    e.preventDefault();
-    try { rd.setSel(posFromEvent(e)); } catch { /* 落点解析失败则用当前光标 */ }
-    const reader = new FileReader();
-    reader.onload = () => { rd.insertImage(String(reader.result)); afterEdit(); ariaTree.announce('已插入图片'); };
-    reader.readAsDataURL(file);
-  }, { signal: sig });
+  editorEl.addEventListener(
+    'dragover',
+    (e) => {
+      if (readOnly) return;
+      if (e.dataTransfer?.types.includes('Files')) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+      }
+    },
+    { signal: sig },
+  );
+  editorEl.addEventListener(
+    'drop',
+    (e) => {
+      if (readOnly) return;
+      const file = e.dataTransfer?.files?.[0];
+      if (!file || !file.type.startsWith('image/')) return;
+      e.preventDefault();
+      try {
+        rd.setSel(posFromEvent(e));
+      } catch {
+        /* 落点解析失败则用当前光标 */
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        rd.insertImage(String(reader.result));
+        afterEdit();
+        ariaTree.announce('已插入图片');
+      };
+      reader.readAsDataURL(file);
+    },
+    { signal: sig },
+  );
 
   // —— 行首/行尾、上下移动 ——
   function lineOfCaret() {
@@ -877,7 +1250,8 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
   }
   function moveVertical(dir: number, extend: boolean) {
     if (!cached) return;
-    const c = caretAt(cached, rd.focus, caretAffinity); if (!c) return;
+    const c = caretAt(cached, rd.focus, caretAffinity);
+    if (!c) return;
     if (goalX == null) goalX = c.x;
     const targetY = dir < 0 ? c.top - 1 : c.bottom + 1;
     const pos = hitTestDoc(cached, goalX, targetY);
@@ -887,61 +1261,195 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
   }
 
   // —— 键盘 ——
-  ime.addEventListener('keydown', (e) => {
-    if (e.isComposing || (e as unknown as { keyCode: number }).keyCode === 229) return;
-    const meta = e.metaKey || e.ctrlKey;
-    const ext = e.shiftKey;
-    if ((e.altKey || meta) && MOD_NAV_KEYS.has(e.key)) {
-      const navCmd = keymap[keyCombo(e)];
-      if (navCmd) { dispatch(navCmd, ext ? 'extend' : null); e.preventDefault(); return; }
-    }
-    switch (e.key) {
-      case 'ArrowLeft': rd.setSel(rd.posLeft(rd.focus), ext); afterNav('before'); e.preventDefault(); return;
-      case 'ArrowRight': rd.setSel(rd.posRight(rd.focus), ext); afterNav('after'); e.preventDefault(); return;
-      case 'ArrowUp': moveVertical(-1, ext); e.preventDefault(); return;
-      case 'ArrowDown': moveVertical(1, ext); e.preventDefault(); return;
-      case 'Home': { const ln = lineOfCaret(); if (ln) rd.setSel({ block: ln.block, offset: ln.startOffset }, ext); afterNav('after'); e.preventDefault(); return; }
-      case 'End': { const ln = lineOfCaret(); if (ln) rd.setSel({ block: ln.block, offset: ln.endOffset }, ext); afterNav('before'); e.preventDefault(); return; }
-      case 'Backspace': if (readOnly) { e.preventDefault(); return; } if (isFocusAtom()) rd.deleteBlock(rd.focus.block); else rd.backspace(); afterEdit(); e.preventDefault(); return;
-      case 'Delete': if (readOnly) { e.preventDefault(); return; } if (isFocusAtom()) rd.deleteBlock(rd.focus.block); else rd.del(); afterEdit(); e.preventDefault(); return;
-      case 'Enter': if (readOnly) { e.preventDefault(); return; } rd.enter(); afterEdit(); e.preventDefault(); return;
-      case 'Tab':
-        if (readOnly) { e.preventDefault(); return; }
-        if (rd.focusIsList()) { if (e.shiftKey) rd.outdentList(); else rd.indentList(); afterEdit(); e.preventDefault(); }
+  ime.addEventListener(
+    'keydown',
+    (e) => {
+      if (e.isComposing || (e as unknown as { keyCode: number }).keyCode === 229) return;
+      const meta = e.metaKey || e.ctrlKey;
+      const ext = e.shiftKey;
+      if ((e.altKey || meta) && MOD_NAV_KEYS.has(e.key)) {
+        const navCmd = keymap[keyCombo(e)];
+        if (navCmd) {
+          dispatch(navCmd, ext ? 'extend' : null);
+          e.preventDefault();
+          return;
+        }
+      }
+      switch (e.key) {
+        case 'ArrowLeft':
+          rd.setSel(rd.posLeft(rd.focus), ext);
+          afterNav('before');
+          e.preventDefault();
+          return;
+        case 'ArrowRight':
+          rd.setSel(rd.posRight(rd.focus), ext);
+          afterNav('after');
+          e.preventDefault();
+          return;
+        case 'ArrowUp':
+          moveVertical(-1, ext);
+          e.preventDefault();
+          return;
+        case 'ArrowDown':
+          moveVertical(1, ext);
+          e.preventDefault();
+          return;
+        case 'Home': {
+          const ln = lineOfCaret();
+          if (ln) rd.setSel({ block: ln.block, offset: ln.startOffset }, ext);
+          afterNav('after');
+          e.preventDefault();
+          return;
+        }
+        case 'End': {
+          const ln = lineOfCaret();
+          if (ln) rd.setSel({ block: ln.block, offset: ln.endOffset }, ext);
+          afterNav('before');
+          e.preventDefault();
+          return;
+        }
+        case 'Backspace':
+          if (readOnly) {
+            e.preventDefault();
+            return;
+          }
+          if (isFocusAtom()) rd.deleteBlock(rd.focus.block);
+          else rd.backspace();
+          afterEdit();
+          e.preventDefault();
+          return;
+        case 'Delete':
+          if (readOnly) {
+            e.preventDefault();
+            return;
+          }
+          if (isFocusAtom()) rd.deleteBlock(rd.focus.block);
+          else rd.del();
+          afterEdit();
+          e.preventDefault();
+          return;
+        case 'Enter':
+          if (readOnly) {
+            e.preventDefault();
+            return;
+          }
+          rd.enter();
+          afterEdit();
+          e.preventDefault();
+          return;
+        case 'Tab':
+          if (readOnly) {
+            e.preventDefault();
+            return;
+          }
+          if (rd.focusIsList()) {
+            if (e.shiftKey) rd.outdentList();
+            else rd.indentList();
+            afterEdit();
+            e.preventDefault();
+          }
+          return;
+        case 'PageUp':
+          scrollY -= canvas.height * PAGE_SCROLL_RATIO;
+          clampScroll();
+          e.preventDefault();
+          return;
+        case 'PageDown':
+          scrollY += canvas.height * PAGE_SCROLL_RATIO;
+          clampScroll();
+          e.preventDefault();
+          return;
+        case 'F2':
+          toggleShaper();
+          e.preventDefault();
+          return;
+        case 'Escape':
+          if (findBar.isOpen()) {
+            findBar.close();
+            e.preventDefault();
+          }
+          return;
+      }
+      if (!meta) return;
+      if (!e.altKey && (e.key === '=' || e.key === '+')) {
+        setZoom(zoom + ZOOM_STEP);
+        e.preventDefault();
         return;
-      case 'PageUp': scrollY -= canvas.height * PAGE_SCROLL_RATIO; clampScroll(); e.preventDefault(); return;
-      case 'PageDown': scrollY += canvas.height * PAGE_SCROLL_RATIO; clampScroll(); e.preventDefault(); return;
-      case 'F2': toggleShaper(); e.preventDefault(); return;
-      case 'Escape': if (findBar.isOpen()) { findBar.close(); e.preventDefault(); } return;
-    }
-    if (!meta) return;
-    if (!e.altKey && (e.key === '=' || e.key === '+')) { setZoom(zoom + ZOOM_STEP); e.preventDefault(); return; }
-    if (!e.altKey && e.key === '-') { setZoom(zoom - ZOOM_STEP); e.preventDefault(); return; }
-    if (!e.altKey && e.key === '0') { setZoom(1); e.preventDefault(); return; }
-    if (e.key.toLowerCase() === 'k') { if (!readOnly) dispatch('link.toggle'); e.preventDefault(); return; }
-    const cmd = keymap[keyCombo(e)];
-    if (cmd) { dispatch(cmd); e.preventDefault(); return; }
-  }, { signal: sig });
+      }
+      if (!e.altKey && e.key === '-') {
+        setZoom(zoom - ZOOM_STEP);
+        e.preventDefault();
+        return;
+      }
+      if (!e.altKey && e.key === '0') {
+        setZoom(1);
+        e.preventDefault();
+        return;
+      }
+      if (e.key.toLowerCase() === 'k') {
+        if (!readOnly) dispatch('link.toggle');
+        e.preventDefault();
+        return;
+      }
+      const cmd = keymap[keyCombo(e)];
+      if (cmd) {
+        dispatch(cmd);
+        e.preventDefault();
+        return;
+      }
+    },
+    { signal: sig },
+  );
 
   // 文本输入（非 IME 路径）
-  ime.addEventListener('input', (e) => {
-    const ie = e as InputEvent;
-    if (ie.isComposing || rd.isComposing) return;
-    const t = ime.value;
-    ime.value = '';
-    if (readOnly) return;
-    if (t) { rd.insertText(t); afterEdit(); }
-  }, { signal: sig });
+  ime.addEventListener(
+    'input',
+    (e) => {
+      const ie = e as InputEvent;
+      if (ie.isComposing || rd.isComposing) return;
+      const t = ime.value;
+      ime.value = '';
+      if (readOnly) return;
+      if (t) {
+        rd.insertText(t);
+        afterEdit();
+      }
+    },
+    { signal: sig },
+  );
 
   // —— IME 组合中间态 ——
-  ime.addEventListener('compositionstart', () => { if (readOnly) return; rd.beginComposition(); afterEdit(); }, { signal: sig });
-  ime.addEventListener('compositionupdate', (e) => { if (readOnly) return; rd.updateComposition(e.data ?? ''); afterEdit(); }, { signal: sig });
-  ime.addEventListener('compositionend', (e) => {
-    if (readOnly) { ime.value = ''; return; }
-    rd.endComposition(e.data ?? '');
-    ime.value = '';
-    afterEdit();
-  }, { signal: sig });
+  ime.addEventListener(
+    'compositionstart',
+    () => {
+      if (readOnly) return;
+      rd.beginComposition();
+      afterEdit();
+    },
+    { signal: sig },
+  );
+  ime.addEventListener(
+    'compositionupdate',
+    (e) => {
+      if (readOnly) return;
+      rd.updateComposition(e.data ?? '');
+      afterEdit();
+    },
+    { signal: sig },
+  );
+  ime.addEventListener(
+    'compositionend',
+    (e) => {
+      if (readOnly) {
+        ime.value = '';
+        return;
+      }
+      rd.endComposition(e.data ?? '');
+      ime.value = '';
+      afterEdit();
+    },
+    { signal: sig },
+  );
 
   // —— 剪贴板 ——
   const clip = setupClipboard(ime, rd, afterEdit);
@@ -949,15 +1457,28 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
   // —— 右键菜单内容 ——
   function showContextMenu(clientX: number, clientY: number) {
     const sel = !rd.isCollapsed;
-    const mark = (label: string, type: MarkType, cmd: string, key?: string): MenuItem =>
-      ({ label, key, active: rd.markActive(type), action: () => dispatch(cmd) });
+    const mark = (label: string, type: MarkType, cmd: string, key?: string): MenuItem => ({
+      label,
+      key,
+      active: rd.markActive(type),
+      action: () => dispatch(cmd),
+    });
     const items: MenuItem[] = [
       { label: '剪切', key: '⌘X', disabled: !sel || readOnly, action: () => clip.cut() },
       { label: '复制', key: '⌘C', disabled: !sel, action: () => clip.copy() },
       { label: '粘贴', key: '⌘V', disabled: readOnly, action: () => clip.paste() },
       { separator: true },
-      mark('粗体', 'bold', 'mark.bold', '⌘B'), mark('斜体', 'italic', 'mark.italic', '⌘I'), mark('下划线', 'underline', 'mark.underline', '⌘U'), mark('删除线', 'strikethrough', 'mark.strikethrough'), mark('高亮', 'highlight', 'mark.highlight'),
-      { label: rd.markActive('link') ? '移除链接' : '插入链接…', key: '⌘K', active: rd.markActive('link'), action: () => dispatch('link.toggle') },
+      mark('粗体', 'bold', 'mark.bold', '⌘B'),
+      mark('斜体', 'italic', 'mark.italic', '⌘I'),
+      mark('下划线', 'underline', 'mark.underline', '⌘U'),
+      mark('删除线', 'strikethrough', 'mark.strikethrough'),
+      mark('高亮', 'highlight', 'mark.highlight'),
+      {
+        label: rd.markActive('link') ? '移除链接' : '插入链接…',
+        key: '⌘K',
+        active: rd.markActive('link'),
+        action: () => dispatch('link.toggle'),
+      },
       { separator: true },
       { label: '全选', key: '⌘A', action: () => dispatch('select.all') },
       { label: '导出…', action: () => dispatch('doc.export') },
@@ -967,12 +1488,18 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
 
   // —— 链接弹层 ——
   async function doToggleLink() {
-    if (rd.markActive('link')) { rd.clearMark('link'); afterEdit(); return; }
+    if (rd.markActive('link')) {
+      rd.clearMark('link');
+      afterEdit();
+      return;
+    }
     const url = await promptDialog.ask({ title: '插入链接', value: 'https://', placeholder: 'https://example.com' });
     if (url) {
       const safe = sanitizeLinkHref(url);
-      if (safe) { rd.setMark('link', { href: safe }); afterEdit(); }
-      else ariaTree.announce('链接已拒绝：不支持的协议');
+      if (safe) {
+        rd.setMark('link', { href: safe });
+        afterEdit();
+      } else ariaTree.announce('链接已拒绝：不支持的协议');
     }
     ime.focus({ preventScroll: true });
   }
@@ -1012,7 +1539,7 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
   function syncToolbar() {
     if (!toolbar) return;
     const state = buildToolbarState(rd, resolver, {
-      shaperShort: activeShaper === canvasShaper ? 'Canvas' : (hbShaper ? 'HarfBuzz' : '加载中'),
+      shaperShort: activeShaper === canvasShaper ? 'Canvas' : hbShaper ? 'HarfBuzz' : '加载中',
       theme: activeTheme(),
       viewMode,
     });
@@ -1026,7 +1553,11 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
   const imageDialog = createImageDialog();
   const signatureDialog = createSignatureDialog();
   const atomDialogs = createAtomDialogs({
-    rd, promptDialog, imageDialog, signatureDialog, afterEdit,
+    rd,
+    promptDialog,
+    imageDialog,
+    signatureDialog,
+    afterEdit,
     announce: (msg) => ariaTree.announce(msg),
     focusEditor: () => ime.focus({ preventScroll: true }),
   });
@@ -1034,7 +1565,10 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
   // —— 统一命令总线 ——
   const focusEditor = (): void => ime.focus({ preventScroll: true });
   const commandCtx: CommandContext = {
-    rd, afterEdit, announce: (msg) => ariaTree.announce(msg), focusEditor,
+    rd,
+    afterEdit,
+    announce: (msg) => ariaTree.announce(msg),
+    focusEditor,
     exec: (id, arg) => dispatch(id, arg),
     dialogs: {
       toggleLink: doToggleLink,
@@ -1051,7 +1585,9 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
       importDoc: atomDialogs.importDoc,
     },
     view: {
-      toggleShaper, toggleTheme, setViewMode: setViewModeInternal,
+      toggleShaper,
+      toggleTheme,
+      setViewMode: setViewModeInternal,
       exportDoc: () => outputPanel.open(rd.doc),
       applyTemplate,
       templateNames: () => allTemplates().map((t) => t.name),
@@ -1074,7 +1610,10 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
     if (readOnly && !READONLY_SAFE.has(id) && !(id in NAV_AFFINITY)) return;
     commands[id](commandCtx, arg);
     const aff = NAV_AFFINITY[id];
-    if (aff) { afterNav(aff); return; }
+    if (aff) {
+      afterNav(aff);
+      return;
+    }
     if (VIEW_ONLY.has(id)) return;
     if (!SELF_FINALIZING.has(id)) afterEdit();
   }
@@ -1094,21 +1633,23 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
     afterNav('after');
     ime.focus({ preventScroll: true });
   }
-  const outline: Outline | null = showOutline && shell.leftBody
-    ? createOutline(shell.leftBody, { onJump: jumpToBlock })
-    : null;
-  const statusBar: StatusBar | null = showStatusBar && shell.statusBarEl
-    ? createStatusBar(shell.statusBarEl, {
-        onZoomDelta: (deltaPct) => setZoom(zoom + deltaPct / 100),
-        onZoomReset: () => setZoom(1),
-      })
-    : null;
+  const outline: Outline | null =
+    showOutline && shell.leftBody ? createOutline(shell.leftBody, { onJump: jumpToBlock }) : null;
+  const statusBar: StatusBar | null =
+    showStatusBar && shell.statusBarEl
+      ? createStatusBar(shell.statusBarEl, {
+          onZoomDelta: (deltaPct) => setZoom(zoom + deltaPct / 100),
+          onZoomReset: () => setZoom(1),
+        })
+      : null;
   const findBar = createFindBar(editorEl, {
     rd,
     afterNav: () => afterNav('after'),
     afterEdit,
     focusEditor,
-    onMatchesChanged: () => { needRender = true; },
+    onMatchesChanged: () => {
+      needRender = true;
+    },
     printDoc: () => dispatch('doc.print'),
   });
 
@@ -1125,20 +1666,36 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
       )
     : null;
   if (autosaver) {
-    window.addEventListener('beforeunload', (e) => {
-      if (!autosaver.dirty) return;
-      if (autosaver.flush()) return;
-      e.preventDefault();
-      e.returnValue = '';
-    }, { signal: sig });
+    window.addEventListener(
+      'beforeunload',
+      (e) => {
+        if (!autosaver.dirty) return;
+        if (autosaver.flush()) return;
+        e.preventDefault();
+        e.returnValue = '';
+      },
+      { signal: sig },
+    );
   }
 
   function subscribeBus() {
-    const onDoc = () => { dirty = true; resetBlink(); syncToolbar(); ariaTree.update(rd.doc); syncPanels(); };
+    const onDoc = () => {
+      dirty = true;
+      resetBlink();
+      syncToolbar();
+      ariaTree.update(rd.doc);
+      syncPanels();
+    };
     bus.on('doc:changed', onDoc);
-    if (autosaver) bus.on('doc:changed', () => { if (!rd.isComposing) autosaver.schedule(); });
+    if (autosaver)
+      bus.on('doc:changed', () => {
+        if (!rd.isComposing) autosaver.schedule();
+      });
     if (showFindBar) bus.on('doc:changed', () => findBar.refresh());
-    bus.on('selection:changed', () => { resetBlink(); syncToolbar(); });
+    bus.on('selection:changed', () => {
+      resetBlink();
+      syncToolbar();
+    });
     bus.on('view:changed', onDoc);
   }
 

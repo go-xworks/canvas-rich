@@ -6,17 +6,39 @@ import { StyledChar, Style, GlyphInfo } from '../types';
 import { GlyphAtlas, FontMetrics } from './glyph-atlas';
 import { Shaper, ShapedChar } from './shaper';
 
-interface FontEntry { tag: string; font: HB.Font; upem: number }
+interface FontEntry {
+  tag: string;
+  font: HB.Font;
+  upem: number;
+}
 
-const EMPTY = (advance: number): GlyphInfo =>
-  ({ u0: 0, v0: 0, u1: 0, v1: 0, page: 0, w: 0, h: 0, bearingX: 0, bearingY: 0, advance, empty: true });
+const EMPTY = (advance: number): GlyphInfo => ({
+  u0: 0,
+  v0: 0,
+  u1: 0,
+  v1: 0,
+  page: 0,
+  w: 0,
+  h: 0,
+  bearingX: 0,
+  bearingY: 0,
+  advance,
+  empty: true,
+});
 
 // 脚本范围判定（用于字体回退选择）
 function isArabicCp(cp: number): boolean {
-  return (cp >= 0x0600 && cp <= 0x06FF) || (cp >= 0x0750 && cp <= 0x077F) ||
-    (cp >= 0x08A0 && cp <= 0x08FF) || (cp >= 0xFB50 && cp <= 0xFDFF) || (cp >= 0xFE70 && cp <= 0xFEFF);
+  return (
+    (cp >= 0x0600 && cp <= 0x06ff) ||
+    (cp >= 0x0750 && cp <= 0x077f) ||
+    (cp >= 0x08a0 && cp <= 0x08ff) ||
+    (cp >= 0xfb50 && cp <= 0xfdff) ||
+    (cp >= 0xfe70 && cp <= 0xfeff)
+  );
 }
-function isHebrewCp(cp: number): boolean { return (cp >= 0x0590 && cp <= 0x05FF) || (cp >= 0xFB1D && cp <= 0xFB4F); }
+function isHebrewCp(cp: number): boolean {
+  return (cp >= 0x0590 && cp <= 0x05ff) || (cp >= 0xfb1d && cp <= 0xfb4f);
+}
 
 /** 基于 HarfBuzz 的多语言整形器，输出字形度量并将轮廓光栅进图集。 @public */
 export class HarfBuzzShaper implements Shaper {
@@ -80,14 +102,18 @@ export class HarfBuzzShaper implements Shaper {
     this.metricsCache.clear();
   }
 
-  private pick(style: Style): FontEntry { return style.bold ? this.bold : this.regular; }
+  private pick(style: Style): FontEntry {
+    return style.bold ? this.bold : this.regular;
+  }
   // 字体回退：按脚本范围选字体，其余按字重用 Roboto
   private fontFor(c: StyledChar): FontEntry {
     const cp = c.ch.codePointAt(0) ?? 0;
     for (const fb of this.fallbacks) if (fb.test(cp)) return fb.font;
     return c.style.bold ? this.bold : this.regular;
   }
-  private px(style: Style): number { return Math.max(1, Math.round(style.fontSize * this.dpr)); }
+  private px(style: Style): number {
+    return Math.max(1, Math.round(style.fontSize * this.dpr));
+  }
 
   fontMetrics(style: Style): FontMetrics {
     const f = this.pick(style);
@@ -113,7 +139,10 @@ export class HarfBuzzShaper implements Shaper {
     let i = 0;
     while (i < n) {
       // 换行符：layout 自己处理，整形器跳过
-      if (chars[i].ch === '\n') { i++; continue; }
+      if (chars[i].ch === '\n') {
+        i++;
+        continue;
+      }
       // 取一段同字重(font)的 run（直到样式的 bold 改变或遇到 \n）
       const runStart = i;
       const boldFlag = chars[i].style.bold;
@@ -142,11 +171,22 @@ export class HarfBuzzShaper implements Shaper {
     // run 文本 + 「UTF-16 偏移 → 本地字符下标」映射
     let text = '';
     const starts: number[] = []; // 第 k 个字符在 run 文本中的 UTF-16 起始偏移
-    for (let k = start; k < end; k++) { starts.push(text.length); text += chars[k].ch; }
+    for (let k = start; k < end; k++) {
+      starts.push(text.length);
+      text += chars[k].ch;
+    }
     const offsetToLocal = (off: number): number => {
       // 找最大的 starts[k] <= off
-      let lo = 0, hi = starts.length - 1, ans = 0;
-      while (lo <= hi) { const mid = (lo + hi) >> 1; if (starts[mid] <= off) { ans = mid; lo = mid + 1; } else hi = mid - 1; }
+      let lo = 0,
+        hi = starts.length - 1,
+        ans = 0;
+      while (lo <= hi) {
+        const mid = (lo + hi) >> 1;
+        if (starts[mid] <= off) {
+          ans = mid;
+          lo = mid + 1;
+        } else hi = mid - 1;
+      }
       return ans;
     };
 
@@ -179,10 +219,11 @@ export class HarfBuzzShaper implements Shaper {
     if (cached) return cached;
 
     const ext = f.font.glyphExtents(gid);
-    if (!ext) return this.atlas.addGlyphById(key, { w: 0, h: 0, bearingX: 0, bearingY: 0, advance: 0, empty: true }, () => {});
+    if (!ext)
+      return this.atlas.addGlyphById(key, { w: 0, h: 0, bearingX: 0, bearingY: 0, advance: 0, empty: true }, () => {});
 
-    const left = ext.xBearing;          // 设计单位：左边承
-    const top = ext.yBearing;           // 设计单位：基线到顶（y 朝上为正）
+    const left = ext.xBearing; // 设计单位：左边承
+    const top = ext.yBearing; // 设计单位：基线到顶（y 朝上为正）
     const w = Math.abs(ext.width);
     const h = Math.abs(ext.height);
     if (w === 0 || h === 0) {
@@ -202,7 +243,7 @@ export class HarfBuzzShaper implements Shaper {
         ctx.save();
         ctx.fillStyle = '#fff'; // 覆盖率存 alpha，颜色由顶点色决定
         ctx.translate(ox, oy);
-        ctx.scale(s, -s);        // 设计单位→px，并翻转 y（设计 y朝上 → 画布 y朝下）
+        ctx.scale(s, -s); // 设计单位→px，并翻转 y（设计 y朝上 → 画布 y朝下）
         ctx.translate(-left, -top);
         ctx.fill(new Path2D(pathD));
         ctx.restore();

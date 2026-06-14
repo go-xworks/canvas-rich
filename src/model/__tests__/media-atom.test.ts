@@ -88,13 +88,19 @@ describe('export: 媒体原子块 → HTML', () => {
   });
 
   it('video → <video controls src + width/height>', () => {
-    const html = toHtml(docOf({ type: 'video', attrs: { src: 'v.mp4', width: 480, height: 270 }, inlines: [text('')] }));
+    const html = toHtml(
+      docOf({ type: 'video', attrs: { src: 'v.mp4', width: 480, height: 270 }, inlines: [text('')] }),
+    );
     expect(html).toContain('<video controls src="v.mp4" width="480" height="270"></video>');
   });
 
   it('iframe → <iframe src sandbox + width/height>（sandbox 不含 allow-same-origin，防同源逃逸组合）', () => {
-    const html = toHtml(docOf({ type: 'iframe', attrs: { src: 'https://e.com', width: 480, height: 270 }, inlines: [text('')] }));
-    expect(html).toContain('<iframe src="https://e.com" width="480" height="270" sandbox="allow-scripts allow-popups"></iframe>');
+    const html = toHtml(
+      docOf({ type: 'iframe', attrs: { src: 'https://e.com', width: 480, height: 270 }, inlines: [text('')] }),
+    );
+    expect(html).toContain(
+      '<iframe src="https://e.com" width="480" height="270" sandbox="allow-scripts allow-popups"></iframe>',
+    );
     expect(html).not.toContain('allow-same-origin');
   });
 
@@ -117,21 +123,25 @@ describe('export: 媒体原子块 → HTML', () => {
 
 describe('export: 媒体原子块 → Markdown（兜底为链接）', () => {
   it('audio/video/iframe 兜底为带类型标签的链接', () => {
-    const md = toMarkdown(docOf(
-      { type: 'audio', attrs: { src: 'a.mp3' }, inlines: [text('')] },
-      { type: 'video', attrs: { src: 'v.mp4' }, inlines: [text('')] },
-      { type: 'iframe', attrs: { src: 'https://e.com' }, inlines: [text('')] },
-    ));
+    const md = toMarkdown(
+      docOf(
+        { type: 'audio', attrs: { src: 'a.mp3' }, inlines: [text('')] },
+        { type: 'video', attrs: { src: 'v.mp4' }, inlines: [text('')] },
+        { type: 'iframe', attrs: { src: 'https://e.com' }, inlines: [text('')] },
+      ),
+    );
     expect(md).toContain('[音频](a.mp3)');
     expect(md).toContain('[视频](v.mp4)');
     expect(md).toContain('[内嵌网页](https://e.com)');
   });
 
   it('attachment 兜底为链接（文本取文件名，缺省回退 src）', () => {
-    const md = toMarkdown(docOf(
-      { type: 'attachment', attrs: { src: 'f.pdf', name: '报告.pdf' }, inlines: [text('')] },
-      { type: 'attachment', attrs: { src: 'data.bin' }, inlines: [text('')] },
-    ));
+    const md = toMarkdown(
+      docOf(
+        { type: 'attachment', attrs: { src: 'f.pdf', name: '报告.pdf' }, inlines: [text('')] },
+        { type: 'attachment', attrs: { src: 'data.bin' }, inlines: [text('')] },
+      ),
+    );
     expect(md).toContain('[报告.pdf](f.pdf)');
     expect(md).toContain('[data.bin](data.bin)');
   });

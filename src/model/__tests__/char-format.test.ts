@@ -76,30 +76,39 @@ describe('setMark: fontSize / fontFamily 写入 attrs', () => {
 
 describe('export: 上标/下标/字体映射', () => {
   it('HTML: superscript → <sup>, subscript → <sub>', () => {
-    const html = toHtml(doc(para([
-      text('E=mc'), text('2', [{ type: 'superscript' }]),
-      text(' H'), text('2', [{ type: 'subscript' }]), text('O'),
-    ])));
+    const html = toHtml(
+      doc(
+        para([
+          text('E=mc'),
+          text('2', [{ type: 'superscript' }]),
+          text(' H'),
+          text('2', [{ type: 'subscript' }]),
+          text('O'),
+        ]),
+      ),
+    );
     expect(html).toContain('<sup>2</sup>');
     expect(html).toContain('<sub>2</sub>');
   });
 
   it('Markdown: sup/sub 回退为 HTML 标签', () => {
-    const md = toMarkdown(doc(para([
-      text('x'), text('2', [{ type: 'superscript' }]),
-      text(' y'), text('n', [{ type: 'subscript' }]),
-    ])));
+    const md = toMarkdown(
+      doc(para([text('x'), text('2', [{ type: 'superscript' }]), text(' y'), text('n', [{ type: 'subscript' }])])),
+    );
     expect(md).toContain('<sup>2</sup>');
     expect(md).toContain('<sub>n</sub>');
   });
 
   it('HTML: fontFamily/fontSize → inline span style', () => {
-    const html = toHtml(doc(para([
-      text('big', [{ type: 'fontSize', attrs: { size: '28' } }]),
-      text('serif', [{ type: 'fontFamily', attrs: { fontFamily: 'serif' } }]),
-    ])));
+    const html = toHtml(
+      doc(
+        para([
+          text('big', [{ type: 'fontSize', attrs: { size: '28' } }]),
+          text('serif', [{ type: 'fontFamily', attrs: { fontFamily: 'serif' } }]),
+        ]),
+      ),
+    );
     expect(html).toContain('font-size:28px');
     expect(html).toContain('font-family:serif');
   });
-
 });

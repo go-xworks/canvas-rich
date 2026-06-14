@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   verify:
-    name: typecheck · test · build
+    name: lint · format · typecheck · test · build
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -32,11 +32,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Lint (oxlint)
+        run: npm run lint
+
+      - name: Format check (oxfmt)
+        run: npm run format:check
+
       - name: Typecheck (tsc --noEmit)
         run: npm run typecheck
 
       - name: Unit tests (vitest)
         run: npm test
 
-      - name: Build (tsc + vite)
+      - name: Build (tsdown + tailwindcss)
         run: npm run build

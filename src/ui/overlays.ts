@@ -92,14 +92,17 @@ export function atomSig(kind: string, payload: string): string {
  * @internal
  */
 export function tableSig(attrs: BlockAttrs): string {
-  return atomSig('table', JSON.stringify({
-    shape: (attrs.rows ?? []).map((r) => r.length),
-    cw: attrs.colWidths ?? null,
-    rh: attrs.rowHeights ?? null,
-    mg: attrs.merges ?? null,
-    align: attrs.align ?? null,
-    dir: attrs.dir ?? null,
-  }));
+  return atomSig(
+    'table',
+    JSON.stringify({
+      shape: (attrs.rows ?? []).map((r) => r.length),
+      cw: attrs.colWidths ?? null,
+      rh: attrs.rowHeights ?? null,
+      mg: attrs.merges ?? null,
+      align: attrs.align ?? null,
+      dir: attrs.dir ?? null,
+    }),
+  );
 }
 
 // 表格签名的版本缓存：blockVersion 不变即复用上次 JSON.stringify 结果，消除每渲染帧
@@ -138,7 +141,12 @@ export function textboxSig(content: string, width: string, height: string): stri
  * @internal
  */
 export function canSkipTableRebuild(
-  prevSig: string, sig: string, prevBlk: object | undefined, blk: object, domRowCount: number, modelRowCount: number,
+  prevSig: string,
+  sig: string,
+  prevBlk: object | undefined,
+  blk: object,
+  domRowCount: number,
+  modelRowCount: number,
 ): boolean {
   return prevSig === sig && prevBlk === blk && domRowCount === modelRowCount;
 }
@@ -167,7 +175,10 @@ export function blurActiveCellWithin(
   container: { contains(node: unknown): boolean },
   active: { blur(): void } | null,
 ): boolean {
-  if (active && container.contains(active)) { active.blur(); return true; }
+  if (active && container.contains(active)) {
+    active.blur();
+    return true;
+  }
   return false;
 }
 
@@ -201,9 +212,16 @@ export function overlayCssRect(
 // 单元格内格式快捷键 → document.execCommand 命令名（mod+b/i/u；改动后 input 事件自然回写解析）。
 const CELL_MARK_COMMAND: Record<string, string> = { b: 'bold', i: 'italic', u: 'underline' };
 
-interface CellRC { r: number; c: number }
+interface CellRC {
+  r: number;
+  c: number;
+}
 interface Entry {
-  el: HTMLElement; kind: string; content: string; blk: Block; blockIndex: number;
+  el: HTMLElement;
+  kind: string;
+  content: string;
+  blk: Block;
+  blockIndex: number;
   // content 签名构建时的来源 Block（表格用）：undo/redo 换块对象而结构签名不变时据此强制重建。
   contentBlk?: Block;
   // 表格区域选择（拖拽起止单元格，跨重建保留以便合并/拆分浮动条联动）；非表格为 null
@@ -276,22 +294,27 @@ const CSS = `
 
 // 附件文件卡片用的内联图标（Lucide 风格描边，随 currentColor 染色）。
 const svg = (paths: string): string =>
-  `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" `
-  + `stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
-const PAPERCLIP_SVG = svg('<path d="M13.234 20.252 21 12.3a4.6 4.6 0 0 0-6.5-6.5l-9.5 9.5a3 3 0 0 0 4.243 4.243l7.5-7.5a1.5 1.5 0 0 0-2.121-2.121L7.5 16.5"/>');
-const DOWNLOAD_SVG = svg('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>');
+  `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" ` +
+  `stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths}</svg>`;
+const PAPERCLIP_SVG = svg(
+  '<path d="M13.234 20.252 21 12.3a4.6 4.6 0 0 0-6.5-6.5l-9.5 9.5a3 3 0 0 0 4.243 4.243l7.5-7.5a1.5 1.5 0 0 0-2.121-2.121L7.5 16.5"/>',
+);
+const DOWNLOAD_SVG = svg(
+  '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/>',
+);
 
 // 写 DOM src 前的第二道 URL 防线（第一道在模型层 insert*/updateAtomAttrs；历史文档反序列化/
 // 直接构造的 Doc 可能绕过模型入口仍携带危险协议）：非法 URL 不写入并移除既有 src（降级为空）。
 function applySafeSrc(el: HTMLImageElement | HTMLMediaElement | HTMLIFrameElement, src: string, kind: UrlKind): void {
   const safe = sanitizeUrl(src, kind);
-  if (safe !== null) el.src = safe; else el.removeAttribute('src');
+  if (safe !== null) el.src = safe;
+  else el.removeAttribute('src');
 }
 
 // 当前框宽高比（getBoundingClientRect）；未挂载/零尺寸时回退 fallback。
 function rectAspect(wrap: HTMLElement, fallback: number): number {
   const r = wrap.getBoundingClientRect();
-  return (r.width / r.height) || fallback;
+  return r.width / r.height || fallback;
 }
 
 // 媒体类原子块 src 同步表：kind → { 内容元素选择器, URL 白名单类别 }。
@@ -309,14 +332,20 @@ function accentColor(): string {
   try {
     const v = getComputedStyle(document.documentElement).getPropertyValue('--rte-accent').trim();
     return v || '#2563eb';
-  } catch { return '#2563eb'; }
+  } catch {
+    return '#2563eb';
+  }
 }
 
 // 在 2D 上下文里按 shape 种类绘制（描边 + 半透明填充，accent 色）。w/h 为逻辑 px（已乘 dpr 缩放上下文）。
 function drawShape(ctx: CanvasRenderingContext2D, kind: ShapeKind, w: number, h: number, accent: string): void {
   const pad = 8;
-  const x0 = pad, y0 = pad, x1 = w - pad, y1 = h - pad;
-  const cx = w / 2, cy = h / 2;
+  const x0 = pad,
+    y0 = pad,
+    x1 = w - pad,
+    y1 = h - pad;
+  const cx = w / 2,
+    cy = h / 2;
   ctx.clearRect(0, 0, w, h);
   ctx.lineWidth = 2;
   ctx.strokeStyle = accent;
@@ -327,46 +356,88 @@ function drawShape(ctx: CanvasRenderingContext2D, kind: ShapeKind, w: number, h:
     ctx.beginPath();
     pts.forEach(([px, py], i) => (i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py)));
     if (close) ctx.closePath();
-    ctx.fill(); ctx.stroke();
+    ctx.fill();
+    ctx.stroke();
   };
   switch (kind) {
     case 'line':
-      ctx.beginPath(); ctx.moveTo(x0, y1); ctx.lineTo(x1, y0); ctx.stroke(); break;
+      ctx.beginPath();
+      ctx.moveTo(x0, y1);
+      ctx.lineTo(x1, y0);
+      ctx.stroke();
+      break;
     case 'divider':
-      ctx.beginPath(); ctx.moveTo(x0, cy); ctx.lineTo(x1, cy); ctx.stroke(); break;
+      ctx.beginPath();
+      ctx.moveTo(x0, cy);
+      ctx.lineTo(x1, cy);
+      ctx.stroke();
+      break;
     case 'rect':
-      ctx.beginPath(); ctx.rect(x0, y0, x1 - x0, y1 - y0); ctx.fill(); ctx.stroke(); break;
+      ctx.beginPath();
+      ctx.rect(x0, y0, x1 - x0, y1 - y0);
+      ctx.fill();
+      ctx.stroke();
+      break;
     case 'rounded-rect': {
       const r = Math.min(18, (x1 - x0) / 2, (y1 - y0) / 2);
       ctx.beginPath();
       ctx.moveTo(x0 + r, y0);
-      ctx.arcTo(x1, y0, x1, y1, r); ctx.arcTo(x1, y1, x0, y1, r);
-      ctx.arcTo(x0, y1, x0, y0, r); ctx.arcTo(x0, y0, x1, y0, r);
-      ctx.closePath(); ctx.fill(); ctx.stroke(); break;
+      ctx.arcTo(x1, y0, x1, y1, r);
+      ctx.arcTo(x1, y1, x0, y1, r);
+      ctx.arcTo(x0, y1, x0, y0, r);
+      ctx.arcTo(x0, y0, x1, y0, r);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      break;
     }
     case 'ellipse':
-      ctx.beginPath(); ctx.ellipse(cx, cy, (x1 - x0) / 2, (y1 - y0) / 2, 0, 0, Math.PI * 2);
-      ctx.fill(); ctx.stroke(); break;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, (x1 - x0) / 2, (y1 - y0) / 2, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      break;
     case 'triangle':
-      poly([[cx, y0], [x1, y1], [x0, y1]]); break;
+      poly([
+        [cx, y0],
+        [x1, y1],
+        [x0, y1],
+      ]);
+      break;
     case 'diamond':
-      poly([[cx, y0], [x1, cy], [cx, y1], [x0, cy]]); break;
+      poly([
+        [cx, y0],
+        [x1, cy],
+        [cx, y1],
+        [x0, cy],
+      ]);
+      break;
     case 'star': {
       const pts: [number, number][] = [];
-      const rOut = Math.min(x1 - x0, y1 - y0) / 2, rIn = rOut * 0.4;
+      const rOut = Math.min(x1 - x0, y1 - y0) / 2,
+        rIn = rOut * 0.4;
       for (let i = 0; i < 10; i++) {
         const ang = -Math.PI / 2 + (i * Math.PI) / 5;
         const rr = i % 2 === 0 ? rOut : rIn;
         pts.push([cx + rr * Math.cos(ang), cy + rr * Math.sin(ang)]);
       }
-      poly(pts); break;
+      poly(pts);
+      break;
     }
     case 'arrow': {
-      const midY = cy, headW = Math.min(40, (x1 - x0) * 0.35), shaftH = (y1 - y0) * 0.28;
+      const midY = cy,
+        headW = Math.min(40, (x1 - x0) * 0.35),
+        shaftH = (y1 - y0) * 0.28;
       poly([
-        [x0, midY - shaftH / 2], [x1 - headW, midY - shaftH / 2], [x1 - headW, y0],
-        [x1, midY], [x1 - headW, y1], [x1 - headW, midY + shaftH / 2], [x0, midY + shaftH / 2],
-      ]); break;
+        [x0, midY - shaftH / 2],
+        [x1 - headW, midY - shaftH / 2],
+        [x1 - headW, y0],
+        [x1, midY],
+        [x1 - headW, y1],
+        [x1 - headW, midY + shaftH / 2],
+        [x0, midY + shaftH / 2],
+      ]);
+      break;
     }
   }
 }
@@ -376,14 +447,17 @@ function drawShape(ctx: CanvasRenderingContext2D, kind: ShapeKind, w: number, h:
  * @internal
  */
 export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): OverlayManager {
-  const style = document.createElement('style'); style.textContent = CSS; document.head.appendChild(style);
+  const style = document.createElement('style');
+  style.textContent = CSS;
+  document.head.appendChild(style);
   // 双层结构：clip（编辑器边界裁剪，不缩放）→ layer（逻辑 px 定位层，transform scale(zoom) 放大）。
   // 裁剪必须在 transform 外层：transform 后 layer 的视觉盒超出编辑器，自身 overflow 无法按编辑器边界裁剪。
   const clip = document.createElement('div');
   clip.style.cssText = 'position:absolute;inset:0;overflow:hidden;pointer-events:none';
   host.appendChild(clip);
   const layer = document.createElement('div');
-  layer.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;transform-origin:0 0';
+  layer.style.cssText =
+    'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;transform-origin:0 0';
   clip.appendChild(layer);
   const map = new Map<string, Entry>();
   // 行内图片 DOM 缓存：键 = `${block}:${offset}`，值 = { 包裹元素, 当前 src }
@@ -427,8 +501,13 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
   // 图片用自然宽高比；形状返回当前框宽高比（自由感更强但仍等比，避免变形）。
   function wireResize(wrap: HTMLElement, handle: HTMLElement, entry: Entry, aspect: () => number): void {
     handle.addEventListener('pointerdown', (e) => {
-      e.preventDefault(); e.stopPropagation();
-      try { handle.setPointerCapture(e.pointerId); } catch { /* 合成事件/无效指针 */ }
+      e.preventDefault();
+      e.stopPropagation();
+      try {
+        handle.setPointerCapture(e.pointerId);
+      } catch {
+        /* 合成事件/无效指针 */
+      }
       activeResizeWrap = wrap; // 拖动期间冻结 sync 对本盒尺寸的写回
       const rect = wrap.getBoundingClientRect();
       const left = rect.left;
@@ -439,10 +518,12 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
         // 屏幕 px ÷ zoom → 逻辑 px（wrap 样式是逻辑 px，经定位层 transform 放大显示）；
         // 最小宽 40 逻辑 px，与 doc-layout 对原子块宽度的下限一致。
         const w = Math.max(40, Math.min(maxW, ev.clientX - left) / zoomNow);
-        wrap.style.width = w + 'px'; wrap.style.height = (w / asp) + 'px';
+        wrap.style.width = w + 'px';
+        wrap.style.height = w / asp + 'px';
       };
       const onUp = () => {
-        handle.removeEventListener('pointermove', onMove); handle.removeEventListener('pointerup', onUp);
+        handle.removeEventListener('pointermove', onMove);
+        handle.removeEventListener('pointerup', onUp);
         handle.removeEventListener('pointercancel', onUp);
         cb.onImageResize(entry.blockIndex, parseFloat(wrap.style.width), parseFloat(wrap.style.height));
         activeResizeWrap = null; // 提交/取消后恢复：下一帧 relayout 已据新尺寸产盒，sync 据其写回
@@ -450,7 +531,8 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
       // pointercancel 与 pointerup 同处理：拖动被系统中断（如手势取消）时仍清理监听并解除冻结，
       // 否则 activeResizeWrap 卡住 → 后续帧 sync 永不写回该盒尺寸。
       handle.addEventListener('pointermove', onMove);
-      handle.addEventListener('pointerup', onUp); handle.addEventListener('pointercancel', onUp);
+      handle.addEventListener('pointerup', onUp);
+      handle.addEventListener('pointercancel', onUp);
     });
   }
 
@@ -462,14 +544,20 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
       // 取焦/落光标，且拖动选词会被误判为块移动）。仅从非编辑区（外框）发起拖动重排。
       if ((e.target as HTMLElement | null)?.closest('[contenteditable="true"]')) return;
       e.preventDefault();
-      const sx = e.clientX, sy = e.clientY; let moving = false;
+      const sx = e.clientX,
+        sy = e.clientY;
+      let moving = false;
       const onMove = (ev: PointerEvent) => {
         if (!moving && Math.hypot(ev.clientX - sx, ev.clientY - sy) < 5) return;
-        if (!moving) { moving = true; wrap.style.opacity = '0.5'; }
+        if (!moving) {
+          moving = true;
+          wrap.style.opacity = '0.5';
+        }
         cb.onBlockMove(entry.blockIndex, ev.clientY, 'move');
       };
       const cleanup = () => {
-        window.removeEventListener('pointermove', onMove); window.removeEventListener('pointerup', onUp);
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
         window.removeEventListener('pointercancel', onCancel);
         wrap.style.opacity = '';
       };
@@ -480,8 +568,13 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
       };
       // pointercancel：拖动被系统中断 → 用起点 y 提交 'drop'，让装配层落回原位并清掉落点指示线，
       // 避免 dropLine 卡在屏上 / dropTarget 残留（与 pointerup 的清理路径一致）。
-      const onCancel = () => { const wasMoving = moving; cleanup(); if (wasMoving) cb.onBlockMove(entry.blockIndex, sy, 'drop'); };
-      window.addEventListener('pointermove', onMove); window.addEventListener('pointerup', onUp);
+      const onCancel = () => {
+        const wasMoving = moving;
+        cleanup();
+        if (wasMoving) cb.onBlockMove(entry.blockIndex, sy, 'drop');
+      };
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
       window.addEventListener('pointercancel', onCancel);
     });
   }
@@ -490,7 +583,8 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
   // 闭包引用 entry（每帧更新 blockIndex/blk），故移动/undo 换块后仍指向当前块。
   function wireAtomEdit(wrap: HTMLElement, entry: Entry): void {
     wrap.addEventListener('dblclick', (e) => {
-      e.preventDefault(); e.stopPropagation();
+      e.preventDefault();
+      e.stopPropagation();
       cb.onAtomEdit(entry.blockIndex, entry.kind);
     });
   }
@@ -500,26 +594,34 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
   // entry 每帧原地更新 blockIndex（移动/undo 换块后仍指当前块），故 focusin 时读 entry.blockIndex 取最新值。
   function wireCellFocusTracking(wrap: HTMLElement, entry: Entry): void {
     wrap.addEventListener('focusin', () => cb.onCellFocus(entry.blockIndex));
-    wrap.addEventListener('focusout', (e) => { if (!wrap.contains(e.relatedTarget as Node)) cb.onCellBlur(); });
+    wrap.addEventListener('focusout', (e) => {
+      if (!wrap.contains(e.relatedTarget as Node)) cb.onCellBlur();
+    });
   }
 
   /**
    * 原子块覆盖层的公共样板：wrap 创建 + 内容挂载 + 可选「缩放手柄/拖动重排/双击再编辑/常开交互」接线。
    * 各 kind 的 builder 只保留内容构建差异（见 atomBuilders 表）。
    */
-  function makeAtomWrap(entry: Entry, content: HTMLElement[], opts: {
-    className?: string;          // 追加在 rte-ovl 之后的类名
-    interactive?: boolean;       // 常开指针交互（audio 播放控件 / table 单元格编辑）
-    aspect?: (wrap: HTMLElement) => number; // 提供 → 缩放手柄（锁定该宽高比）+ 拖动重排
-    dblEdit?: boolean;           // 双击「再编辑」（onAtomEdit 弹层）
-  }): HTMLElement {
+  function makeAtomWrap(
+    entry: Entry,
+    content: HTMLElement[],
+    opts: {
+      className?: string; // 追加在 rte-ovl 之后的类名
+      interactive?: boolean; // 常开指针交互（audio 播放控件 / table 单元格编辑）
+      aspect?: (wrap: HTMLElement) => number; // 提供 → 缩放手柄（锁定该宽高比）+ 拖动重排
+      dblEdit?: boolean; // 双击「再编辑」（onAtomEdit 弹层）
+    },
+  ): HTMLElement {
     const wrap = document.createElement('div');
     wrap.className = opts.className ? `rte-ovl ${opts.className}` : 'rte-ovl';
     if (opts.interactive) wrap.style.pointerEvents = 'auto';
     for (const el of content) wrap.appendChild(el);
     const aspect = opts.aspect;
     if (aspect) {
-      const handle = document.createElement('div'); handle.className = 'rte-resize'; wrap.appendChild(handle);
+      const handle = document.createElement('div');
+      handle.className = 'rte-resize';
+      wrap.appendChild(handle);
       wireResize(wrap, handle, entry, () => aspect(wrap));
       wireDrag(wrap, handle, entry);
     }
@@ -531,9 +633,11 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
   const atomBuilders: Record<OverlayKind, (entry: Entry) => HTMLElement> = {
     image(entry) {
       // 图片：缩放锁自然宽高比（未加载回退当前框比，再回退 2）；双击换图。
-      const img = document.createElement('img'); img.draggable = false;
+      const img = document.createElement('img');
+      img.draggable = false;
       return makeAtomWrap(entry, [img], {
-        aspect: (wrap) => (img.naturalWidth && img.naturalHeight) ? img.naturalWidth / img.naturalHeight : rectAspect(wrap, 2),
+        aspect: (wrap) =>
+          img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : rectAspect(wrap, 2),
         dblEdit: true,
       });
     },
@@ -544,24 +648,29 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
     },
     signature(entry) {
       // 电子签名：<img>（手绘 PNG，透明底，类 image）；缩放锁自然宽高比；双击重画签名。
-      const img = document.createElement('img'); img.draggable = false; img.alt = '签名';
+      const img = document.createElement('img');
+      img.draggable = false;
+      img.alt = '签名';
       return makeAtomWrap(entry, [img], {
         className: 'rte-signature',
-        aspect: (wrap) => (img.naturalWidth && img.naturalHeight) ? img.naturalWidth / img.naturalHeight : rectAspect(wrap, 220 / 90),
+        aspect: (wrap) =>
+          img.naturalWidth && img.naturalHeight ? img.naturalWidth / img.naturalHeight : rectAspect(wrap, 220 / 90),
         dblEdit: true,
       });
     },
     seal(entry) {
       // 印章：内联红色圆形公章 SVG（随 attrs.text 重绘）。SVG 注入独立 body 容器（非 wrap 本体），
       // 避免 innerHTML 重绘时抹掉缩放手柄；公章恒方形（宽高比 1）。双击改印章文字。
-      const body = document.createElement('div'); body.className = 'rte-seal-body';
+      const body = document.createElement('div');
+      body.className = 'rte-seal-body';
       return makeAtomWrap(entry, [body], { className: 'rte-seal', aspect: () => 1, dblEdit: true });
     },
     video(entry) {
       // 视频：<video controls>；缩放锁视频自然宽高比（元数据未加载回退当前框比）。双击改视频源。
-      const v = document.createElement('video'); v.controls = true;
+      const v = document.createElement('video');
+      v.controls = true;
       return makeAtomWrap(entry, [v], {
-        aspect: (wrap) => (v.videoWidth && v.videoHeight) ? v.videoWidth / v.videoHeight : rectAspect(wrap, 16 / 9),
+        aspect: (wrap) => (v.videoWidth && v.videoHeight ? v.videoWidth / v.videoHeight : rectAspect(wrap, 16 / 9)),
         dblEdit: true,
       });
     },
@@ -577,16 +686,23 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
     },
     audio(entry) {
       // 音频：<audio controls>，固定高度（无缩放手柄）、常开交互（播放控件）。双击改音频源。
-      const a = document.createElement('audio'); a.controls = true;
+      const a = document.createElement('audio');
+      a.controls = true;
       return makeAtomWrap(entry, [a], { interactive: true, dblEdit: true });
     },
     attachment(entry) {
       // 附件：文件卡片（图标 + 文件名 + 下载链接），固定高度（无缩放手柄）。
       // 双击改附件源/名：阻止默认（避免双击触发下载导航），交回调弹层。
-      const card = document.createElement('a'); card.className = 'rte-attach';
-      const ic = document.createElement('span'); ic.className = 'rte-attach-icon'; ic.innerHTML = PAPERCLIP_SVG;
-      const nm = document.createElement('span'); nm.className = 'rte-attach-name';
-      const dl = document.createElement('span'); dl.className = 'rte-attach-dl'; dl.innerHTML = DOWNLOAD_SVG;
+      const card = document.createElement('a');
+      card.className = 'rte-attach';
+      const ic = document.createElement('span');
+      ic.className = 'rte-attach-icon';
+      ic.innerHTML = PAPERCLIP_SVG;
+      const nm = document.createElement('span');
+      nm.className = 'rte-attach-name';
+      const dl = document.createElement('span');
+      dl.className = 'rte-attach-dl';
+      dl.innerHTML = DOWNLOAD_SVG;
       card.append(ic, nm, dl);
       return makeAtomWrap(entry, [card], { dblEdit: true });
     },
@@ -595,8 +711,10 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
       // + 缩放（当前框宽高比）。复用表格单元格的 contenteditable + 内容回写模式：input 时把 textContent
       // 写回 entry.blk.attrs.content 并回调 onTextboxEdit；focusin/out 复用 onCellFocus/onCellBlur
       // 暂停 canvas 光标 / 不抢回 ime。
-      const body = document.createElement('div'); body.className = 'rte-textbox-body';
-      body.contentEditable = 'true'; body.spellcheck = false;
+      const body = document.createElement('div');
+      body.className = 'rte-textbox-body';
+      body.contentEditable = 'true';
+      body.spellcheck = false;
       const wrap = makeAtomWrap(entry, [body], { className: 'rte-textbox', aspect: (w) => rectAspect(w, 240 / 80) });
       body.addEventListener('input', () => {
         const txt = body.textContent ?? '';
@@ -613,8 +731,11 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
     },
     table(entry) {
       // table：外层 .rte-ovl 定位盒 → 内层 .rte-table-wrap（承载拖拽手柄/浮动条的绝对定位基准）→ table
-      const inner = document.createElement('div'); inner.className = 'rte-table-wrap';
-      const t = document.createElement('table'); t.className = 'rte-table'; inner.appendChild(t);
+      const inner = document.createElement('div');
+      inner.className = 'rte-table-wrap';
+      const t = document.createElement('table');
+      t.className = 'rte-table';
+      inner.appendChild(t);
       const wrap = makeAtomWrap(entry, [inner], { interactive: true });
       wireCellFocusTracking(wrap, entry);
       return wrap;
@@ -628,7 +749,8 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
     // 新增 BlockType 若忘了接覆盖层，旧逻辑会把它静默错绑成表格 DOM（querySelector('table')
     // 取空还会在 renderTable 抛错）；占位 + console.warn 让问题在开发期即刻暴露。
     console.warn(`[overlays] 未知原子块 kind「${kind}」：渲染占位 div（请为其接入覆盖层分支）`);
-    const wrap = document.createElement('div'); wrap.className = 'rte-ovl';
+    const wrap = document.createElement('div');
+    wrap.className = 'rte-ovl';
     wrap.style.background = 'var(--rte-code-bg)';
     wrap.textContent = `[${kind}]`;
     return wrap;
@@ -648,8 +770,7 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
     for (const m of merges) {
       anchorAt.set(`${m.r},${m.c}`, m);
       for (let r = m.r; r < m.r + m.rowspan; r++)
-        for (let c = m.c; c < m.c + m.colspan; c++)
-          if (!(r === m.r && c === m.c)) covered.add(`${r},${c}`);
+        for (let c = m.c; c < m.c + m.colspan; c++) if (!(r === m.r && c === m.c)) covered.add(`${r},${c}`);
     }
     return { covered, anchorAt };
   }
@@ -696,10 +817,15 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
         if (covered.has(`${r},${c}`)) continue; // 被合并覆盖：不 insertCell
         const td = tr.insertCell();
         const anchor = anchorAt.get(`${r},${c}`);
-        if (anchor) { td.colSpan = anchor.colspan; td.rowSpan = anchor.rowspan; }
-        td.contentEditable = 'true'; td.spellcheck = false;
+        if (anchor) {
+          td.colSpan = anchor.colspan;
+          td.rowSpan = anchor.rowspan;
+        }
+        td.contentEditable = 'true';
+        td.spellcheck = false;
         td.innerHTML = row[c] ? inlinesToCellHtml(row[c].inlines) : ''; // 富单元格：marks/'\n' → 标签/<br>（已转义）
-        td.dataset.r = String(r); td.dataset.c = String(c);
+        td.dataset.r = String(r);
+        td.dataset.c = String(c);
         // 回写：把 td 的 DOM 解析回 Inline[]，赋「新 cell 对象」到当前 rows（沿用就地回写模式；
         // 撤销栈安全由 cloneDoc 对 rows 的逐 cell 深拷保证——快照与当前态不共享任何 cell 引用）。
         td.addEventListener('input', () => {
@@ -708,14 +834,25 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
           cb.onTableEdit(entry.blk);
         });
         td.addEventListener('keydown', (e) => {
-          if (e.key === 'Tab') { e.preventDefault(); focusCell(table, r, c, e.shiftKey ? -1 : 1); return; }
+          if (e.key === 'Tab') {
+            e.preventDefault();
+            focusCell(table, r, c, e.shiftKey ? -1 : 1);
+            return;
+          }
           // 单元格内快捷键：mod+b/i/u → 浏览器原生 contenteditable 富文本命令（改动后 input 自然回写解析）
           if ((e.metaKey || e.ctrlKey) && !e.altKey) {
             const cmd = CELL_MARK_COMMAND[e.key.toLowerCase()];
-            if (cmd) { e.preventDefault(); document.execCommand(cmd); return; }
+            if (cmd) {
+              e.preventDefault();
+              document.execCommand(cmd);
+              return;
+            }
           }
           // 单元格内换行：统一产 <br>（domToInlines 解析为 '\n'），避免浏览器默认包 <div> 的结构分歧
-          if (e.key === 'Enter') { e.preventDefault(); document.execCommand('insertLineBreak'); }
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            document.execCommand('insertLineBreak');
+          }
         });
         wireCellSelect(entry, table, inner, td, r, c);
       }
@@ -727,7 +864,14 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
   }
 
   // 区域选择：在单元格上按下记起点，拖动到落点单元格记终点（更新高亮 + 浮动条）。
-  function wireCellSelect(entry: Entry, table: HTMLTableElement, inner: HTMLElement, td: HTMLElement, r: number, c: number): void {
+  function wireCellSelect(
+    entry: Entry,
+    table: HTMLTableElement,
+    inner: HTMLElement,
+    td: HTMLElement,
+    r: number,
+    c: number,
+  ): void {
     td.addEventListener('pointerdown', () => {
       entry.tableSel = { start: { r, c }, end: { r, c } };
       const onMove = (ev: PointerEvent) => {
@@ -738,21 +882,26 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
       };
       const onUp = () => {
         window.removeEventListener('pointermove', onMove);
-        window.removeEventListener('pointerup', onUp); window.removeEventListener('pointercancel', onUp);
+        window.removeEventListener('pointerup', onUp);
+        window.removeEventListener('pointercancel', onUp);
         syncTableSelUI(entry, table, inner);
       };
       window.addEventListener('pointermove', onMove);
-      window.addEventListener('pointerup', onUp); window.addEventListener('pointercancel', onUp);
+      window.addEventListener('pointerup', onUp);
+      window.addEventListener('pointercancel', onUp);
       syncTableSelUI(entry, table, inner);
     });
   }
 
   // 选区规范化为矩形 {r0,c0,r1,c1}；无选区返回 null。
   function selRect(entry: Entry): { r0: number; c0: number; r1: number; c1: number } | null {
-    const s = entry.tableSel; if (!s) return null;
+    const s = entry.tableSel;
+    if (!s) return null;
     return {
-      r0: Math.min(s.start.r, s.end.r), c0: Math.min(s.start.c, s.end.c),
-      r1: Math.max(s.start.r, s.end.r), c1: Math.max(s.start.c, s.end.c),
+      r0: Math.min(s.start.r, s.end.r),
+      c0: Math.min(s.start.c, s.end.c),
+      r1: Math.max(s.start.r, s.end.r),
+      c1: Math.max(s.start.c, s.end.c),
     };
   }
 
@@ -761,7 +910,8 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
     const rect = selRect(entry);
     for (const row of Array.from(table.rows))
       for (const cell of Array.from(row.cells)) {
-        const r = Number((cell as HTMLElement).dataset.r), c = Number((cell as HTMLElement).dataset.c);
+        const r = Number((cell as HTMLElement).dataset.r),
+          c = Number((cell as HTMLElement).dataset.c);
         const on = !!rect && r >= rect.r0 && r <= rect.r1 && c >= rect.c0 && c <= rect.c1;
         cell.classList.toggle('rte-cell-sel', on);
       }
@@ -770,8 +920,11 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
     const mergeBtn = bar.querySelector('[data-act="merge"]') as HTMLElement;
     const splitBtn = bar.querySelector('[data-act="split"]') as HTMLElement;
     const multi = !!rect && (rect.r0 !== rect.r1 || rect.c0 !== rect.c1);
-    const anchorSel = !!rect && rect.r0 === rect.r1 && rect.c0 === rect.c1
-      && (entry.blk.attrs.merges ?? []).some((m) => m.r === rect.r0 && m.c === rect.c0);
+    const anchorSel =
+      !!rect &&
+      rect.r0 === rect.r1 &&
+      rect.c0 === rect.c1 &&
+      (entry.blk.attrs.merges ?? []).some((m) => m.r === rect.r0 && m.c === rect.c0);
     // 合并：仅多格选区可用；拆分：仅单选到合并锚点可用；增删行列：任意选区均可用。
     mergeBtn.style.display = multi ? '' : 'none';
     splitBtn.style.display = anchorSel ? '' : 'none';
@@ -786,49 +939,89 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
   // 浮动条：合并 / 拆分 + 增删行列按钮，点击经回调通知装配层。
   // 行列增删以选区锚点格 (r0,c0) 为基准；增删后清空选区（结构变了原选区可能越界）。
   function buildMergeBar(entry: Entry, inner: HTMLElement): void {
-    const bar = document.createElement('div'); bar.className = 'rte-table-bar';
+    const bar = document.createElement('div');
+    bar.className = 'rte-table-bar';
     const mk = (label: string, act: string, fn: () => void): HTMLButtonElement => {
-      const b = document.createElement('button'); b.textContent = label; b.dataset.act = act;
-      b.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); });
+      const b = document.createElement('button');
+      b.textContent = label;
+      b.dataset.act = act;
+      b.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      });
       // 浮动条按钮均为结构操作：先收口单元格焦点（pointerdown 已 preventDefault，点击时焦点
       // 仍在 td 上，恰是「编辑回写 × 结构重建」的竞态窗口），再执行回调。
-      b.addEventListener('click', (e) => { e.preventDefault(); blurCellFocus(entry); fn(); });
+      b.addEventListener('click', (e) => {
+        e.preventDefault();
+        blurCellFocus(entry);
+        fn();
+      });
       return b;
     };
-    bar.appendChild(mk('合并单元格', 'merge', () => {
-      const rect = selRect(entry); if (!rect) return;
-      cb.onTableMerge(entry.blockIndex, rect.r0, rect.c0, rect.r1, rect.c1);
-      entry.tableSel = null;
-    }));
-    bar.appendChild(mk('拆分单元格', 'split', () => {
-      const rect = selRect(entry); if (!rect) return;
-      cb.onTableSplit(entry.blockIndex, rect.r0, rect.c0);
-      entry.tableSel = null;
-    }));
-    bar.appendChild(mk('插入行(上)', 'row-above', () => {
-      const rect = selRect(entry); if (!rect) return;
-      cb.onTableRowOp(entry.blockIndex, rect.r0, 'above'); entry.tableSel = null;
-    }));
-    bar.appendChild(mk('插入行(下)', 'row-below', () => {
-      const rect = selRect(entry); if (!rect) return;
-      cb.onTableRowOp(entry.blockIndex, rect.r1, 'below'); entry.tableSel = null;
-    }));
-    bar.appendChild(mk('删除行', 'row-del', () => {
-      const rect = selRect(entry); if (!rect) return;
-      cb.onTableRowOp(entry.blockIndex, rect.r0, 'delete'); entry.tableSel = null;
-    }));
-    bar.appendChild(mk('插入列(左)', 'col-left', () => {
-      const rect = selRect(entry); if (!rect) return;
-      cb.onTableColOp(entry.blockIndex, rect.c0, 'left'); entry.tableSel = null;
-    }));
-    bar.appendChild(mk('插入列(右)', 'col-right', () => {
-      const rect = selRect(entry); if (!rect) return;
-      cb.onTableColOp(entry.blockIndex, rect.c1, 'right'); entry.tableSel = null;
-    }));
-    bar.appendChild(mk('删除列', 'col-del', () => {
-      const rect = selRect(entry); if (!rect) return;
-      cb.onTableColOp(entry.blockIndex, rect.c0, 'delete'); entry.tableSel = null;
-    }));
+    bar.appendChild(
+      mk('合并单元格', 'merge', () => {
+        const rect = selRect(entry);
+        if (!rect) return;
+        cb.onTableMerge(entry.blockIndex, rect.r0, rect.c0, rect.r1, rect.c1);
+        entry.tableSel = null;
+      }),
+    );
+    bar.appendChild(
+      mk('拆分单元格', 'split', () => {
+        const rect = selRect(entry);
+        if (!rect) return;
+        cb.onTableSplit(entry.blockIndex, rect.r0, rect.c0);
+        entry.tableSel = null;
+      }),
+    );
+    bar.appendChild(
+      mk('插入行(上)', 'row-above', () => {
+        const rect = selRect(entry);
+        if (!rect) return;
+        cb.onTableRowOp(entry.blockIndex, rect.r0, 'above');
+        entry.tableSel = null;
+      }),
+    );
+    bar.appendChild(
+      mk('插入行(下)', 'row-below', () => {
+        const rect = selRect(entry);
+        if (!rect) return;
+        cb.onTableRowOp(entry.blockIndex, rect.r1, 'below');
+        entry.tableSel = null;
+      }),
+    );
+    bar.appendChild(
+      mk('删除行', 'row-del', () => {
+        const rect = selRect(entry);
+        if (!rect) return;
+        cb.onTableRowOp(entry.blockIndex, rect.r0, 'delete');
+        entry.tableSel = null;
+      }),
+    );
+    bar.appendChild(
+      mk('插入列(左)', 'col-left', () => {
+        const rect = selRect(entry);
+        if (!rect) return;
+        cb.onTableColOp(entry.blockIndex, rect.c0, 'left');
+        entry.tableSel = null;
+      }),
+    );
+    bar.appendChild(
+      mk('插入列(右)', 'col-right', () => {
+        const rect = selRect(entry);
+        if (!rect) return;
+        cb.onTableColOp(entry.blockIndex, rect.c1, 'right');
+        entry.tableSel = null;
+      }),
+    );
+    bar.appendChild(
+      mk('删除列', 'col-del', () => {
+        const rect = selRect(entry);
+        if (!rect) return;
+        cb.onTableColOp(entry.blockIndex, rect.c0, 'delete');
+        entry.tableSel = null;
+      }),
+    );
     inner.appendChild(bar);
   }
 
@@ -842,10 +1035,12 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
       const colEls = Array.from(table.querySelectorAll('col')) as HTMLElement[];
       let x = 0;
       for (let c = 0; c < cols; c++) {
-        const cw = colEls[c]?.offsetWidth || (table.offsetWidth / Math.max(1, cols));
+        const cw = colEls[c]?.offsetWidth || table.offsetWidth / Math.max(1, cols);
         x += cw;
-        const grip = document.createElement('div'); grip.className = 'rte-col-grip';
-        grip.style.left = x + 'px'; grip.style.height = h + 'px';
+        const grip = document.createElement('div');
+        grip.className = 'rte-col-grip';
+        grip.style.left = x + 'px';
+        grip.style.height = h + 'px';
         wireColResize(entry, table, grip, c);
         inner.appendChild(grip);
       }
@@ -854,8 +1049,10 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
       for (let r = 0; r < rowCount; r++) {
         const rowH = table.rows[r]?.offsetHeight ?? 0;
         y += rowH;
-        const grip = document.createElement('div'); grip.className = 'rte-row-grip';
-        grip.style.top = y + 'px'; grip.style.width = table.offsetWidth + 'px';
+        const grip = document.createElement('div');
+        grip.className = 'rte-row-grip';
+        grip.style.top = y + 'px';
+        grip.style.width = table.offsetWidth + 'px';
         wireRowResize(entry, table, grip, r);
         inner.appendChild(grip);
       }
@@ -865,7 +1062,8 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
 
   function wireColResize(entry: Entry, table: HTMLTableElement, grip: HTMLElement, col: number): void {
     grip.addEventListener('pointerdown', (e) => {
-      e.preventDefault(); e.stopPropagation();
+      e.preventDefault();
+      e.stopPropagation();
       const colEl = Array.from(table.querySelectorAll('col'))[col] as HTMLElement | undefined;
       const startW = colEl?.offsetWidth ?? table.offsetWidth / Math.max(1, table.querySelectorAll('col').length);
       const startX = e.clientX;
@@ -877,39 +1075,48 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
       };
       const onUp = () => {
         window.removeEventListener('pointermove', onMove);
-        window.removeEventListener('pointerup', onUp); window.removeEventListener('pointercancel', onUp);
+        window.removeEventListener('pointerup', onUp);
+        window.removeEventListener('pointercancel', onUp);
         blurCellFocus(entry); // 列宽提交也改 tableSig（重建 DOM）：先收口单元格焦点再回调
         cb.onColResize(entry.blockIndex, col, w);
       };
       window.addEventListener('pointermove', onMove);
-      window.addEventListener('pointerup', onUp); window.addEventListener('pointercancel', onUp);
+      window.addEventListener('pointerup', onUp);
+      window.addEventListener('pointercancel', onUp);
     });
   }
 
   function wireRowResize(entry: Entry, table: HTMLTableElement, grip: HTMLElement, row: number): void {
     grip.addEventListener('pointerdown', (e) => {
-      e.preventDefault(); e.stopPropagation();
-      const tr = table.rows[row]; if (!tr) return;
-      const startH = tr.offsetHeight, startY = e.clientY;
+      e.preventDefault();
+      e.stopPropagation();
+      const tr = table.rows[row];
+      if (!tr) return;
+      const startH = tr.offsetHeight,
+        startY = e.clientY;
       let h = startH;
       // 指针位移 ÷zoom → 逻辑 px（同列宽手柄），行高样式为逻辑 px
-      const onMove = (ev: PointerEvent) => { h = Math.max(MIN_CELL_PX, startH + (ev.clientY - startY) / zoomNow); tr.style.height = h + 'px'; };
+      const onMove = (ev: PointerEvent) => {
+        h = Math.max(MIN_CELL_PX, startH + (ev.clientY - startY) / zoomNow);
+        tr.style.height = h + 'px';
+      };
       const onUp = () => {
         window.removeEventListener('pointermove', onMove);
-        window.removeEventListener('pointerup', onUp); window.removeEventListener('pointercancel', onUp);
+        window.removeEventListener('pointerup', onUp);
+        window.removeEventListener('pointercancel', onUp);
         blurCellFocus(entry); // 行高提交也改 tableSig（重建 DOM）：先收口单元格焦点再回调
         cb.onRowResize(entry.blockIndex, row, h);
       };
       window.addEventListener('pointermove', onMove);
-      window.addEventListener('pointerup', onUp); window.addEventListener('pointercancel', onUp);
+      window.addEventListener('pointerup', onUp);
+      window.addEventListener('pointercancel', onUp);
     });
   }
 
   // Tab 导航：从当前 (r,c) 按文档顺序移到相邻「实际渲染」格（dir +1/-1），跳过被合并覆盖的格；夹到边界。
   function focusCell(table: HTMLTableElement, r: number, c: number, dir: 1 | -1): void {
     const flat: HTMLElement[] = [];
-    for (const row of Array.from(table.rows))
-      for (const cell of Array.from(row.cells)) flat.push(cell as HTMLElement);
+    for (const row of Array.from(table.rows)) for (const cell of Array.from(row.cells)) flat.push(cell as HTMLElement);
     if (flat.length === 0) return;
     const idx = flat.findIndex((el) => Number(el.dataset.r) === r && Number(el.dataset.c) === c);
     const next = Math.max(0, Math.min(flat.length - 1, (idx < 0 ? 0 : idx) + dir));
@@ -920,12 +1127,14 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
   // 背板 = 布局 px（逻辑 × scale），显示 = 逻辑 px × zoom → 物理像素密度恰为 deviceDpr，任意 zoom 下清晰。
   function renderShape(entry: Entry, wLayout: number, hLayout: number, scale: number): void {
     const kind = (entry.blk.attrs.shape ?? 'rect') as ShapeKind;
-    const wL = wLayout / scale, hL = hLayout / scale;
+    const wL = wLayout / scale,
+      hL = hLayout / scale;
     const sig = atomSig('shape', `${kind}|${Math.round(wL)}|${Math.round(hL)}`);
     if (entry.content === sig) return;
     entry.content = sig;
     const cv = entry.el.querySelector('canvas')!;
-    cv.width = Math.max(1, Math.round(wLayout)); cv.height = Math.max(1, Math.round(hLayout));
+    cv.width = Math.max(1, Math.round(wLayout));
+    cv.height = Math.max(1, Math.round(hLayout));
     const ctx = cv.getContext('2d');
     if (!ctx) return;
     ctx.setTransform(scale, 0, 0, scale, 0, 0); // 逻辑 px 坐标系
@@ -940,7 +1149,8 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
       //（交错「写样式→读布局」会让每个 measured 覆盖层各强制一次同步 reflow）。
       const measuredReads: { entry: Entry; block: number }[] = [];
       for (const box of boxes) {
-        const blk = doc.blocks[box.block]; if (!blk) continue;
+        const blk = doc.blocks[box.block];
+        if (!blk) continue;
         const id = blk.attrs.id ?? (blk.attrs.id = genBlockId());
         seen.add(id);
         let entry = map.get(id);
@@ -948,10 +1158,12 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
           if (entry) removeEntry(entry); // 含焦点清理（kind 变化重建可能移除正在编辑的 DOM）
           entry = { el: null as unknown as HTMLElement, kind: box.kind, content: '', blk, blockIndex: box.block };
           entry.el = build(box.kind, entry);
-          layer.appendChild(entry.el); map.set(id, entry);
+          layer.appendChild(entry.el);
+          map.set(id, entry);
           if (overlaySpecOf(box.kind).sizing === 'measured') observeMeasured(entry);
         }
-        entry.blk = blk; entry.blockIndex = box.block; // 关键：闭包引用最新块与当前索引（undo/移动后变化）
+        entry.blk = blk;
+        entry.blockIndex = box.block; // 关键：闭包引用最新块与当前索引（undo/移动后变化）
         // 内容
         // 由覆盖层规格 SSOT（blockSpecs.overlaySpecOf）派生交互/高度策略，不再逐 kind 写布尔链：
         // fixedH = 非 measured（explicit 的 attrs 尺寸 + fullWidth 的固定高度，均不向布局回填实测高度）；
@@ -968,17 +1180,23 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
           const el = entry.el.querySelector(media.selector) as HTMLImageElement | HTMLMediaElement | HTMLIFrameElement;
           const src = blk.attrs.src ?? '';
           const sig = atomSig(box.kind, src);
-          if (entry.content !== sig) { applySafeSrc(el, src, media.url); entry.content = sig; }
+          if (entry.content !== sig) {
+            applySafeSrc(el, src, media.url);
+            entry.content = sig;
+          }
         } else if (box.kind === 'attachment') {
-          const src = blk.attrs.src ?? '', name = blk.attrs.name || src || '附件';
+          const src = blk.attrs.src ?? '',
+            name = blk.attrs.name || src || '附件';
           // JSON 序列化二元组（替代裸 NUL 分隔拼接）：边界显式且可读，值含任意字符均无歧义
           const sig = atomSig(box.kind, JSON.stringify([src, name]));
           if (entry.content !== sig) {
             entry.content = sig;
             const card = entry.el.querySelector('.rte-attach') as HTMLAnchorElement;
             const safeHref = sanitizeUrl(src, 'attachment'); // 第二道 URL 防线（href 同样可承载 javascript:）
-            if (safeHref !== null) card.href = safeHref; else card.removeAttribute('href');
-            card.setAttribute('download', name); card.title = name;
+            if (safeHref !== null) card.href = safeHref;
+            else card.removeAttribute('href');
+            card.setAttribute('download', name);
+            card.title = name;
             (entry.el.querySelector('.rte-attach-name') as HTMLElement).textContent = name;
           }
         } else if (box.kind === 'seal') {
@@ -1007,10 +1225,20 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
           const tex = blk.attrs.latex ?? '';
           const sig = atomSig(box.kind, tex);
           if (entry.content !== sig) {
-            entry.content = sig; entry.el.classList.remove('err');
+            entry.content = sig;
+            entry.el.classList.remove('err');
             entry.lastMeasuredH = undefined; // 公式内容变 → 渲染高度可能变，强制下一帧重新回填
-            try { entry.el.innerHTML = katex.renderToString(tex, { throwOnError: false, displayMode: true, output: 'html', trust: false }); }
-            catch { entry.el.classList.add('err'); entry.el.textContent = tex; }
+            try {
+              entry.el.innerHTML = katex.renderToString(tex, {
+                throwOnError: false,
+                displayMode: true,
+                output: 'html',
+                trust: false,
+              });
+            } catch {
+              entry.el.classList.add('err');
+              entry.el.textContent = tex;
+            }
           }
         } else if (box.kind === 'table') {
           renderTable(entry);
@@ -1020,7 +1248,8 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
         // 缩放拖动中的盒子：保留手柄的实时尺寸，本帧不从陈旧布局盒覆盖宽高。
         const r = overlayCssRect(box, scrollY, scale);
         const s = entry.el.style;
-        s.left = r.left + 'px'; s.top = r.top + 'px';
+        s.left = r.left + 'px';
+        s.top = r.top + 'px';
         if (entry.el !== activeResizeWrap) {
           s.width = r.width + 'px';
           s.height = fixedH ? r.height + 'px' : 'auto';
@@ -1034,7 +1263,7 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
           // 文本框特例：内部 contenteditable 聚焦编辑时（tableFocused 使 selectedBlock 变 -1，sel=false），
           // 仍须保持 pointerEvents:auto，否则一聚焦即穿透 → 无法继续点击/选词。聚焦判定 = 本盒含 activeElement。
           const editing = box.kind === 'textbox' && entry.el.contains(document.activeElement);
-          s.pointerEvents = (sel || editing) ? 'auto' : 'none';
+          s.pointerEvents = sel || editing ? 'auto' : 'none';
           entry.el.classList.toggle('rte-img-sel', sel);
           const handle = entry.el.querySelector('.rte-resize') as HTMLElement | null;
           if (handle) handle.style.display = sel ? 'block' : 'none';
@@ -1049,7 +1278,11 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
           measuredReads.push({ entry, block: box.block });
         }
       }
-      for (const [id, entry] of map) if (!seen.has(id)) { removeEntry(entry); map.delete(id); }
+      for (const [id, entry] of map)
+        if (!seen.has(id)) {
+          removeEntry(entry);
+          map.delete(id);
+        }
       // 统一读阶段：全部样式写完后才读 offsetHeight（至多触发一次同步布局）。
       // throttle：仅当较上次回填值有意义变化(≥0.5 逻辑 px) 才回调，
       // 避免亚像素抖动逐帧触发 setMeasuredHeight → dirty → 无谓重排。
@@ -1069,21 +1302,33 @@ export function createOverlayManager(host: HTMLElement, cb: OverlayCallbacks): O
         seen.add(key);
         let ent = inlineMap.get(key);
         if (!ent) {
-          const el = document.createElement('div'); el.className = 'rte-inline-img';
-          const img = document.createElement('img'); img.draggable = false; el.appendChild(img);
+          const el = document.createElement('div');
+          el.className = 'rte-inline-img';
+          const img = document.createElement('img');
+          img.draggable = false;
+          el.appendChild(img);
           layer.appendChild(el);
           ent = { el, img, src: '' };
           inlineMap.set(key, ent);
         }
         const src = srcOf(box);
-        if (ent.src !== src) { applySafeSrc(ent.img, src, 'image'); ent.src = src; } // 行内图片同走第二道 URL 防线
+        if (ent.src !== src) {
+          applySafeSrc(ent.img, src, 'image');
+          ent.src = src;
+        } // 行内图片同走第二道 URL 防线
         const r = overlayCssRect(box, scrollY, scale); // 逻辑 px 定位（定位层 transform 放大回屏幕）
         const s = ent.el.style;
-        s.left = r.left + 'px'; s.top = r.top + 'px';
-        s.width = r.width + 'px'; s.height = r.height + 'px';
+        s.left = r.left + 'px';
+        s.top = r.top + 'px';
+        s.width = r.width + 'px';
+        s.height = r.height + 'px';
         s.display = '';
       }
-      for (const [key, ent] of inlineMap) if (!seen.has(key)) { ent.el.remove(); inlineMap.delete(key); }
+      for (const [key, ent] of inlineMap)
+        if (!seen.has(key)) {
+          ent.el.remove();
+          inlineMap.delete(key);
+        }
     },
     destroy() {
       // clip 含 layer 与全部原子块 DOM；clip 虽在 host(=editorEl) 子树内（随外壳一并回收），

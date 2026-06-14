@@ -39,7 +39,8 @@ export class WebGL2Renderer implements Renderer {
   private tex: (WebGLTexture | null)[] = []; // 每图集页一张纹理，惰性创建
   private uRes: WebGLUniformLocation;
   private cpu = new Float32Array(0);
-  private w = 1; private h = 1;
+  private w = 1;
+  private h = 1;
 
   constructor(canvas: HTMLCanvasElement) {
     const gl = canvas.getContext('webgl2', { alpha: false, antialias: false, premultipliedAlpha: false });
@@ -150,14 +151,17 @@ export class WebGL2Renderer implements Renderer {
     const v = this.compile(gl.VERTEX_SHADER, vs);
     const f = this.compile(gl.FRAGMENT_SHADER, fs);
     const p = gl.createProgram()!;
-    gl.attachShader(p, v); gl.attachShader(p, f); gl.linkProgram(p);
+    gl.attachShader(p, v);
+    gl.attachShader(p, f);
+    gl.linkProgram(p);
     if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error('link: ' + gl.getProgramInfoLog(p));
     return p;
   }
   private compile(type: number, src: string): WebGLShader {
     const gl = this.gl;
     const s = gl.createShader(type)!;
-    gl.shaderSource(s, src); gl.compileShader(s);
+    gl.shaderSource(s, src);
+    gl.compileShader(s);
     if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error('compile: ' + gl.getShaderInfoLog(s));
     return s;
   }

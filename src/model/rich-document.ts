@@ -1,16 +1,60 @@
 import {
-  Doc, Block, BlockType, BlockAttrs, BlockAlign, Mark, MarkType, Inline, ShapeKind, TableCell,
-  block as mkBlock, text as mkText, inlineAtom as mkInlineAtom, cell as mkCell, isCellEmpty, cloneCell,
-  blockText, blockTextLen, isBlockEmpty, cloneDoc, cloneBlockAttrs, withMark, withoutMark, genBlockId, isInlineAtom, isAtomBlock,
+  Doc,
+  Block,
+  BlockType,
+  BlockAttrs,
+  BlockAlign,
+  Mark,
+  MarkType,
+  Inline,
+  ShapeKind,
+  TableCell,
+  block as mkBlock,
+  text as mkText,
+  inlineAtom as mkInlineAtom,
+  cell as mkCell,
+  isCellEmpty,
+  cloneCell,
+  blockText,
+  blockTextLen,
+  isBlockEmpty,
+  cloneDoc,
+  cloneBlockAttrs,
+  withMark,
+  withoutMark,
+  genBlockId,
+  isInlineAtom,
+  isAtomBlock,
 } from './schema';
 import {
-  MIN_CELL_PX, tableColCount, normalizeRect, mergesIntersect,
-  adjustMergesOnInsertRow, adjustMergesOnDeleteRow, adjustMergesOnInsertCol, adjustMergesOnDeleteCol,
+  MIN_CELL_PX,
+  tableColCount,
+  normalizeRect,
+  mergesIntersect,
+  adjustMergesOnInsertRow,
+  adjustMergesOnDeleteRow,
+  adjustMergesOnInsertCol,
+  adjustMergesOnDeleteCol,
 } from './table-utils';
-import { continuesOnEnter, defaultAfter, splitAtStart, liftOnBackspace, isAtom, isList, clampDepth, atomSizeAttrs } from './block-specs';
 import {
-  normalizeInlines, deleteRange as delInline, insertText as insInline,
-  splitInlines, sliceInlines, applyMark, rangeHasMark, marksAt,
+  continuesOnEnter,
+  defaultAfter,
+  splitAtStart,
+  liftOnBackspace,
+  isAtom,
+  isList,
+  clampDepth,
+  atomSizeAttrs,
+} from './block-specs';
+import {
+  normalizeInlines,
+  deleteRange as delInline,
+  insertText as insInline,
+  splitInlines,
+  sliceInlines,
+  applyMark,
+  rangeHasMark,
+  marksAt,
 } from './inlines';
 import { splitGraphemes, nextBoundary, prevBoundary } from './grapheme';
 import { nextWordBoundary, prevWordBoundary } from './word-boundary';
@@ -25,7 +69,10 @@ import { sanitizeUrl, UrlKind } from '../shared/url';
 
 // —— 位置模型 ——
 /** 文档内的光标/选区端点：块下标 + 块内 UTF-16 偏移。 @public */
-export interface Pos { block: number; offset: number } // offset ∈ [0, blockTextLen]，UTF-16 单位
+export interface Pos {
+  block: number;
+  offset: number;
+} // offset ∈ [0, blockTextLen]，UTF-16 单位
 
 /** 比较两个位置的先后（块优先、再比 offset），返回 -1/0/1。 @public */
 export function comparePos(a: Pos, b: Pos): -1 | 0 | 1 {
@@ -47,7 +94,9 @@ export function posAfterRangeDelete(p: Pos, from: Pos, to: Pos): Pos {
 }
 
 interface Snapshot {
-  doc: Doc; anchor: Pos; focus: Pos;
+  doc: Doc;
+  anchor: Pos;
+  focus: Pos;
   // 结构共享元数据：blocks[i] 克隆时的来源块 + 当时版本。restore 时来源块版本未变（=自快照后
   // 未被改动）即复用来源对象，保住布局缓存（WeakMap 按 Block 身份键）命中——undo/redo 增量化。
   sources: { src: Block; v: number }[];
@@ -59,12 +108,22 @@ export const TEXT_MERGE_WINDOW_MS = 1000;
 // 可合并的文本编辑种类：插入 / 退格 / 前向删除（互不合并；任何其它编辑断开合并）。
 type TextEditKind = 'insert' | 'backspace' | 'del';
 // 合并锚点：上一次文本编辑结束后的光标位置 + 时刻；下一次同类编辑自该位置衔接且在时间窗内才合并。
-interface TextMergeState { kind: TextEditKind; block: number; offset: number; time: number }
+interface TextMergeState {
+  kind: TextEditKind;
+  block: number;
+  offset: number;
+  time: number;
+}
 
 // 媒体类原子块类型 → URL 白名单种类：写 attrs.src 前经 sanitizeUrl 过滤。
 // 模型层是第一道防线（insert*/updateAtomAttrs 统一入口），覆盖层写 DOM 前还有第二道。
 const URL_KIND_BY_BLOCK: Partial<Record<BlockType, UrlKind>> = {
-  image: 'image', signature: 'signature', audio: 'audio', video: 'video', iframe: 'iframe', attachment: 'attachment',
+  image: 'image',
+  signature: 'signature',
+  audio: 'audio',
+  video: 'video',
+  iframe: 'iframe',
+  attachment: 'attachment',
 };
 
 /** 按块类型过滤 src：媒体类块经协议白名单校验，非法降级为空串；非媒体类块原样返回。 */
@@ -89,7 +148,13 @@ export class RichDoc {
   // IME 组合 transient 通道：begin 时快照一次并记录锚点，update 全量替换组合区间不再快照，
   // end 收尾为单次可撤销提交。replacedSelection=begin 已实质改动文档（删选区/原子块旁建段），
   // 取消组合（end 空串）时据此决定是否弹出起始快照。
-  private composition: { block: number; start: number; length: number; marks: Mark[]; replacedSelection: boolean } | null = null;
+  private composition: {
+    block: number;
+    start: number;
+    length: number;
+    marks: Mark[];
+    replacedSelection: boolean;
+  } | null = null;
 
   constructor(public doc: Doc) {
     // 不变量：文档恒有 ≥1 块（空文档补一个空段落）。下游（focus 块取用 / docEnd / clamp）
@@ -102,17 +167,27 @@ export class RichDoc {
    * 统一 focus 块取用入口，替代各处直接索引 `doc.blocks[focus.block]`（可能越界为 undefined）。
    * @public
    */
-  focusBlock(): Block { return this.doc.blocks[clamp(this.focus.block, 0, this.blockCount - 1)]; }
+  focusBlock(): Block {
+    return this.doc.blocks[clamp(this.focus.block, 0, this.blockCount - 1)];
+  }
 
   // —— 查询 ——
   /** 文档块总数。 @public */
-  get blockCount(): number { return this.doc.blocks.length; }
+  get blockCount(): number {
+    return this.doc.blocks.length;
+  }
   /** 取第 i 块。 @public */
-  blockAt(i: number): Block { return this.doc.blocks[i]; }
+  blockAt(i: number): Block {
+    return this.doc.blocks[i];
+  }
   /** 第 i 块文本的 UTF-16 长度。 @public */
-  blockLen(i: number): number { return blockTextLen(this.doc.blocks[i]); }
+  blockLen(i: number): number {
+    return blockTextLen(this.doc.blocks[i]);
+  }
   /** 第 i 块的纯文本。 @public */
-  blockStr(i: number): string { return blockText(this.doc.blocks[i]); }
+  blockStr(i: number): string {
+    return blockText(this.doc.blocks[i]);
+  }
 
   /** 把任意 Pos 夹回合法范围（块下标 ∈ 文档、offset ∈ 该块文本长度）。 @public */
   clamp(p: Pos): Pos {
@@ -122,7 +197,9 @@ export class RichDoc {
   }
 
   /** 选区是否折叠（anchor 与 focus 同点，即无选中文本）。 @public */
-  get isCollapsed(): boolean { return comparePos(this.anchor, this.focus) === 0; }
+  get isCollapsed(): boolean {
+    return comparePos(this.anchor, this.focus) === 0;
+  }
   /** 把 anchor/focus 规范化为有序区间 {from ≤ to}。 @public */
   range(): { from: Pos; to: Pos } {
     return comparePos(this.anchor, this.focus) <= 0
@@ -166,12 +243,21 @@ export class RichDoc {
     return p;
   }
   /** 文档起点位置。 @public */
-  docStart(): Pos { return { block: 0, offset: 0 }; }
+  docStart(): Pos {
+    return { block: 0, offset: 0 };
+  }
   /** 文档终点位置（末块块尾）。 @public */
-  docEnd(): Pos { return { block: this.blockCount - 1, offset: this.blockLen(this.blockCount - 1) }; }
+  docEnd(): Pos {
+    return { block: this.blockCount - 1, offset: this.blockLen(this.blockCount - 1) };
+  }
 
   /** 全选：anchor 置文首、focus 置文末。 @public */
-  selectAll(): void { this.anchor = this.docStart(); this.focus = this.docEnd(); this.storedMarks = null; this.mergeState = null; }
+  selectAll(): void {
+    this.anchor = this.docStart();
+    this.focus = this.docEnd();
+    this.storedMarks = null;
+    this.mergeState = null;
+  }
 
   /** 选区纯文本，跨块以换行连接；折叠时返回空串。 @public */
   selectedText(): string {
@@ -209,7 +295,9 @@ export class RichDoc {
     if (from.block === to.block) return rangeHasMark(this.doc.blocks[from.block].inlines, from.offset, to.offset, type);
     // 跨块：要求每块命中段都含（首块自 from、末块至 to、中间整块）
     let ok = true;
-    this.eachSelRange((blk, s, e) => { if (!rangeHasMark(blk.inlines, s, e, type)) ok = false; });
+    this.eachSelRange((blk, s, e) => {
+      if (!rangeHasMark(blk.inlines, s, e, type)) ok = false;
+    });
     return ok;
   }
 
@@ -254,7 +342,9 @@ export class RichDoc {
 
   // —— IME 组合（transient 编辑通道）——
   /** 是否处于 IME 组合中（transient 通道激活，组合串已临时入文档参与布局）。 @public */
-  get isComposing(): boolean { return this.composition !== null; }
+  get isComposing(): boolean {
+    return this.composition !== null;
+  }
 
   /**
    * 开始 IME 组合：快照一次（整个组合 = 一条撤销记录），有选区先删，
@@ -265,7 +355,10 @@ export class RichDoc {
     if (this.composition) return;
     this.snapshot();
     let replacedSelection = false;
-    if (!this.isCollapsed) { this.deleteSel(); replacedSelection = true; }
+    if (!this.isCollapsed) {
+      this.deleteSel();
+      replacedSelection = true;
+    }
     if (isAtom(this.doc.blocks[this.focus.block].type)) {
       const at = this.focus.block + 1;
       this.doc.blocks.splice(at, 0, mkBlock('paragraph', [mkText('')]));
@@ -286,7 +379,10 @@ export class RichDoc {
     const c = this.composition;
     if (!c) return;
     const b = this.doc.blocks[c.block];
-    if (!b) { this.composition = null; return; }
+    if (!b) {
+      this.composition = null;
+      return;
+    }
     touchBlock(b);
     let inl = delInline(b.inlines, c.start, c.start + c.length);
     if (text) inl = insInline(inl, c.start, text, withMark(c.marks, { type: 'underline' }));
@@ -323,7 +419,11 @@ export class RichDoc {
    * 块内连续退格在时间窗内合并为一条撤销记录（跨块/降级/选区删除恒为独立快照）。 @public
    */
   backspace(): void {
-    if (!this.isCollapsed) { this.snapshot(); this.deleteSel(); return; }
+    if (!this.isCollapsed) {
+      this.snapshot();
+      this.deleteSel();
+      return;
+    }
     const f = this.focus;
     if (f.offset > 0) {
       this.snapshotTextEdit('backspace');
@@ -344,7 +444,10 @@ export class RichDoc {
     }
     if (f.block === 0) return; // 文首、普通段落块首：无操作
     // 上一块是原子块（图片/公式/表格）：不合并，改为选中它（首次退格选中，再退格删除）
-    if (isAtom(this.doc.blocks[f.block - 1].type)) { this.setSel({ block: f.block - 1, offset: 0 }); return; }
+    if (isAtom(this.doc.blocks[f.block - 1].type)) {
+      this.setSel({ block: f.block - 1, offset: 0 });
+      return;
+    }
     this.snapshot();
     this.mergeWithPrev(f.block);
   }
@@ -354,7 +457,11 @@ export class RichDoc {
    * 块内连续前删（光标原位）在时间窗内合并为一条撤销记录。 @public
    */
   del(): void {
-    if (!this.isCollapsed) { this.snapshot(); this.deleteSel(); return; }
+    if (!this.isCollapsed) {
+      this.snapshot();
+      this.deleteSel();
+      return;
+    }
     const f = this.focus;
     const len = this.blockLen(f.block);
     if (f.offset < len) {
@@ -369,8 +476,12 @@ export class RichDoc {
     }
     if (f.block < this.blockCount - 1) {
       // 下一块是原子块：不合并，改为选中它
-      if (isAtom(this.doc.blocks[f.block + 1].type)) { this.setSel({ block: f.block + 1, offset: 0 }); return; }
-      this.snapshot(); this.mergeWithPrev(f.block + 1);
+      if (isAtom(this.doc.blocks[f.block + 1].type)) {
+        this.setSel({ block: f.block + 1, offset: 0 });
+        return;
+      }
+      this.snapshot();
+      this.mergeWithPrev(f.block + 1);
     }
   }
 
@@ -380,10 +491,20 @@ export class RichDoc {
    * @public
    */
   deleteWordBack(): void {
-    if (!this.isCollapsed) { this.snapshot(); this.deleteSel(); return; }
-    if (isAtom(this.doc.blocks[this.focus.block].type)) { this.deleteBlock(this.focus.block); return; }
+    if (!this.isCollapsed) {
+      this.snapshot();
+      this.deleteSel();
+      return;
+    }
+    if (isAtom(this.doc.blocks[this.focus.block].type)) {
+      this.deleteBlock(this.focus.block);
+      return;
+    }
     const f = this.focus;
-    if (f.offset === 0) { this.backspace(); return; }
+    if (f.offset === 0) {
+      this.backspace();
+      return;
+    }
     this.snapshot();
     const start = prevWordBoundary(this.blockStr(f.block), f.offset);
     const b = this.doc.blocks[f.block];
@@ -399,10 +520,20 @@ export class RichDoc {
    * @public
    */
   deleteWordForward(): void {
-    if (!this.isCollapsed) { this.snapshot(); this.deleteSel(); return; }
-    if (isAtom(this.doc.blocks[this.focus.block].type)) { this.deleteBlock(this.focus.block); return; }
+    if (!this.isCollapsed) {
+      this.snapshot();
+      this.deleteSel();
+      return;
+    }
+    if (isAtom(this.doc.blocks[this.focus.block].type)) {
+      this.deleteBlock(this.focus.block);
+      return;
+    }
     const f = this.focus;
-    if (f.offset >= this.blockLen(f.block)) { this.del(); return; }
+    if (f.offset >= this.blockLen(f.block)) {
+      this.del();
+      return;
+    }
     this.snapshot();
     const end = nextWordBoundary(this.blockStr(f.block), f.offset);
     const b = this.doc.blocks[f.block];
@@ -419,8 +550,15 @@ export class RichDoc {
    * @public
    */
   deleteToLineStart(lineStart: number): void {
-    if (!this.isCollapsed) { this.snapshot(); this.deleteSel(); return; }
-    if (isAtom(this.doc.blocks[this.focus.block].type)) { this.deleteBlock(this.focus.block); return; }
+    if (!this.isCollapsed) {
+      this.snapshot();
+      this.deleteSel();
+      return;
+    }
+    if (isAtom(this.doc.blocks[this.focus.block].type)) {
+      this.deleteBlock(this.focus.block);
+      return;
+    }
     const f = this.focus;
     const start = clamp(lineStart, 0, f.offset);
     if (start >= f.offset) return;
@@ -506,7 +644,9 @@ export class RichDoc {
     }
     const add = !this.markActive(type);
     this.snapshot();
-    this.mutSelRange((blk, s, e) => { blk.inlines = applyMark(blk.inlines, s, e, mark, add); });
+    this.mutSelRange((blk, s, e) => {
+      blk.inlines = applyMark(blk.inlines, s, e, mark, add);
+    });
   }
 
   /**
@@ -537,23 +677,50 @@ export class RichDoc {
   /** 设置/更新某 mark（如颜色、链接 href），总是加或覆盖，区别于 toggle。 @public */
   setMark(type: MarkType, attrs?: Record<string, string>): void {
     const mark: Mark = attrs ? { type, attrs } : { type };
-    if (this.isCollapsed) { this.storedMarks = withMark(this.activeMarks(), mark); this.mergeState = null; return; }
+    if (this.isCollapsed) {
+      this.storedMarks = withMark(this.activeMarks(), mark);
+      this.mergeState = null;
+      return;
+    }
     this.applyToSel((inl, s, e) => applyMark(inl, s, e, mark, true));
   }
   /** 清除选区或 storedMarks 上指定 mark。 @public */
   clearMark(type: MarkType): void {
-    if (this.isCollapsed) { this.storedMarks = withoutMark(this.activeMarks(), type); this.mergeState = null; return; }
+    if (this.isCollapsed) {
+      this.storedMarks = withoutMark(this.activeMarks(), type);
+      this.mergeState = null;
+      return;
+    }
     this.applyToSel((inl, s, e) => applyMark(inl, s, e, { type }, false));
   }
   /** 一键清除选区内全部行内 marks（单次撤销）。折叠时清空 storedMarks。 @public */
   clearMarks(): void {
-    if (this.isCollapsed) { this.storedMarks = []; this.mergeState = null; return; }
-    const all: MarkType[] = ['bold', 'italic', 'underline', 'strikethrough', 'highlight', 'code', 'color', 'link', 'fontFamily', 'fontSize', 'superscript', 'subscript'];
+    if (this.isCollapsed) {
+      this.storedMarks = [];
+      this.mergeState = null;
+      return;
+    }
+    const all: MarkType[] = [
+      'bold',
+      'italic',
+      'underline',
+      'strikethrough',
+      'highlight',
+      'code',
+      'color',
+      'link',
+      'fontFamily',
+      'fontSize',
+      'superscript',
+      'subscript',
+    ];
     this.applyToSel((inl, s, e) => all.reduce((acc, t) => applyMark(acc, s, e, { type: t }, false), inl));
   }
   private applyToSel(fn: (inl: Inline[], s: number, e: number) => Inline[]) {
     this.snapshot();
-    this.mutSelRange((blk, s, e) => { blk.inlines = fn(blk.inlines, s, e); });
+    this.mutSelRange((blk, s, e) => {
+      blk.inlines = fn(blk.inlines, s, e);
+    });
   }
 
   // —— 选区遍历公共方法（消除 6 处重复的 from.block..to.block + s/e 计算）——
@@ -577,16 +744,25 @@ export class RichDoc {
   // 所有「就地改写选区块」的写者一律换用以下封装：先 touchBlock 再回调，保证布局缓存失效。
   // 立规矩：text 块的任何新增外部写入路径必须经 RichDoc 方法（即经此处或显式 touchBlock）。
   private mutSelRange(fn: (blk: Block, s: number, e: number) => void) {
-    this.eachSelRange((blk, s, e) => { touchBlock(blk); fn(blk, s, e); });
+    this.eachSelRange((blk, s, e) => {
+      touchBlock(blk);
+      fn(blk, s, e);
+    });
   }
   private mutSelBlock(fn: (blk: Block) => void) {
-    this.eachSelBlock((blk) => { touchBlock(blk); fn(blk); });
+    this.eachSelBlock((blk) => {
+      touchBlock(blk);
+      fn(blk);
+    });
   }
 
   /** 设选区各块的块类型（保留段落排版属性，合并传入 attrs；传入项优先）。 @public */
   setBlockType(type: BlockType, attrs: BlockAttrs = {}): void {
     this.snapshot();
-    this.mutSelBlock((blk) => { blk.type = type; blk.attrs = { ...this.preserveFormattingAttrs(blk.attrs), ...attrs }; });
+    this.mutSelBlock((blk) => {
+      blk.type = type;
+      blk.attrs = { ...this.preserveFormattingAttrs(blk.attrs), ...attrs };
+    });
   }
   /** 切换任务列表项的勾选态（进撤销栈）；非 task_item 块无操作。 @public */
   toggleTaskChecked(block: number): void {
@@ -599,30 +775,40 @@ export class RichDoc {
   /** 设选区各块的水平对齐（左/中/右/两端/分散）。 @public */
   setAlign(align: BlockAlign): void {
     this.snapshot();
-    this.mutSelBlock((blk) => { blk.attrs.align = align; });
+    this.mutSelBlock((blk) => {
+      blk.attrs.align = align;
+    });
   }
   /** 设选区各块的行距倍数（1 / 1.15 / 1.5 / 2 等）。 @public */
   setLineHeight(mult: number): void {
     this.snapshot();
-    this.mutSelBlock((blk) => { blk.attrs.lineHeight = mult; });
+    this.mutSelBlock((blk) => {
+      blk.attrs.lineHeight = mult;
+    });
   }
   /** 设选区各块的段前间距（逻辑 px，覆盖块主题默认）。 @public */
   setSpaceBefore(px: number): void {
     this.snapshot();
     const v = Math.max(0, px);
-    this.mutSelBlock((blk) => { blk.attrs.spaceBefore = v; });
+    this.mutSelBlock((blk) => {
+      blk.attrs.spaceBefore = v;
+    });
   }
   /** 设选区各块的段后间距（逻辑 px，覆盖块主题默认）。 @public */
   setSpaceAfter(px: number): void {
     this.snapshot();
     const v = Math.max(0, px);
-    this.mutSelBlock((blk) => { blk.attrs.spaceAfter = v; });
+    this.mutSelBlock((blk) => {
+      blk.attrs.spaceAfter = v;
+    });
   }
   /** 设选区各块的左缩进（逻辑 px，覆盖块主题默认；夹到 ≥0）。 @public */
   setIndent(px: number): void {
     this.snapshot();
     const v = Math.max(0, px);
-    this.mutSelBlock((blk) => { blk.attrs.indent = v; });
+    this.mutSelBlock((blk) => {
+      blk.attrs.indent = v;
+    });
   }
   /**
    * 按步长增/减选区各块缩进（点击「增加/减少缩进」）。
@@ -640,12 +826,16 @@ export class RichDoc {
   setLetterSpacing(px: number): void {
     this.snapshot();
     const v = Math.max(0, px);
-    this.mutSelBlock((blk) => { blk.attrs.letterSpacing = v; });
+    this.mutSelBlock((blk) => {
+      blk.attrs.letterSpacing = v;
+    });
   }
   /** 设选区各块的书写方向（LTR/RTL）。 @public */
   setDir(dir: 'ltr' | 'rtl'): void {
     this.snapshot();
-    this.mutSelBlock((blk) => { blk.attrs.dir = dir; });
+    this.mutSelBlock((blk) => {
+      blk.attrs.dir = dir;
+    });
   }
 
   /**
@@ -655,15 +845,24 @@ export class RichDoc {
    */
   private changeListDepth(delta: number): void {
     const targets: Block[] = [];
-    this.eachSelBlock((blk) => { if (isList(blk.type)) targets.push(blk); });
-    if (targets.length === 0) return;            // 无可缩进块：不快照、不变更
+    this.eachSelBlock((blk) => {
+      if (isList(blk.type)) targets.push(blk);
+    });
+    if (targets.length === 0) return; // 无可缩进块：不快照、不变更
     this.snapshot();
-    for (const blk of targets) { touchBlock(blk); blk.attrs.depth = clampDepth(clampDepth(blk.attrs.depth) + delta); }
+    for (const blk of targets) {
+      touchBlock(blk);
+      blk.attrs.depth = clampDepth(clampDepth(blk.attrs.depth) + delta);
+    }
   }
   /** 选区内列表/任务项嵌套加深一级（Tab）。depth 夹到 ≤ MAX_LIST_DEPTH。 @public */
-  indentList(): void { this.changeListDepth(1); }
+  indentList(): void {
+    this.changeListDepth(1);
+  }
   /** 选区内列表/任务项嵌套减一级（Shift+Tab）。depth 夹到 ≥ 0。 @public */
-  outdentList(): void { this.changeListDepth(-1); }
+  outdentList(): void {
+    this.changeListDepth(-1);
+  }
   /** 焦点块当前是否为列表/任务项（决定 Tab/Shift+Tab 是否走嵌套缩进）。 @public */
   focusIsList(): boolean {
     const b = this.doc.blocks[this.focus.block];
@@ -691,7 +890,9 @@ export class RichDoc {
     this.storedMarks = null;
   }
   /** 在光标块后插入图片原子块（src 经协议白名单过滤，非法降级空串）。 @public */
-  insertImage(src: string): void { this.insertAtom({ type: 'image', attrs: { src: safeSrcFor('image', src) }, inlines: [mkText('')] }); }
+  insertImage(src: string): void {
+    this.insertAtom({ type: 'image', attrs: { src: safeSrcFor('image', src) }, inlines: [mkText('')] });
+  }
   /**
    * 在光标处插入「行内图片」（行内原子，占 1 个 UTF-16 offset，随文字断行/光标移动）。
    * 区别于 insertImage（块级图片，独占一行）。有选区先删；停在原子块上则在其后新建段落再插。
@@ -721,13 +922,29 @@ export class RichDoc {
     this.storedMarks = null;
   }
   /** 在光标块后插入公式原子块。 @public */
-  insertFormula(latex: string): void { this.insertAtom({ type: 'formula', attrs: { latex }, inlines: [mkText('')] }); }
+  insertFormula(latex: string): void {
+    this.insertAtom({ type: 'formula', attrs: { latex }, inlines: [mkText('')] });
+  }
   /** 在光标块后插入音频原子块（媒体 URL，经协议白名单过滤）。 @public */
-  insertAudio(src: string): void { this.insertAtom({ type: 'audio', attrs: { src: safeSrcFor('audio', src) }, inlines: [mkText('')] }); }
+  insertAudio(src: string): void {
+    this.insertAtom({ type: 'audio', attrs: { src: safeSrcFor('audio', src) }, inlines: [mkText('')] });
+  }
   /** 在光标块后插入视频原子块（媒体 URL 经协议白名单过滤，默认尺寸查覆盖层规格表，可缩放）。 @public */
-  insertVideo(src: string): void { this.insertAtom({ type: 'video', attrs: { src: safeSrcFor('video', src), ...atomSizeAttrs('video') }, inlines: [mkText('')] }); }
+  insertVideo(src: string): void {
+    this.insertAtom({
+      type: 'video',
+      attrs: { src: safeSrcFor('video', src), ...atomSizeAttrs('video') },
+      inlines: [mkText('')],
+    });
+  }
   /** 在光标块后插入内嵌网页(iframe)原子块（URL 仅 http/https，默认尺寸查覆盖层规格表，可缩放）。 @public */
-  insertIframe(src: string): void { this.insertAtom({ type: 'iframe', attrs: { src: safeSrcFor('iframe', src), ...atomSizeAttrs('iframe') }, inlines: [mkText('')] }); }
+  insertIframe(src: string): void {
+    this.insertAtom({
+      type: 'iframe',
+      attrs: { src: safeSrcFor('iframe', src), ...atomSizeAttrs('iframe') },
+      inlines: [mkText('')],
+    });
+  }
   /** 在光标块后插入附件原子块（文件 URL 经协议白名单过滤 + 可选文件名，渲染为可下载文件卡片）。 @public */
   insertAttachment(src: string, name?: string): void {
     const safe = safeSrcFor('attachment', src);
@@ -738,7 +955,11 @@ export class RichDoc {
    * 默认显示尺寸查覆盖层规格表、透明底、可缩放（类 image 覆盖层）。 @public
    */
   insertSignature(src: string): void {
-    this.insertAtom({ type: 'signature', attrs: { src: safeSrcFor('signature', src), ...atomSizeAttrs('signature') }, inlines: [mkText('')] });
+    this.insertAtom({
+      type: 'signature',
+      attrs: { src: safeSrcFor('signature', src), ...atomSizeAttrs('signature') },
+      inlines: [mkText('')],
+    });
   }
   /**
    * 在光标块后插入印章原子块（印章文字 = 单位/公司名）。
@@ -759,7 +980,11 @@ export class RichDoc {
     // line/divider 默认更扁（视觉为一条线）；其余给规格表的方形/矩形画布默认高
     const isLineLike = kind === 'line' || kind === 'divider';
     const sz = atomSizeAttrs('shape');
-    this.insertAtom({ type: 'shape', attrs: { shape: kind, width: sz.width, height: isLineLike ? 40 : sz.height }, inlines: [mkText('')] });
+    this.insertAtom({
+      type: 'shape',
+      attrs: { shape: kind, width: sz.width, height: isLineLike ? 40 : sz.height },
+      inlines: [mkText('')],
+    });
   }
   /** 在光标块后插入 rows×cols 空表格原子块（每格为空富单元格）。 @public */
   insertTable(rows: number, cols: number): void {
@@ -829,11 +1054,13 @@ export class RichDoc {
         const cl = nextRows[r]?.[c];
         if (cl && !isCellEmpty(cl)) parts.push(cl.inlines);
         if (!(r === rect.r && c === rect.c) && nextRows[r]) nextRows[r][c] = mkCell(); // 参差行的空洞一并补为空格子
-
       }
     }
     const joined: Inline[] = [];
-    parts.forEach((p, i) => { if (i > 0) joined.push(mkText(' ')); joined.push(...p); });
+    parts.forEach((p, i) => {
+      if (i > 0) joined.push(mkText(' '));
+      joined.push(...p);
+    });
     nextRows[rect.r][rect.c] = { inlines: normalizeInlines(joined) };
     // 移除与新矩形相交的旧合并区，再追加新区（保持 merges 互不重叠的不变量）
     const kept = (b.attrs.merges ?? []).filter((m) => !mergesIntersect(m, rect));
@@ -869,9 +1096,17 @@ export class RichDoc {
     touchBlock(b);
     const cols = tableColCount(rows);
     const nextRows = rows.map((row) => row.slice());
-    nextRows.splice(at, 0, Array.from({ length: cols }, () => mkCell()));
+    nextRows.splice(
+      at,
+      0,
+      Array.from({ length: cols }, () => mkCell()),
+    );
     const next: BlockAttrs = { ...b.attrs, rows: nextRows };
-    if (b.attrs.rowHeights) { const rh = b.attrs.rowHeights.slice(); rh.splice(at, 0, 0); next.rowHeights = rh; }
+    if (b.attrs.rowHeights) {
+      const rh = b.attrs.rowHeights.slice();
+      rh.splice(at, 0, 0);
+      next.rowHeights = rh;
+    }
     if (b.attrs.merges) next.merges = adjustMergesOnInsertRow(b.attrs.merges, at);
     b.attrs = next;
   }
@@ -891,7 +1126,11 @@ export class RichDoc {
     const nextRows = rows.map((r) => r.slice());
     nextRows.splice(row, 1);
     const next: BlockAttrs = { ...b.attrs, rows: nextRows };
-    if (b.attrs.rowHeights) { const rh = b.attrs.rowHeights.slice(); rh.splice(row, 1); next.rowHeights = rh; }
+    if (b.attrs.rowHeights) {
+      const rh = b.attrs.rowHeights.slice();
+      rh.splice(row, 1);
+      next.rowHeights = rh;
+    }
     if (b.attrs.merges) next.merges = adjustMergesOnDeleteRow(b.attrs.merges, row);
     b.attrs = next;
   }
@@ -918,7 +1157,11 @@ export class RichDoc {
       return padded;
     });
     const next: BlockAttrs = { ...b.attrs, rows: nextRows };
-    if (b.attrs.colWidths) { const cw = b.attrs.colWidths.slice(); cw.splice(at, 0, 0); next.colWidths = cw; }
+    if (b.attrs.colWidths) {
+      const cw = b.attrs.colWidths.slice();
+      cw.splice(at, 0, 0);
+      next.colWidths = cw;
+    }
     if (b.attrs.merges) next.merges = adjustMergesOnInsertCol(b.attrs.merges, at);
     b.attrs = next;
   }
@@ -943,7 +1186,11 @@ export class RichDoc {
       return padded;
     });
     const next: BlockAttrs = { ...b.attrs, rows: nextRows };
-    if (b.attrs.colWidths) { const cw = b.attrs.colWidths.slice(); cw.splice(col, 1); next.colWidths = cw; }
+    if (b.attrs.colWidths) {
+      const cw = b.attrs.colWidths.slice();
+      cw.splice(col, 1);
+      next.colWidths = cw;
+    }
     if (b.attrs.merges) next.merges = adjustMergesOnDeleteCol(b.attrs.merges, col);
     b.attrs = next;
   }
@@ -1081,10 +1328,14 @@ export class RichDoc {
     if (valid.length === 0) return;
     this.snapshot();
     const sorted = [...valid].sort((a, b) => a.block - b.block || a.start - b.start);
-    let curBlock = -1, delta = 0;
+    let curBlock = -1,
+      delta = 0;
     let last: Pos = this.focus;
     for (const r of sorted) {
-      if (r.block !== curBlock) { curBlock = r.block; delta = 0; }
+      if (r.block !== curBlock) {
+        curBlock = r.block;
+        delta = 0;
+      }
       const b = this.doc.blocks[r.block];
       const len = blockTextLen(b);
       const s = clamp(r.start + delta, 0, len);
@@ -1149,8 +1400,10 @@ export class RichDoc {
     touchBlock(cur);
     const [front, back] = splitInlines(cur.inlines, f.offset);
     const insert: Block[] = [];
-    if (isAtom(first.type)) { cur.inlines = normalizeInlines(front); insert.push(first); }
-    else cur.inlines = normalizeInlines([...front, ...first.inlines]);
+    if (isAtom(first.type)) {
+      cur.inlines = normalizeInlines(front);
+      insert.push(first);
+    } else cur.inlines = normalizeInlines([...front, ...first.inlines]);
     for (let i = 1; i < blocks.length; i++) insert.push(blocks[i]);
     let caret: Pos;
     const lastBlk = insert.length ? insert[insert.length - 1] : cur;
@@ -1174,7 +1427,11 @@ export class RichDoc {
   /** 回填覆盖层实测高度（不进撤销栈）；高度有变返回 true，否则 false。 @public */
   setMeasuredHeight(block: number, h: number): boolean {
     const b = this.doc.blocks[block];
-    if (b && b.attrs.measuredH !== h) { touchBlock(b); b.attrs.measuredH = h; return true; }
+    if (b && b.attrs.measuredH !== h) {
+      touchBlock(b);
+      b.attrs.measuredH = h;
+      return true;
+    }
     return false;
   }
 
@@ -1233,9 +1490,14 @@ export class RichDoc {
   private snapshotTextEdit(kind: TextEditKind): void {
     const m = this.mergeState;
     const f = this.focus;
-    const mergeable = m !== null && m.kind === kind && m.block === f.block && m.offset === f.offset
-      && this.now() - m.time <= TEXT_MERGE_WINDOW_MS
-      && this.undoStack.length > 0 && this.redoStack.length === 0;
+    const mergeable =
+      m !== null &&
+      m.kind === kind &&
+      m.block === f.block &&
+      m.offset === f.offset &&
+      this.now() - m.time <= TEXT_MERGE_WINDOW_MS &&
+      this.undoStack.length > 0 &&
+      this.redoStack.length === 0;
     if (!mergeable) this.pushUndo();
   }
   // 记录本次文本编辑的合并锚点（编辑后的光标位置 + 当前时刻）。
@@ -1243,18 +1505,36 @@ export class RichDoc {
     this.mergeState = { kind, block: this.focus.block, offset: this.focus.offset, time: this.now() };
   }
   /** 主动断开连续输入合并（粘贴等命令边界调用）：下一次文本编辑必新增独立快照。 @public */
-  breakUndoCoalescing(): void { this.mergeState = null; }
+  breakUndoCoalescing(): void {
+    this.mergeState = null;
+  }
   /** 撤销栈是否非空。 @public */
-  get canUndo(): boolean { return this.undoStack.length > 0; }
+  get canUndo(): boolean {
+    return this.undoStack.length > 0;
+  }
   /** 重做栈是否非空。 @public */
-  get canRedo(): boolean { return this.redoStack.length > 0; }
+  get canRedo(): boolean {
+    return this.redoStack.length > 0;
+  }
   /** 撤销一步：当前态入重做栈，恢复栈顶快照。 @public */
-  undo(): void { const s = this.undoStack.pop(); if (!s) return; this.redoStack.push(this.capture()); this.restore(s); }
+  undo(): void {
+    const s = this.undoStack.pop();
+    if (!s) return;
+    this.redoStack.push(this.capture());
+    this.restore(s);
+  }
   /** 重做一步：当前态入撤销栈，恢复栈顶快照。 @public */
-  redo(): void { const s = this.redoStack.pop(); if (!s) return; this.undoStack.push(this.capture()); this.restore(s); }
+  redo(): void {
+    const s = this.redoStack.pop();
+    if (!s) return;
+    this.undoStack.push(this.capture());
+    this.restore(s);
+  }
   private capture(): Snapshot {
     return {
-      doc: cloneDoc(this.doc), anchor: { ...this.anchor }, focus: { ...this.focus },
+      doc: cloneDoc(this.doc),
+      anchor: { ...this.anchor },
+      focus: { ...this.focus },
       sources: this.doc.blocks.map((b) => ({ src: b, v: blockVersion(b) })),
     };
   }
@@ -1270,7 +1550,11 @@ export class RichDoc {
       const rec = s.sources[i];
       if (rec && !isAtomBlock(blocks[i].type) && blockVersion(rec.src) === rec.v) blocks[i] = rec.src;
     }
-    this.doc = s.doc; this.anchor = this.clamp(s.anchor); this.focus = this.clamp(s.focus); this.storedMarks = null; this.mergeState = null;
+    this.doc = s.doc;
+    this.anchor = this.clamp(s.anchor);
+    this.focus = this.clamp(s.focus);
+    this.storedMarks = null;
+    this.mergeState = null;
   }
 }
 
@@ -1280,6 +1564,12 @@ export { splitGraphemes };
 // 表格纯工具（MIN_CELL_PX/tableColCount/normalizeRect/mergesIntersect + 增删行列的 merges 调整）已下沉至
 // ./table-utils；此处再导出，保持历史 import 路径（`from './rich-document'`）不破坏（model 内部已直接 import 自 ./table-utils）。
 export {
-  MIN_CELL_PX, tableColCount, normalizeRect, mergesIntersect,
-  adjustMergesOnInsertRow, adjustMergesOnDeleteRow, adjustMergesOnInsertCol, adjustMergesOnDeleteCol,
+  MIN_CELL_PX,
+  tableColCount,
+  normalizeRect,
+  mergesIntersect,
+  adjustMergesOnInsertRow,
+  adjustMergesOnDeleteRow,
+  adjustMergesOnInsertCol,
+  adjustMergesOnDeleteCol,
 };

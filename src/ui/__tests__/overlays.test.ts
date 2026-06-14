@@ -1,6 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import {
-  atomSig, tableSig, textboxSig, canSkipTableRebuild, measuredHeightChanged, overlayLayerZoom, overlayCssRect,
+  atomSig,
+  tableSig,
+  textboxSig,
+  canSkipTableRebuild,
+  measuredHeightChanged,
+  overlayLayerZoom,
+  overlayCssRect,
   blurActiveCellWithin,
 } from '../overlays';
 import { cellsFromStrings, text } from '../../model/schema';
@@ -13,7 +19,11 @@ import type { BlockAttrs, CellMerge, TableCell } from '../../model/schema';
 //  - overlayLayerZoom / overlayCssRect：功能性缩放（zoom≠1）下覆盖层与 canvas 内容的对齐换算
 //    （集群1 回归——曾以设备 dpr 直除布局盒，表格/公式预留空间与 DOM 高度差 zoom 倍而错位）。
 
-const baseRows = (): TableCell[][] => cellsFromStrings([['a', 'b'], ['c', 'd']]);
+const baseRows = (): TableCell[][] =>
+  cellsFromStrings([
+    ['a', 'b'],
+    ['c', 'd'],
+  ]);
 
 describe('tableSig', () => {
   it('is stable across pure text edits (cell content not in the signature)', () => {
@@ -32,7 +42,12 @@ describe('tableSig', () => {
   it('changes when row/column structure changes', () => {
     const a: BlockAttrs = { rows: cellsFromStrings([['a', 'b']]) };
     const b: BlockAttrs = { rows: cellsFromStrings([['a', 'b', 'c']]) }; // 多一列
-    const c: BlockAttrs = { rows: cellsFromStrings([['a', 'b'], ['c', 'd']]) }; // 多一行
+    const c: BlockAttrs = {
+      rows: cellsFromStrings([
+        ['a', 'b'],
+        ['c', 'd'],
+      ]),
+    }; // 多一行
     expect(tableSig(a)).not.toBe(tableSig(b));
     expect(tableSig(a)).not.toBe(tableSig(c));
   });
@@ -147,11 +162,17 @@ describe('canSkipTableRebuild（renderTable 早退判定：签名 + Block 身份
 describe('blurActiveCellWithin（结构操作前焦点收口，集群3）', () => {
   // 结构子集纯对象：node 环境无 DOM，按 contains/blur 的最小契约构造（同 cell-dom 测试模式）。
   const mkActive = (): { blur(): void; blurred: boolean } => {
-    const a = { blurred: false, blur(): void { a.blurred = true; } };
+    const a = {
+      blurred: false,
+      blur(): void {
+        a.blurred = true;
+      },
+    };
     return a;
   };
-  const containerWith = (inside: unknown): { contains(node: unknown): boolean } =>
-    ({ contains: (node: unknown) => node === inside });
+  const containerWith = (inside: unknown): { contains(node: unknown): boolean } => ({
+    contains: (node: unknown) => node === inside,
+  });
 
   it('activeElement 在表格覆盖层内 → 执行 blur 并返回 true（编辑回写成为唯一事实再做结构操作）', () => {
     const active = mkActive();
@@ -191,10 +212,10 @@ describe('measuredHeightChanged', () => {
 
 describe('overlayLayerZoom', () => {
   it('zoom = scale / deviceDpr（定位层 transform 的缩放因子）', () => {
-    expect(overlayLayerZoom(2, 1)).toBe(2);    // zoom 2 @ deviceDpr 1
-    expect(overlayLayerZoom(3, 2)).toBe(1.5);  // zoom 1.5 @ deviceDpr 2
-    expect(overlayLayerZoom(1, 2)).toBe(0.5);  // zoom 0.5 @ deviceDpr 2
-    expect(overlayLayerZoom(2, 2)).toBe(1);    // zoom 1 → 不加 transform
+    expect(overlayLayerZoom(2, 1)).toBe(2); // zoom 2 @ deviceDpr 1
+    expect(overlayLayerZoom(3, 2)).toBe(1.5); // zoom 1.5 @ deviceDpr 2
+    expect(overlayLayerZoom(1, 2)).toBe(0.5); // zoom 0.5 @ deviceDpr 2
+    expect(overlayLayerZoom(2, 2)).toBe(1); // zoom 1 → 不加 transform
   });
 
   it('deviceDpr 夹到 ≥1（与装配层 Math.max(1, devicePixelRatio) 一致）', () => {
@@ -216,7 +237,12 @@ describe('overlayCssRect', () => {
 
   it('屏幕对齐不变量：本地 rect × zoom === 布局 rect ÷ deviceDpr（任意 dpr/zoom 组合）', () => {
     const scrollY = 90;
-    for (const [deviceDpr, zoom] of [[1, 2], [2, 1.5], [2, 0.5], [1.5, 1]] as const) {
+    for (const [deviceDpr, zoom] of [
+      [1, 2],
+      [2, 1.5],
+      [2, 0.5],
+      [1.5, 1],
+    ] as const) {
       const scale = deviceDpr * zoom;
       const z = overlayLayerZoom(scale, deviceDpr);
       const r = overlayCssRect(box, scrollY, scale);

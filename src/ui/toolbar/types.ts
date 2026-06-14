@@ -9,9 +9,7 @@
  * 在 ui 层就地声明以维持 ui→editor 无类型反向依赖（值域一致：字符串/数字/null/表格维度）。
  * @internal
  */
-export type ToolbarCommandArg =
-  | string | number | null
-  | { rows: number; cols: number };
+export type ToolbarCommandArg = string | number | null | { rows: number; cols: number };
 
 /**
  * 工具栏的当前可视状态快照，用于驱动按钮 active/disabled 与块类型/方向回填。
@@ -20,17 +18,18 @@ export type ToolbarCommandArg =
 export interface ToolbarState {
   marks: Record<string, boolean>;
   blockValue: string;
-  fontSize: string;   // 当前生效字号（行内 mark 覆盖则为该值，否则块默认字号）
+  fontSize: string; // 当前生效字号（行内 mark 覆盖则为该值，否则块默认字号）
   fontFamily: string; // 当前生效字体族命名值（'default' 表示块默认）
-  color: string | null;     // 当前生效文字色 hex（无 color mark 时 null）
+  color: string | null; // 当前生效文字色 hex（无 color mark 时 null）
   highlight: string | null; // 当前生效高亮色 hex（无 highlight mark 时 null）
   align: string;
   dir: string;
   lineHeight: string; // 当前块行距倍数字符串（'1' / '1.15' / '1.5' / '2'，无则块默认）
-  spaceBefore: number;  // 当前块段前间距（逻辑 px）
-  spaceAfter: number;   // 当前块段后间距（逻辑 px）
+  spaceBefore: number; // 当前块段前间距（逻辑 px）
+  spaceAfter: number; // 当前块段后间距（逻辑 px）
   letterSpacing: number; // 当前块字间距（逻辑 px）
-  canUndo: boolean; canRedo: boolean;
+  canUndo: boolean;
+  canRedo: boolean;
   shaperShort: string;
   theme: 'light' | 'dark'; // 当前主题，驱动主题切换按钮的图标（月亮/太阳）/文案/active 态
   viewMode: 'web' | 'word'; // 当前视图模式，驱动视图页签两按钮的 active 回填

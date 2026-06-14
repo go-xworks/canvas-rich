@@ -9,7 +9,11 @@ const wordSegmenter = createSegmenter('word');
 const RE_WORD_CHAR = /[\p{L}\p{N}_]/u;
 
 // 词段：[start,end) 的 UTF-16 区间 + 是否「词样」（isWordLike；空白/标点/孤立符号为 false）。
-interface WordSpan { start: number; end: number; wordLike: boolean }
+interface WordSpan {
+  start: number;
+  end: number;
+  wordLike: boolean;
+}
 
 // 把字符串切为词段序列：优先 Intl.Segmenter（CJK 词典分词），缺失时按词字符类归并连续段。
 function wordSpans(textStr: string): WordSpan[] {
@@ -48,7 +52,10 @@ export function nextWordBoundary(textStr: string, offset: number): number {
  */
 export function prevWordBoundary(textStr: string, offset: number): number {
   let best = 0;
-  for (const s of wordSpans(textStr)) { if (s.wordLike && s.start < offset) best = s.start; else if (s.start >= offset) break; }
+  for (const s of wordSpans(textStr)) {
+    if (s.wordLike && s.start < offset) best = s.start;
+    else if (s.start >= offset) break;
+  }
   return best;
 }
 
