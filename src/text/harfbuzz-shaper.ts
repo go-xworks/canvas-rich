@@ -43,7 +43,13 @@ export class HarfBuzzShaper implements Shaper {
 
   static async create(atlas: GlyphAtlas, dpr: number): Promise<HarfBuzzShaper> {
     const hb = await import('harfbuzzjs');
-    const load = async (url: string, tag: string): Promise<FontEntry> => {
+    // 字体根：随构建 base 解析（Vite 注入 import.meta.env.BASE_URL，默认 '/'），
+    // 使站点部署在子路径（如 GitHub Pages /canvas-rich/）时字体 URL 仍正确；
+    // 非 Vite 宿主取不到时回退 '/'（消费者需把字体放在服务根 /fonts/）。
+    const env = (import.meta as ImportMeta & { env?: { BASE_URL?: string } }).env;
+    const fontBase = env?.BASE_URL ?? '/';
+    const load = async (name: string, tag: string): Promise<FontEntry> => {
+      const url = `${fontBase}fonts/${name}`;
       const ab = await fetch(url).then((r) => {
         if (!r.ok) throw new Error(`字体加载失败 ${url}: ${r.status}`);
         return r.arrayBuffer();
@@ -56,10 +62,10 @@ export class HarfBuzzShaper implements Shaper {
       return { tag, font, upem };
     };
     const [regular, bold, arabic, hebrew] = await Promise.all([
-      load('/fonts/Roboto-Regular.ttf', 'r'),
-      load('/fonts/Roboto-Bold.ttf', 'b'),
-      load('/fonts/NotoSansArabic-Regular.ttf', 'ar'),
-      load('/fonts/NotoSansHebrew-Regular.ttf', 'he'),
+      load('Roboto-Regular.ttf', 'r'),
+      load('Roboto-Bold.ttf', 'b'),
+      load('NotoSansArabic-Regular.ttf', 'ar'),
+      load('NotoSansHebrew-Regular.ttf', 'he'),
     ]);
     return new HarfBuzzShaper(hb, atlas, dpr, regular, bold, arabic, hebrew);
   }
