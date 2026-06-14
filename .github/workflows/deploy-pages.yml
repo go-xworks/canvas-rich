@@ -29,7 +29,10 @@ jobs:
       - run: npm ci
       # 子路径部署（go-xworks.github.io/canvas-rich/）：base 同步给资源与字体（BASE_URL）
       - run: npx vite build --base=/canvas-rich/
+      # enablement:true → 首次运行用 Actions 的 GITHUB_TOKEN 自动启用 Pages（无需在网页手动设 Source）
       - uses: actions/configure-pages@v5
+        with:
+          enablement: true
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist-demo
