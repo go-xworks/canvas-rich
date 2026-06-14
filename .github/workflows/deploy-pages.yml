@@ -21,19 +21,19 @@ jobs:
     name: Build demo
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
       - run: npm ci
       # 子路径部署（go-xworks.github.io/canvas-rich/）：base 同步给资源与字体（BASE_URL）
       - run: npx vite build --base=/canvas-rich/
-      # enablement:true → 首次运行用 Actions 的 GITHUB_TOKEN 自动启用 Pages（无需在网页手动设 Source）
-      - uses: actions/configure-pages@v5
+      # enablement:true → 首次运行用 Actions 的 GITHUB_TOKEN 自动启用 Pages（需仓库 Workflow permissions 为 Read and write）
+      - uses: actions/configure-pages@v6
         with:
           enablement: true
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: dist-demo
 
@@ -46,4 +46,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
