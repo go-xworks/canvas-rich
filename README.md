@@ -1,45 +1,45 @@
 # canvas-rich
 
-> GPU 自绘的 **canvas 富文本编辑内核** · A GPU-rendered rich text editor engine on HTML `<canvas>`.
+> **English** · [简体中文](README.zh-CN.md)
+
+> A GPU-rendered **canvas rich text editor engine** on HTML `<canvas>`.
 
 [![CI](https://github.com/go-xworks/canvas-rich/actions/workflows/ci.yml/badge.svg)](https://github.com/go-xworks/canvas-rich/actions/workflows/ci.yml)
 [![Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://go-xworks.github.io/canvas-rich/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](tsconfig.json)
 
-canvas-rich 用 TypeScript + `<canvas>` + WebGL2/WebGPU 自绘整个编辑器：字形经图集光栅成 GPU 贴图四边形，
-不依赖 DOM 排版、不依赖浏览器文本控件，并在其上自建文档树、位置模型、样式解析与块级布局。
+canvas-rich renders the entire editor with TypeScript + `<canvas>` + WebGL2/WebGPU: glyphs are rasterized through an atlas into GPU-textured quads, with no reliance on DOM layout or browser text controls. On top of that it builds its own document tree, position model, style resolution, and block layout.
 
-**🔗 在线示例：https://go-xworks.github.io/canvas-rich/**
+**🔗 Live demo: https://go-xworks.github.io/canvas-rich/**
 
-## 特性
+## Features
 
-- **GPU 自绘** — 字形进多页 2048² 图集，WebGL2/WebGPU 单 shader 批量合成；GPU 上下文丢失自动恢复。
-- **文档模型** — 19 种块（标题 / 列表 / 任务 / 引用 / 代码块 / 表格 / 媒体 / 公式 / 形状…）+ 12 种行内 marks。
-- **排版** — 块级布局、段落行距/间距/缩进/对齐、嵌套列表、目录、Unicode BiDi 双向算法、HarfBuzz 复杂文字整形与脚本字体回退。
-- **视图** — web 连续滚动 / word A4 分页；50–200% 功能性缩放；亮 / 暗主题。
-- **编辑** — 跨块选区、词级导航、双击选词、拖拽移动文本、撤销合并、IME 组合中间态预览。
-- **工具** — 查找 / 替换（⌘F）、富文本剪贴板、打印 / 导出 PDF（⌘P）、localStorage 自动保存与草稿恢复。
-- **触屏** — 单指滚动 + 惯性、长按选词、选区手柄、双指捏合缩放、虚拟键盘避让。
-- **导入导出** — Markdown / HTML / JSON（互逆）。
-- **性能** — 块级增量布局缓存（编辑只重排受影响块）+ 视口剔除（静止帧零开销）。
-- **零框架依赖** — 纯 TypeScript，可嵌入任意技术栈。
+- **GPU-rendered** — glyphs go into multi-page 2048² atlases, batched in a single WebGL2/WebGPU shader; automatic recovery on GPU context loss.
+- **Document model** — 19 block types (headings / lists / tasks / quotes / code blocks / tables / media / formulas / shapes…) + 12 inline marks.
+- **Typography** — block layout, paragraph line height / spacing / indentation / alignment, nested lists, table of contents, the Unicode BiDi algorithm, HarfBuzz complex-script shaping, and script-based font fallback.
+- **Views** — web continuous scrolling / word A4 pagination; 50–200% functional zoom; light / dark themes.
+- **Editing** — cross-block selection, word-level navigation, double-click word selection, drag-to-move text, undo coalescing, IME composition preview.
+- **Tools** — find / replace (⌘F), rich text clipboard, print / export to PDF (⌘P), localStorage autosave and draft recovery.
+- **Touch** — single-finger scrolling with inertia, long-press word selection, selection handles, two-finger pinch zoom, virtual keyboard avoidance.
+- **Import / export** — Markdown / HTML / JSON (round-trippable).
+- **Performance** — block-level incremental layout cache (editing only re-lays affected blocks) + viewport culling (zero cost on static frames).
+- **Zero framework dependencies** — pure TypeScript, embeddable in any stack.
 
-## 快速开始
+## Quick start
 
-> 需要 Node ≥ 20。本仓库分两层：`src/` 是核心库，`examples/` 是消费库的示例站点。
+> Requires Node ≥ 20. The repository has two layers: `src/` is the core library, `examples/` is a sample site that consumes the library.
 
 ```bash
 npm install
-npm run dev        # 起示例站点 http://localhost:5173
-npm run build      # 构建库：dist/index.js + dist/style.css + dist/index.d.ts
-npm test           # 单元测试
+npm run dev        # start the sample site at http://localhost:5173
+npm run build      # build the library: dist/index.js + dist/style.css + dist/index.d.ts
+npm test           # unit tests
 ```
 
-## 作为库使用
+## Using as a library
 
-核心库对标 ProseMirror / CodeMirror 6 / Lexical：传入一个容器，库自建 DOM 外壳，
-工厂 `createEditor(target, options)` 返回命令式实例句柄。
+The core library is on par with ProseMirror / CodeMirror 6 / Lexical: pass in a container, the library builds its own DOM shell, and the `createEditor(target, options)` factory returns an imperative instance handle.
 
 ```ts
 import { createEditor } from 'canvas-rich';
@@ -51,42 +51,41 @@ const editor = createEditor(document.getElementById('app')!, {
   viewMode: 'web',         // 'web' | 'word'
 });
 
-editor.exec('mark.bold');                            // 派发命令
+editor.exec('mark.bold');                            // dispatch a command
 editor.on('doc:changed', () => console.log(editor.getMarkdown()));
-editor.setHTML('<h1>New</h1>');                      // 拿/灌内容：get/set + HTML/Markdown/JSON/Doc
-editor.destroy();                                    // 彻底销毁，回收全部 DOM 与监听
+editor.setHTML('<h1>New</h1>');                      // get/set content: get/set + HTML/Markdown/JSON/Doc
+editor.destroy();                                    // fully destroy, releasing all DOM and listeners
 ```
 
-`EditorInstance` 提供 `exec / getDoc / setDoc / getHTML / setHTML / getMarkdown / setMarkdown /
-getJSON / setJSON / on / off / focus / setViewMode / setZoom / setTheme / destroy`。
-完整选项见 [`createEditor` 的 TSDoc](src/editor/create-editor.ts)。
+`EditorInstance` provides `exec / getDoc / setDoc / getHTML / setHTML / getMarkdown / setMarkdown /
+getJSON / setJSON / on / off / focus / setViewMode / setZoom / setTheme / destroy`.
+See the full options in the [`createEditor` TSDoc](src/editor/create-editor.ts).
 
-> **运行时资源**：HarfBuzz 整形（`shaper:'harfbuzz'`）需在站点根 `/fonts/` 提供 Roboto / Noto 字体；
-> 公式需 `import 'katex/dist/katex.min.css'`。默认 `canvas` 整形器无此依赖。
-> **已知局限**：主题色板为进程级全局，同页多实例暂无法各自独立主题。
+> **Runtime assets**: HarfBuzz shaping (`shaper:'harfbuzz'`) requires Roboto / Noto fonts served from `/fonts/` at the site root;
+> formulas require `import 'katex/dist/katex.min.css'`. The default `canvas` shaper has none of these dependencies.
+> **Known limitation**: the theme palette is a process-level global, so multiple instances on the same page cannot yet hold independent themes.
 
-## 架构
+## Architecture
 
-分层单向向下 `ui → editor → text → render → model → shared`，核心层零 UI / DOM 依赖。
+Layered strictly downward — `ui → editor → text → render → model → shared` — with the core layers free of any UI / DOM dependency.
 
 ```
-model/    文档树 schema、编辑模型 RichDoc、样式解析、导入导出、块行为注册表
-text/     整形器接口、字形图集、断行、块级布局、BiDi、分页
-render/   WebGL2 / WebGPU 后端（工厂择优降级）
-editor/   命令总线、事件发射器、剪贴板、命中测试、createEditor 工厂
-ui/       工具栏（声明式贡献清单）、覆盖层、面板、弹层、查找条（内部实现）
-shared/   跨层纯工具
+model/    document tree schema, the RichDoc editing model, style resolution, import/export, block behavior registry
+text/     shaper interface, glyph atlas, line breaking, block layout, BiDi, pagination
+render/   WebGL2 / WebGPU backends (the factory picks the best and degrades gracefully)
+editor/   command bus, event emitter, clipboard, hit testing, the createEditor factory
+ui/       toolbar (declarative contribution manifest), overlays, panels, popovers, find bar (internal implementation)
+shared/   cross-layer pure utilities
 ```
 
-设计要点：**统一命令总线**（键盘 / 工具栏 / 右键三路同 id 派发）、**类型化事件发射器**（Observer）、
-**插件化注册表**（块行为 / 块导出 / 工具栏贡献项各只注册一处）。详见 [`CONVENTIONS.md`](CONVENTIONS.md)。
+Design highlights: a **unified command bus** (keyboard / toolbar / context menu all dispatch the same ids), a **typed event emitter** (Observer), and a **plugin registry** (block behaviors / block exporters / toolbar contributions each registered in exactly one place). See [`CONVENTIONS.md`](CONVENTIONS.md) for details.
 
-## 贡献
+## Contributing
 
-欢迎 Issue 与 PR，请先阅读 [`CONTRIBUTING.md`](CONTRIBUTING.md)（开发、三门验证、提交规范）、
-[`CONVENTIONS.md`](CONVENTIONS.md)（工程约定）与 [行为准则](CODE_OF_CONDUCT.md)。
-安全问题请按 [`SECURITY.md`](SECURITY.md) 私密报告。变更记录见 [`CHANGELOG.md`](CHANGELOG.md)。
+Issues and PRs are welcome. Please first read [`CONTRIBUTING.md`](CONTRIBUTING.md) (development, pre-commit checks, commit conventions),
+and [`CONVENTIONS.md`](CONVENTIONS.md) (engineering conventions).
+Report security issues privately per [`SECURITY.md`](SECURITY.md). See [`CHANGELOG.md`](CHANGELOG.md) for the change log.
 
-## 许可
+## License
 
 [MIT](LICENSE) © go-xworks

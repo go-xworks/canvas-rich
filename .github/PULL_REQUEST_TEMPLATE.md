@@ -1,16 +1,17 @@
-<!-- 感谢贡献！请填写以下信息，便于 review。 -->
+<!-- English -->
+<!-- Thanks for contributing! Please fill in the following so reviewers can understand the change. -->
 
-## 动机与背景
+## Motivation & Context（动机与背景）
 
-<!-- 这个 PR 解决什么问题 / 实现什么能力？关联 Issue：Closes #__ -->
+<!-- What problem does this PR solve / what capability does it add? Linked issue: Closes #__ -->
 
-## 改动内容
+## Changes（改动内容）
 
-<!-- 简述改动范围与关键设计取舍 -->
+<!-- Summarize the scope of the change and the key design trade-offs. -->
 
 -
 
-## 改动类型
+## Type of Change（改动类型）
 
 - [ ] fix（修复 bug）
 - [ ] feat（新功能）
@@ -19,16 +20,22 @@
 - [ ] docs（文档）
 - [ ] test / chore / build / ci（其他）
 
-## 验证
+## Verification（验证）
 
-- [ ] `npm run typecheck` 零错误
-- [ ] `npm test` 全部通过
-- [ ] `npm run build` 成功
-- [ ] 新增 / 更新了单元测试
-- [ ] 如有行为/视觉变化，已在浏览器实测（可附截图）
+- [ ] `npm run typecheck` passes with zero errors（零错误）
+- [ ] `npm test` all pass（全部通过）
+- [ ] `npm run build` succeeds（成功）
+- [ ] Added / updated unit tests（新增 / 更新了单元测试）
+- [ ] If there is any behavioral / visual change, verified in the browser (screenshots welcome)（如有行为/视觉变化，已在浏览器实测，可附截图）
 
-## 检查清单
+## Checklist（检查清单）
 
-- [ ] 遵循 [`CONVENTIONS.md`](../CONVENTIONS.md)（kebab 文件名 / TSDoc / 禁 `any` / 分层）
-- [ ] 提交信息符合 Conventional Commits
-- [ ] 按需更新了 `README.md` / `CHANGELOG.md`
+- [ ] Follows [`CONVENTIONS.md`](../CONVENTIONS.md) (kebab-case file names / TSDoc / no `any` / layering)（遵循 `CONVENTIONS.md`：kebab 文件名 / TSDoc / 禁 `any` / 分层）
+- [ ] Commit messages follow Conventional Commits（提交信息符合 Conventional Commits）
+- [ ] Updated `README.md` / `CHANGELOG.md` as needed（按需更新了 `README.md` / `CHANGELOG.md`）
+
+---
+
+<!-- 中文 -->
+<!-- 感谢贡献！请填写以下信息，便于 review。 -->
+<!-- 上为英文、下为中文；勾选项与字段已中英对照，可任填一处提交。 -->
