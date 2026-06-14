@@ -1,5 +1,6 @@
 import { Doc } from '../model/schema';
 import { toHtml, toMarkdown, toJson } from '../model/export';
+import { wrapScoped } from '../editor/scope';
 
 // 导出面板（Tailwind 工具类）：HTML / Markdown / JSON，可复制。
 // 分层：ui（呈现层，调用 model/export 渲染文本，不修改文档）。
@@ -39,7 +40,9 @@ export function createOutputPanel(onClosed: () => void): OutputPanel {
     'flex-1 m-0 border-0 p-3 bg-[var(--rte-code-bg)] text-[var(--rte-code-text)] font-mono text-[12.5px] leading-[1.5] resize-none outline-none whitespace-pre overflow-auto';
   panel.append(header, ta);
   wrap.appendChild(panel);
-  document.body.appendChild(wrap);
+  // 作用域包裹：wrap 进 .canvas-rich(display:contents) wrapper 再挂 body（作用域化 utility 命中 + 令牌继承）。
+  const scopeWrap = wrapScoped(wrap);
+  document.body.appendChild(scopeWrap);
 
   let curDoc: Doc | null = null;
   let fmt: Fmt = 'html';
@@ -112,7 +115,7 @@ export function createOutputPanel(onClosed: () => void): OutputPanel {
     },
     destroy() {
       document.removeEventListener('keydown', onDocKeyDown);
-      wrap.remove();
+      scopeWrap.remove();
     },
   };
 }

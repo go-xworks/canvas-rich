@@ -1774,8 +1774,8 @@ export function createEditor(target: HTMLElement, options: EditorOptions = {}): 
       promptDialog.destroy();
       imageDialog.destroy();
       signatureDialog.destroy();
-      // 6) 移除外壳 DOM（含 dropLine/dragCaretEl/canvas/ime 随子树回收）
-      shell.root.remove();
+      // 6) 移除外壳 DOM（移除 .canvas-rich 作用域包裹层 → root 及 dropLine/dragCaretEl/canvas/ime 随子树回收）
+      shell.scopeWrap.remove();
       // 注：tooltip 层（ui/tooltip installTooltips）是页面级单例（installed 守卫，一页仅装一次，
       // 跨实例共享），非 per-instance 门户——反复 create/destroy 不累积，故无需在此回收。
     },

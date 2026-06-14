@@ -1,10 +1,12 @@
-/* 库样式入口（库化自洽）。由 editor/create-editor.ts 经 import 带出，
-   经 vite 库模式 cssCodeSplit:false 合并为单一 dist/style.css；
-   消费者 import 'canvas-rich/style.css' 即得外壳布局 + chrome 样式。
+/* 库样式入口（库化自洽）。库构建（build/tailwind-plugin.ts，由单条 tsdown 命令驱动）以本文件为入口：
+   编译 tailwind v4（@tailwindcss/node）+ 内容扫描（@tailwindcss/oxide）+ 作用域化到 .canvas-rich
+   （lightningcss，全部选择器前缀 .canvas-rich，:root→.canvas-rich，html[data-theme]→[data-theme] .canvas-rich）
+   + 压缩，emitFile 出单一 dist/style.css；消费者 import 'canvas-rich/style.css' 即得「作用域化的」外壳布局 +
+   chrome 样式，零全局污染（与宿主 .flex 等不冲突，运行时需把外壳/门户套进 .canvas-rich 包裹，见 editor/scope.ts）。
+   注：dev（@tailwindcss/vite）产的是「全局未作用域」的 utility，仅库构建产作用域版（dev/lib 解耦见 deps 注）。
 
    组成：
-   1. tailwind utilities —— 工具栏/状态栏/弹层等 chrome 用到的 utility class，
-      由 tailwindcss/vite 插件按 src 实际用到的 class 编译进来（v4 自动内容扫描，按需产出）；
+   1. tailwind utilities —— 工具栏/状态栏/弹层等 chrome 用到的 utility class（v4 自动内容扫描，按需产出）；
       不导入 preflight reset，以免污染宿主页面 / IME textarea / 覆盖层。
    2. shell.css —— DOM 外壳布局（rte-shell 作用域 class，视觉/布局逐字等价旧外壳）。
 

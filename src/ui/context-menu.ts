@@ -1,5 +1,6 @@
 // 通用右键菜单（Tailwind 工具类）。show(x,y,items) 在坐标处弹出。
 // 分层：ui（呈现层，纯 DOM 控件，不依赖 model）。
+import { wrapScoped } from '../editor/scope';
 
 /**
  * 右键菜单项：可执行项（含禁用/勾选/快捷键提示）或分隔线。
@@ -34,7 +35,10 @@ const ITEM_OFF = 'opacity-40 cursor-default';
 export function createContextMenu(): ContextMenu {
   const menu = document.createElement('div');
   menu.className = MENU;
-  document.body.appendChild(menu);
+  // 作用域包裹：menu 进 .canvas-rich(display:contents) wrapper 再挂 body，使作用域化的库 utility 命中、
+  // 且 --rte-* 令牌沿 wrapper 继承到菜单内（destroy 时移除 wrapper 即整体回收）。
+  const scopeWrap = wrapScoped(menu);
+  document.body.appendChild(scopeWrap);
 
   const hide = () => menu.classList.add('hidden');
   const isOpen = () => !menu.classList.contains('hidden');
@@ -57,7 +61,7 @@ export function createContextMenu(): ContextMenu {
       document.removeEventListener('mousedown', onDocMouseDown, true);
       document.removeEventListener('keydown', onDocKeyDown);
       window.removeEventListener('blur', hide);
-      menu.remove();
+      scopeWrap.remove();
     },
     show(x, y, items) {
       menu.innerHTML = '';

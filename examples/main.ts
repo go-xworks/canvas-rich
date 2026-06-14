@@ -9,7 +9,8 @@
  *   主题/缩放/视图模式——全部由 EditorOptions 驱动，示例零接线即复现现 demo。
  * - 示例侧（本文件）：仅 `createEditor(app, options)` 一行 + 引入样式。
  *   外壳 + chrome（tailwind utility）样式 = 库的 `src/styles/lib.css`（发布后为 `import 'canvas-rich/style.css'`，
- *   由 @tailwindcss/cli 编成 dist/style.css）；dev 下示例直接吃源码，故在此 import 同一入口经 Vite 插件供样式。
+ *   由 tsdown 的 tailwind 插件编译 + 作用域化到 .canvas-rich + 压缩成 dist/style.css）；
+ *   dev 下示例直接吃源码（@tailwindcss/vite 产全局未作用域 utility），故在此 import 同一入口经 Vite 插件供样式。
  *   katex 样式因库 external katex，提供责任在调用方（见 README「作为库使用」）。
  */
 import '../src/styles/lib.css'; // 外壳 + chrome 样式（= 发布物 'canvas-rich/style.css'）

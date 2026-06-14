@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
  * 示例只是库的「调用方」，`examples/index.html` 是 dev 入口（仅 #app + 引 main.ts），
  * `examples/main.ts` `import { createEditor } from '../src'` 直接吃库源码（热更）。
  *
- * 库构建走另一份 vite.lib.config.ts（build.lib，external 重依赖）。
+ * 库构建走 tsdown（见 tsdown.config.ts / build/tailwind-plugin.ts，external 重依赖）。
  * harfbuzzjs 内部使用 top-level await 初始化 wasm，需要 es2022+ 目标。
  */
 export default defineConfig({

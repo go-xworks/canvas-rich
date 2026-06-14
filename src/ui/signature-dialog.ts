@@ -3,6 +3,7 @@
 // 亮色/暗色均用 --rte-* 变量；笔迹色取墨黑（恒定，不随主题，保签名落地一致）。
 // 分层：纯 DOM 控件，不依赖 model。
 import { icon } from './icons';
+import { wrapScoped } from '../editor/scope';
 
 /** 签名弹层句柄：弹出画板并解析为签名 PNG dataURL（取消/空白返回 null）；销毁（移除 body 门户节点）。 @internal */
 export interface SignatureDialog {
@@ -73,7 +74,9 @@ export function createSignatureDialog(): SignatureDialog {
 
   card.append(titleEl, hint, body, footer);
   scrim.appendChild(card);
-  document.body.appendChild(scrim);
+  // 作用域包裹：scrim 进 .canvas-rich(display:contents) wrapper 再挂 body（作用域化 utility 命中 + 令牌继承）。
+  const scopeWrap = wrapScoped(scrim);
+  document.body.appendChild(scopeWrap);
 
   let resolver: ((v: string | null) => void) | null = null;
   let drawing = false;
@@ -187,7 +190,7 @@ export function createSignatureDialog(): SignatureDialog {
     },
     destroy() {
       close(null); // 解决可能挂起的 open（避免悬空 Promise）
-      scrim.remove();
+      scopeWrap.remove();
     },
   };
 }

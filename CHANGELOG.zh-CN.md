@@ -13,10 +13,14 @@
 
   **BREAKING**：入口由 `index.html` 应用改为 `createEditor` 工厂，不再有全局 DOM id 约定。
 - HarfBuzz 字体路径改用构建 `BASE_URL` 解析，支持站点部署在子路径。
+- **构建迁移到 tsdown**（Rolldown）：单条 `tsdown` 命令同时产出 JS + `.d.ts` + CSS。
+  自定义 tsdown 插件（`build/tailwind-plugin.ts`）编译 Tailwind v4 并**给所有选择器加 `.canvas-rich` 作用域**
+  （经 lightningcss），使库的工具类不再泄漏到宿主页面、也不与宿主样式冲突。运行时编辑器外壳与全部 body
+  门户都套一层布局中性的 `.canvas-rich`（`display: contents`）。
 
 ### Added
 - GitHub Pages 自动部署示例站点（`.github/workflows/deploy-pages.yml`）。
-- 可发布库配置：`exports` / `types` / `style.css`，库构建（Vite lib 模式，external 重依赖）+ `.d.ts` 生成。
+- 可发布库配置：`exports` / `types` / `style.css`，库构建（tsdown，external 重依赖）+ `.d.ts` 生成。
 
 ## [0.1.0] - 2026-06-12
 

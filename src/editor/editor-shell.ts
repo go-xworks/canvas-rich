@@ -12,6 +12,7 @@
  *
  * 分层：editor（编辑装配层；只建结构、不接业务，业务由 create-editor 注入）。
  */
+import { wrapScoped } from './scope';
 
 /** 外壳子部件开关（缺省全开，复刻现 demo 整套外壳）。 @internal */
 export interface ShellChrome {
@@ -29,8 +30,14 @@ export interface ShellChrome {
  * @internal
  */
 export interface Shell {
-  /** 外壳根（= target 内新建的 `.rte-shell`；供消费者样式定位、destroy 时整树移除）。 */
+  /** 外壳根（= target 内新建的 `.rte-shell`；供消费者样式定位、句柄 `dom` 仍返回它）。 */
   root: HTMLElement;
+  /**
+   * 作用域包裹层（`.canvas-rich` `display:contents` div，套住 `root` 并 append 到 target）：
+   * 库 CSS 作用域化为 `.canvas-rich <sel>` 后需此祖先才命中外壳子树。destroy 时移除它即整树回收。
+   * 对布局透明（不产生盒），故 `root` 的尺寸/flex 行为与未包裹时逐字等价。
+   */
+  scopeWrap: HTMLElement;
   /** 工具栏挂载容器（chrome.toolbar=false 时为 null）。 */
   toolbarEl: HTMLElement | null;
   /** 中部横向区（左面板 | 编辑器）。 */
@@ -129,7 +136,10 @@ export function createShell(target: HTMLElement, chrome: ShellChrome = {}): Shel
   ime.setAttribute('spellcheck', 'false');
   root.appendChild(ime);
 
-  target.appendChild(root);
+  // 作用域包裹：root 进 .canvas-rich(display:contents) wrapper 再挂到 target。
+  // wrapper 对布局透明（外壳尺寸/flex 行为不变），但作为 CSS 后代作用域祖先让作用域化的库样式命中。
+  const scopeWrap = wrapScoped(root);
+  target.appendChild(scopeWrap);
 
-  return { root, toolbarEl, bodyEl, leftPanel, leftBody, leftCollapse, editorEl, canvas, ime, statusBarEl };
+  return { root, scopeWrap, toolbarEl, bodyEl, leftPanel, leftBody, leftCollapse, editorEl, canvas, ime, statusBarEl };
 }

@@ -1,6 +1,7 @@
 // 应用内输入弹层（ui 层）：替代原生 window.prompt/alert/confirm。
 // 亮色主题（--rte-* 变量）、Promise 返回、Enter 确认 / Esc 取消 / 点遮罩关闭、role=dialog 可达。
 // 分层：纯 DOM 控件，不依赖 model。
+import { wrapScoped } from '../editor/scope';
 
 /** ask 的参数：标题、默认值、占位、确定按钮文案、是否多行（LaTeX 等）。 @internal */
 export interface PromptOptions {
@@ -51,7 +52,9 @@ export function createPromptDialog(): PromptDialog {
   footer.append(cancelBtn, okBtn);
   card.append(titleEl, body, footer);
   scrim.appendChild(card);
-  document.body.appendChild(scrim);
+  // 作用域包裹：scrim 进 .canvas-rich(display:contents) wrapper 再挂 body（作用域化 utility 命中 + 令牌继承）。
+  const scopeWrap = wrapScoped(scrim);
+  document.body.appendChild(scopeWrap);
 
   let resolver: ((v: string | null) => void) | null = null;
   let field: HTMLInputElement | HTMLTextAreaElement | null = null;
@@ -128,7 +131,7 @@ export function createPromptDialog(): PromptDialog {
     },
     destroy() {
       close(null); // 解决可能挂起的 ask（避免悬空 Promise）
-      scrim.remove();
+      scopeWrap.remove();
     },
   };
 }

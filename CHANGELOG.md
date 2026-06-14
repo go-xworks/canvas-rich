@@ -17,10 +17,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
   `createEditor` factory; there are no longer any global DOM id conventions.
 - The HarfBuzz font path is now resolved via the build `BASE_URL`, supporting deployment
   of the site under a sub-path.
+- **Build moved to tsdown** (Rolldown): a single `tsdown` command now emits JS + `.d.ts` + CSS.
+  A custom tsdown plugin (`build/tailwind-plugin.ts`) compiles Tailwind v4 and **scopes every
+  selector under `.canvas-rich`** (via lightningcss), so the library's utility classes no longer
+  leak into or collide with the host page's styles. At runtime the editor shell and all body
+  portals are wrapped in a layout-neutral `.canvas-rich` element (`display: contents`).
 
 ### Added
 - Automatic deployment of the example site to GitHub Pages (`.github/workflows/deploy-pages.yml`).
-- Publishable library configuration: `exports` / `types` / `style.css`, library build (Vite lib mode, with heavy dependencies externalized) plus `.d.ts` generation.
+- Publishable library configuration: `exports` / `types` / `style.css`, library build (tsdown, with heavy dependencies externalized) plus `.d.ts` generation.
 
 ## [0.1.0] - 2026-06-12
 

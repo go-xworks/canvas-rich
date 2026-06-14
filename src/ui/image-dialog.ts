@@ -2,6 +2,7 @@
 // 亮色主题（--rte-* 变量）、Promise 返回所选图片 src（data URL 或外链），取消返回 null。
 // 分层：纯 DOM 控件，不依赖 model。
 import { icon } from './icons';
+import { wrapScoped } from '../editor/scope';
 
 /** 图片弹层句柄：弹出并解析为图片 src（取消返回 null）；销毁（移除 body 门户节点）。 @internal */
 export interface ImageDialog {
@@ -80,7 +81,9 @@ export function createImageDialog(): ImageDialog {
 
   card.append(titleEl, body, footer);
   scrim.appendChild(card);
-  document.body.appendChild(scrim);
+  // 作用域包裹：scrim 进 .canvas-rich(display:contents) wrapper 再挂 body（作用域化 utility 命中 + 令牌继承）。
+  const scopeWrap = wrapScoped(scrim);
+  document.body.appendChild(scopeWrap);
 
   let resolver: ((v: string | null) => void) | null = null;
   let src = '';
@@ -175,7 +178,7 @@ export function createImageDialog(): ImageDialog {
     },
     destroy() {
       close(null); // 解决可能挂起的 open（避免悬空 Promise）
-      scrim.remove();
+      scopeWrap.remove();
     },
   };
 }

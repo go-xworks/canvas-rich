@@ -1,5 +1,6 @@
 import { Doc } from '../model/schema';
 import { toHtml } from '../model/export';
+import { wrapScoped } from '../editor/scope';
 
 // 平行 ARIA 无障碍树（参考 Google Docs / 腾讯文档）：
 // - canvas 设 aria-hidden（否则读屏报成无名图）。
@@ -40,14 +41,21 @@ export function createAriaTree(canvas: HTMLElement, ime: HTMLElement): AriaTree 
   mirror.className = 'rte-sr-only';
   mirror.setAttribute('role', 'document');
   mirror.setAttribute('aria-label', '文档内容');
-  document.body.appendChild(mirror);
 
   // live region（初始必须为空，否则加载时的内容不被当作变化播报）
   const live = document.createElement('div');
   live.className = 'rte-sr-only';
   live.setAttribute('aria-live', 'polite');
   live.setAttribute('aria-atomic', 'true');
-  document.body.appendChild(live);
+
+  // mirror + live 共用一个 .canvas-rich(display:contents) wrapper 挂 body。注意：上面的 .rte-sr-only
+  // 是本文件运行时直接注入 document.head 的裸全局规则（const CSS，未经 build 作用域插件改写），故镜像/
+  // live 节点本不依赖 .canvas-rich 祖先即可命中。包裹的真实作用是：与其它门户保持一致的统一回收路径，
+  // 并让 --rte-* 令牌沿 wrapper 继承（若 mirror 内将来用到作用域化 utility/令牌则需要）。wrapper 用
+  // display:contents 对布局透明，不破坏 .rte-sr-only 的 position:absolute 裁剪（destroy 移除 wrapper）。
+  const scopeWrap = wrapScoped(mirror);
+  scopeWrap.appendChild(live);
+  document.body.appendChild(scopeWrap);
 
   let lastHtml = '';
   return {
@@ -67,8 +75,7 @@ export function createAriaTree(canvas: HTMLElement, ime: HTMLElement): AriaTree 
     },
     destroy() {
       style.remove();
-      mirror.remove();
-      live.remove();
+      scopeWrap.remove(); // 连同内部 mirror + live 一并回收
     },
   };
 }

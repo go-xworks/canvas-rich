@@ -2,6 +2,7 @@
 // 比原生 title 更快出现、可样式化、可多行；亮色主题用 --rte-* 令牌。事件委托到 document，
 // 与具体控件结构解耦——任何调用 attachTooltip 的元素都会自动获得提示。
 // 分层：纯 DOM 控件，不依赖 model。
+import { wrapScoped } from '../editor/scope';
 
 /** 一条提示的内容：名称、可选快捷键、可选一句话用法说明。 @internal */
 export interface TooltipSpec {
@@ -41,7 +42,9 @@ export function installTooltips(delay = 350): void {
     'background:var(--rte-overlay-bg,#fff);color:var(--rte-text,#1f2430);' +
     'border:1px solid var(--rte-overlay-border,#e3e5e9);box-shadow:var(--rte-shadow,0 8px 24px rgba(15,17,23,.12));' +
     'font:12px/1.45 system-ui,sans-serif;pointer-events:none;opacity:0;transition:opacity .12s;display:none';
-  document.body.appendChild(tip);
+  // 作用域包裹：tip 进 .canvas-rich(display:contents) wrapper 再挂 body，使 var(--rte-*) 沿 wrapper 继承
+  // 取到作用域元素上的令牌值（与其它门户一致）。页面级单例，套一次即可（installed 守卫，不回收）。
+  document.body.appendChild(wrapScoped(tip));
 
   let timer = 0;
   let cur: HTMLElement | null = null;
