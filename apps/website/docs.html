@@ -10,16 +10,18 @@
   <body>
     <div class="site-shell">
       <header class="nav">
-        <a class="logo" href="./"><span class="logo-mark"></span><span>canvas-rich Docs</span></a>
+        <a class="logo" href="./" aria-label="canvas-rich 首页"
+          ><span class="logo-mark">C</span><span>canvas-rich</span></a
+        >
         <nav class="nav-links">
-          <a href="./">官网</a><a href="./demo/">Demo</a><a href="https://github.com/go-xworks/canvas-rich">GitHub</a>
+          <a href="./">首页</a><a href="./demo/">Demo</a><a href="https://github.com/go-xworks/canvas-rich">GitHub</a>
         </nav>
       </header>
-      <main class="section">
-        <div class="section-head">
-          <span class="eyebrow">📚 Documentation</span>
-          <h2>从安装到部署，一页掌握</h2>
-          <p>文档官网聚合常用接入方式、运行命令、API 示例与 GitHub Pages 发布说明。</p>
+      <main class="section docs-page">
+        <div class="section-head docs-title">
+          <p class="eyebrow">Documentation</p>
+          <h1>从安装到部署，<span class="nowrap">一页掌握</span></h1>
+          <p>聚合常用接入方式、运行命令、API 示例与 GitHub Pages 发布说明。</p>
         </div>
         <div class="docs-layout">
           <aside class="docs-nav">
@@ -72,7 +74,7 @@ const editor = createEditor(document.getElementById('app')!, {
             <section id="deploy" class="doc-card">
               <h3>GitHub Pages 部署</h3>
               <pre><code>pnpm build:pages
-# 将 dist-pages 发布到 gh-pages 分支或 GitHub Pages artifact</code></pre>
+# 将 dist-pages 发布为 GitHub Pages artifact</code></pre>
               <p>
                 当前站点是多页面 Vite 应用：<code>/</code> 为官网，<code>/docs.html</code> 为文档官网，<code
                   >/demo/</code
@@ -88,7 +90,7 @@ const editor = createEditor(document.getElementById('app')!, {
           </div>
         </div>
       </main>
-      <footer class="footer"><span>Docs for canvas-rich</span><a href="./">返回官网</a></footer>
+      <footer class="footer"><span>Docs for canvas-rich</span><a href="./">返回首页</a></footer>
     </div>
   </body>
 </html>
