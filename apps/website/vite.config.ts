@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 
 const libraryRoot = fileURLToPath(new URL('../../packages/canvas-rich/', import.meta.url));
 const appRoot = fileURLToPath(new URL('.', import.meta.url));
+const workspaceRoot = fileURLToPath(new URL('../..', import.meta.url));
 
 export default defineConfig({
   base: process.env.SITE_BASE_PATH ?? './',
@@ -29,5 +30,5 @@ export default defineConfig({
   },
   esbuild: { target: 'es2022' },
   optimizeDeps: { exclude: ['harfbuzzjs'], esbuildOptions: { target: 'es2022' } },
-  server: { fs: { allow: [appRoot, libraryRoot] } },
+  server: { fs: { allow: [appRoot, libraryRoot, workspaceRoot] } },
 });
