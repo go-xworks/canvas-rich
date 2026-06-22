@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import { resolve } from 'node:path';
 import tailwindcss from '@tailwindcss/vite';
 import { fileURLToPath } from 'node:url';
 
@@ -21,6 +22,13 @@ export default defineConfig({
     outDir: fileURLToPath(new URL('./dist-demo', import.meta.url)),
     emptyOutDir: true,
     target: 'es2022',
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'examples/index.html'),
+        docs: resolve(__dirname, 'examples/docs.html'),
+        demo: resolve(__dirname, 'examples/demo.html'),
+      },
+    },
   },
   esbuild: { target: 'es2022' },
   // 排除预打包：让 harfbuzzjs 原样从 node_modules 加载，其 wasm 的相对路径(import.meta.url)才能正确解析

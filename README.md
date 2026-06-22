@@ -5,13 +5,16 @@
 > A GPU-rendered **canvas rich text editor engine** on HTML `<canvas>`.
 
 [![CI](https://github.com/go-xworks/canvas-rich/actions/workflows/ci.yml/badge.svg)](https://github.com/go-xworks/canvas-rich/actions/workflows/ci.yml)
-[![Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://go-xworks.github.io/canvas-rich/)
+[![Website](https://img.shields.io/badge/website-live-brightgreen)](https://go-xworks.github.io/canvas-rich/)
+[![Docs](https://img.shields.io/badge/docs-online-6f42c1)](https://go-xworks.github.io/canvas-rich/docs.html)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](tsconfig.json)
 
 canvas-rich renders the entire editor with TypeScript + `<canvas>` + WebGL2/WebGPU: glyphs are rasterized through an atlas into GPU-textured quads, with no reliance on DOM layout or browser text controls. On top of that it builds its own document tree, position model, style resolution, and block layout.
 
-**🔗 Live demo: https://go-xworks.github.io/canvas-rich/**
+**🔗 Website: https://go-xworks.github.io/canvas-rich/**  
+**📚 Docs: https://go-xworks.github.io/canvas-rich/docs.html**  
+**🧪 Live demo: https://go-xworks.github.io/canvas-rich/demo.html**
 
 ## Features
 

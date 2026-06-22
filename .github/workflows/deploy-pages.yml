@@ -1,4 +1,4 @@
-name: Deploy demo to GitHub Pages
+name: Deploy website and docs to GitHub Pages
 
 on:
   push:
@@ -18,7 +18,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build demo
+    name: Build website
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
