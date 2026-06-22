@@ -1,15 +1,86 @@
 <!doctype html>
-<html lang="zh">
+<html lang="zh-CN">
   <head>
     <meta charset="utf-8" />
-    <!-- 批E：移除 maximum-scale/user-scalable（WCAG 1.4.4 低视力用户需可原生放大；300ms 延迟由 touch-action 解决）；
-         interactive-widget=resizes-content：虚拟键盘弹出时收缩布局视口（visualViewport 适配的第一道） -->
     <meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content" />
-    <title>GPU 富文本引擎 · 示例</title>
-    <!-- 库化：示例只留 #app 容器 + 入口脚本；编辑器外壳 DOM 由库 createEditor 在 #app 内程序化构建。 -->
+    <meta
+      name="description"
+      content="canvas-rich 是 GPU 自绘的 Canvas 富文本编辑内核，提供 WebGL2/WebGPU 渲染、复杂排版和完整编辑能力。"
+    />
+    <title>canvas-rich · GPU Canvas 富文本引擎</title>
+    <link rel="stylesheet" href="./site.css" />
   </head>
-  <body style="margin: 0">
-    <div id="app" style="position: fixed; inset: 0"></div>
-    <script type="module" src="./main.ts"></script>
+  <body>
+    <div class="site-shell">
+      <header class="nav">
+        <a class="logo" href="./"><span class="logo-mark"></span><span>canvas-rich</span></a>
+        <nav class="nav-links" aria-label="主导航">
+          <a href="#features">特性</a><a href="./docs.html">文档</a><a href="./demo.html">在线 Demo</a
+          ><a href="https://github.com/go-xworks/canvas-rich">GitHub</a>
+        </nav>
+      </header>
+      <main>
+        <section class="hero">
+          <div>
+            <span class="eyebrow">✨ GitHub Pages 官网 · 文档 · 在线编辑器</span>
+            <h1><span class="gradient-text">GPU 自绘</span><br />富文本编辑内核</h1>
+            <p class="lead">
+              canvas-rich 使用 TypeScript、Canvas、WebGL2/WebGPU
+              构建完整富文本编辑体验：字形图集、复杂脚本整形、分页、表格、公式、剪贴板、打印导出，一套内核嵌入任意前端栈。
+            </p>
+            <div class="hero-actions">
+              <a class="button primary" href="./docs.html">阅读文档</a
+              ><a class="button" href="./demo.html">打开完整 Demo</a>
+            </div>
+            <div class="stats">
+              <div class="stat"><b>GPU</b><span>批量纹理四边形渲染</span></div>
+              <div class="stat"><b>31+</b><span>块类型与行内标记能力</span></div>
+              <div class="stat"><b>0</b><span>框架绑定，纯 TypeScript</span></div>
+            </div>
+          </div>
+          <div class="showcase"><div id="site-editor" class="editor-frame"></div></div>
+        </section>
+        <section id="features" class="section">
+          <div class="section-head">
+            <h2>为专业文档编辑而设计</h2>
+            <p>从渲染、排版、输入到导入导出都由内核统一控制，避免 DOM contenteditable 的不可预测差异。</p>
+          </div>
+          <div class="grid">
+            <article class="card">
+              <div class="icon">⚡</div>
+              <h3>GPU 文本渲染</h3>
+              <p>字形进入多页 atlas，通过 WebGL2/WebGPU 批量绘制，静态帧零额外重排。</p>
+            </article>
+            <article class="card">
+              <div class="icon">📄</div>
+              <h3>分页与 Web 视图</h3>
+              <p>支持连续滚动和类 Word A4 分页，缩放、目录和打印导出在同一模型上工作。</p>
+            </article>
+            <article class="card">
+              <div class="icon">🌍</div>
+              <h3>复杂文字排版</h3>
+              <p>内置 BiDi、HarfBuzz 整形接口、字体回退、嵌套列表和表格布局。</p>
+            </article>
+            <article class="card">
+              <div class="icon">🧩</div>
+              <h3>可扩展模型</h3>
+              <p>块行为、导出器、工具栏贡献集中注册，适合沉淀业务级文档组件。</p>
+            </article>
+            <article class="card">
+              <div class="icon">✍️</div>
+              <h3>完整编辑体验</h3>
+              <p>跨块选择、拖拽移动、撤销合并、IME 预览、查找替换和触摸手势。</p>
+            </article>
+            <article class="card">
+              <div class="icon">🚢</div>
+              <h3>适配 GitHub Pages</h3>
+              <p>官网、文档和 Demo 均由 Vite 构建为静态资源，开箱即可部署。</p>
+            </article>
+          </div>
+        </section>
+      </main>
+      <footer class="footer"><span>MIT © go-xworks</span><span>Built for canvas-rich</span></footer>
+    </div>
+    <script type="module" src="./site.ts"></script>
   </body>
 </html>

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content" />
+    <meta name="description" content="canvas-rich 文档官网：安装、快速开始、API、部署与架构说明。" />
+    <title>canvas-rich 文档 · Docs</title>
+    <link rel="stylesheet" href="./site.css" />
+  </head>
+  <body>
+    <div class="site-shell">
+      <header class="nav">
+        <a class="logo" href="./"><span class="logo-mark"></span><span>canvas-rich Docs</span></a>
+        <nav class="nav-links">
+          <a href="./">官网</a><a href="./demo.html">Demo</a
+          ><a href="https://github.com/go-xworks/canvas-rich">GitHub</a>
+        </nav>
+      </header>
+      <main class="section">
+        <div class="section-head">
+          <span class="eyebrow">📚 Documentation</span>
+          <h2>从安装到部署，一页掌握</h2>
+          <p>文档官网聚合常用接入方式、运行命令、API 示例与 GitHub Pages 发布说明。</p>
+        </div>
+        <div class="docs-layout">
+          <aside class="docs-nav">
+            <a href="#install">安装</a><a href="#usage">基础用法</a><a href="#api">实例 API</a
+            ><a href="#assets">运行资产</a><a href="#deploy">GitHub Pages</a><a href="#architecture">架构</a>
+          </aside>
+          <div class="docs-content">
+            <section id="install" class="doc-card">
+              <h3>安装与本地运行</h3>
+              <pre><code>npm install
+npm run dev
+npm run build
+npm test</code></pre>
+              <p>仓库包含核心库与示例站两层：<code>src/</code> 输出可发布库，<code>examples/</code> 是 Vite 静态站。</p>
+            </section>
+            <section id="usage" class="doc-card">
+              <h3>基础用法</h3>
+              <pre><code>import { createEditor } from 'canvas-rich';
+import 'canvas-rich/style.css';
+
+const editor = createEditor(document.getElementById('app')!, {
+  initialMarkdown: '# Hello\n\nStart typing…',
+  theme: 'light',
+  viewMode: 'web',
+});</code></pre>
+              <p>调用方只需提供容器，编辑器外壳、Canvas、工具栏和输入代理由库内部创建。</p>
+            </section>
+            <section id="api" class="doc-card">
+              <h3>实例 API</h3>
+              <ul>
+                <li><code>exec(commandId)</code>：执行加粗、插入表格、撤销等命令。</li>
+                <li>
+                  <code>getHTML / setHTML</code>、<code>getMarkdown / setMarkdown</code>、<code>getJSON / setJSON</code
+                  >：多格式读写。
+                </li>
+                <li><code>on / off</code>：监听 <code>doc:changed</code> 等事件。</li>
+                <li><code>setTheme / setZoom / setViewMode</code>：运行时切换界面状态。</li>
+              </ul>
+            </section>
+            <section id="assets" class="doc-card">
+              <h3>运行资产</h3>
+              <p>
+                默认 Canvas shaper 无额外要求；若启用 HarfBuzz，请将 Roboto / Noto 字体部署到站点根路径
+                <code>/fonts/</code>。公式渲染需由调用方引入 <code>katex/dist/katex.min.css</code>。
+              </p>
+            </section>
+            <section id="deploy" class="doc-card">
+              <h3>GitHub Pages 部署</h3>
+              <pre><code>npm run build:demo
+# 将 dist-demo 发布到 gh-pages 分支或 GitHub Pages artifact</code></pre>
+              <p>
+                当前站点是多页面 Vite 应用：<code>/</code> 为官网，<code>/docs.html</code> 为文档官网，<code
+                  >/demo.html</code
+                >
+                为完整编辑器 Demo。
+              </p>
+            </section>
+            <section id="architecture" class="doc-card">
+              <h3>架构层级</h3>
+              <pre><code>ui → editor → text → render → model → shared</code></pre>
+              <p>核心层保持向下依赖：模型、文本排版、渲染后端、编辑命令和 UI chrome 互相解耦，方便按业务扩展。</p>
+            </section>
+          </div>
+        </div>
+      </main>
+      <footer class="footer"><span>Docs for canvas-rich</span><a href="./">返回官网</a></footer>
+    </div>
+  </body>
+</html>
