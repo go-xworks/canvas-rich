@@ -25,38 +25,95 @@
       <main>
         <section class="hero">
           <div class="hero-copy">
-            <p class="eyebrow">GPU Canvas Rich Text Engine</p>
+            <p class="eyebrow hero-badge"><span></span>TypeScript · Canvas · GPU Renderer</p>
             <h1>canvas-rich</h1>
+            <p class="hero-statement">GPU 自绘的专业文档编辑内核</p>
             <p class="lead">
               一个 TypeScript 富文本编辑内核。自绘排版、GPU
               渲染、分页、表格、公式与导入导出，面向需要稳定文档能力的前端产品。
             </p>
+            <div class="hero-points" aria-label="核心能力">
+              <span>WebGL2 / WebGPU renderer</span><span>Typed document model</span
+              ><span>IME & selection pipeline</span>
+            </div>
             <div class="hero-actions">
               <a class="button primary" href="./docs.html">开始使用</a><a class="button" href="./demo/">在线 Demo</a>
             </div>
+            <div class="hero-stats" aria-label="项目状态">
+              <div><strong>GPU</strong><span>渲染管线</span></div>
+              <div><strong>A4</strong><span>分页模型</span></div>
+              <div><strong>IME</strong><span>输入预览</span></div>
+              <div><strong>MIT</strong><span>开源协议</span></div>
+            </div>
           </div>
           <div class="engine-panel" aria-label="canvas-rich 编辑器能力预览">
-            <div class="engine-toolbar"><span>Document</span><span>Layout</span><span>Render</span></div>
-            <div class="engine-canvas">
-              <div class="page-sheet">
-                <div class="line title-line"></div>
-                <div class="line w-72"></div>
-                <div class="line w-88"></div>
-                <div class="selection-band"><span></span><span></span></div>
-                <div class="table-block">
-                  <span></span><span></span><span></span><span></span><span></span><span></span>
+            <div class="engine-topbar">
+              <div class="engine-window-title">
+                <span class="engine-window-dots" aria-hidden="true"><i></i><i></i><i></i></span>
+                <div><strong>canvas-rich</strong><span>workspace.preview</span></div>
+              </div>
+              <div class="engine-topbar-actions"><span>Layout stable</span><span>GPU ready</span></div>
+            </div>
+            <div class="engine-tabs">
+              <span class="active">Editor Shell</span><span>Renderer</span><span>Document Model</span
+              ><strong>Preview</strong>
+            </div>
+            <div class="engine-toolbar">
+              <span>Paragraph</span><span>B</span><span>I</span><span>Table</span><span>Formula</span
+              ><span>Export</span>
+            </div>
+            <div class="engine-workspace">
+              <aside class="engine-outline">
+                <span class="panel-label">Outline</span>
+                <strong>Architecture</strong>
+                <ul>
+                  <li class="active">Renderer</li>
+                  <li>Layout</li>
+                  <li>Document Model</li>
+                  <li>Editor Shell</li>
+                </ul>
+              </aside>
+              <div class="engine-canvas">
+                <div class="page-sheet">
+                  <div class="line title-line"></div>
+                  <div class="line w-72"></div>
+                  <div class="line w-88"></div>
+                  <div class="selection-band"><span></span><span></span></div>
+                  <div class="table-block">
+                    <span></span><span></span><span></span><span></span><span></span><span></span>
+                  </div>
+                  <div class="line w-64"></div>
+                  <div class="line w-80"></div>
+                  <i class="caret"></i>
                 </div>
-                <div class="line w-64"></div>
-                <div class="line w-80"></div>
-                <i class="caret"></i>
               </div>
-              <div class="render-stack" aria-hidden="true">
-                <span>Glyph Atlas</span><span>Quad Mesh</span><span>WebGL2 / WebGPU</span>
-              </div>
+              <aside class="engine-inspector">
+                <span class="panel-label">Render Stack</span>
+                <div><strong>Glyph Atlas</strong><span>4 pages</span></div>
+                <div><strong>Quad Mesh</strong><span>batched</span></div>
+                <div><strong>Pagination</strong><span>A4 / Web</span></div>
+                <div><strong>Input</strong><span>IME preview</span></div>
+              </aside>
             </div>
-            <div class="engine-footer">
-              <span>viewport culling</span><span>incremental layout</span><span>typed document model</span>
-            </div>
+            <div class="engine-console"><span>render()</span><span>layout()</span><span>commitSelection()</span></div>
+          </div>
+        </section>
+        <section class="metric-section" aria-label="引擎指标">
+          <div class="metric-item">
+            <span>01</span><strong>GPU batching</strong>
+            <p>字形、选择区、装饰层统一批处理。</p>
+          </div>
+          <div class="metric-item">
+            <span>02</span><strong>Incremental layout</strong>
+            <p>编辑命中局部段落，避免整页重排。</p>
+          </div>
+          <div class="metric-item">
+            <span>03</span><strong>Pagination core</strong>
+            <p>A4 分页、连续滚动、缩放共用模型。</p>
+          </div>
+          <div class="metric-item">
+            <span>04</span><strong>Editor pipeline</strong>
+            <p>输入、选择、撤销、导出由内核统一管理。</p>
           </div>
         </section>
         <section id="resources" class="section resource-section">
@@ -73,6 +130,21 @@
             </a>
           </div>
         </section>
+        <section class="section pipeline-section">
+          <div class="pipeline-copy">
+            <p class="eyebrow">Pipeline</p>
+            <h2>从文档模型到 GPU 绘制的完整链路</h2>
+            <p>
+              canvas-rich 把文档、排版、输入和渲染拆成明确阶段。业务层只接触稳定 API，平台差异收敛在渲染和资产加载层。
+            </p>
+          </div>
+          <div class="pipeline-panel" aria-label="渲染管线">
+            <div><span>Document AST</span><strong>blocks / marks / tables / formula</strong></div>
+            <div><span>Layout Engine</span><strong>pagination / bidi / fallback / hit test</strong></div>
+            <div><span>Render Queue</span><strong>glyph atlas / quads / decorations</strong></div>
+            <div><span>Canvas Runtime</span><strong>WebGL2 now · WebGPU ready</strong></div>
+          </div>
+        </section>
         <section class="section preview-section">
           <div class="section-head">
             <p class="eyebrow">Live preview</p>
@@ -87,36 +159,60 @@
             <h2>为专业文档编辑而设计</h2>
             <p>从渲染、排版、输入到导入导出都由内核统一控制，减少 DOM contenteditable 的不可预测差异。</p>
           </div>
-          <div class="grid">
-            <article class="card">
-              <span class="card-index">01</span>
+          <div class="capability-matrix">
+            <article class="capability-card">
               <h3>Renderer</h3>
-              <p>字形进入多页 atlas，通过 WebGL2/WebGPU 批量绘制，静态帧零额外重排。</p>
+              <p>字形、装饰层、选择区进入同一绘制队列，减少 DOM 与 Canvas 混合导致的状态漂移。</p>
+              <ul>
+                <li>多页 glyph atlas</li>
+                <li>静态帧缓存</li>
+                <li>WebGL2 / WebGPU 边界</li>
+              </ul>
             </article>
-            <article class="card">
-              <span class="card-index">02</span>
+            <article class="capability-card">
               <h3>Layout</h3>
-              <p>支持连续滚动和类 Word A4 分页，缩放、目录和打印导出在同一模型上工作。</p>
+              <p>段落、分页、表格和命中测试共享排版结果，支持连续滚动与类 Word 页面视图。</p>
+              <ul>
+                <li>A4 pagination</li>
+                <li>table layout</li>
+                <li>zoom aware hit test</li>
+              </ul>
             </article>
-            <article class="card">
-              <span class="card-index">03</span>
+            <article class="capability-card">
               <h3>Typography</h3>
-              <p>内置 BiDi、HarfBuzz 整形接口、字体回退、嵌套列表和表格布局。</p>
+              <p>复杂脚本、双向文本、字体回退和公式排版统一进入 shaping 阶段，避免浏览器差异外泄。</p>
+              <ul>
+                <li>BiDi</li>
+                <li>HarfBuzz shaping</li>
+                <li>KaTeX formula</li>
+              </ul>
             </article>
-            <article class="card">
-              <span class="card-index">04</span>
+            <article class="capability-card">
               <h3>Document Model</h3>
-              <p>块行为、导出器、工具栏贡献集中注册，适合沉淀业务级文档组件。</p>
+              <p>块、mark、表格和导出器按契约注册，适合沉淀业务级文档组件与编辑策略。</p>
+              <ul>
+                <li>typed blocks</li>
+                <li>export adapters</li>
+                <li>toolbar contribution</li>
+              </ul>
             </article>
-            <article class="card">
-              <span class="card-index">05</span>
+            <article class="capability-card">
               <h3>Editor Shell</h3>
-              <p>跨块选择、拖拽移动、撤销合并、IME 预览、查找替换和触摸手势。</p>
+              <p>输入、选区、拖拽、撤销和触摸手势围绕统一状态机组织，降低编辑行为分叉。</p>
+              <ul>
+                <li>cross-block selection</li>
+                <li>IME composition</li>
+                <li>undo merge</li>
+              </ul>
             </article>
-            <article class="card">
-              <span class="card-index">06</span>
+            <article class="capability-card">
               <h3>Static Delivery</h3>
-              <p>官网、文档和 Demo 均由 Vite 构建为静态资源，可直接部署到 GitHub Pages。</p>
+              <p>官网、文档和 Demo 均由 Vite 构建为静态资源，发布链路与包消费方式保持一致。</p>
+              <ul>
+                <li>Vite build</li>
+                <li>GitHub Pages</li>
+                <li>workspace assets</li>
+              </ul>
             </article>
           </div>
         </section>
