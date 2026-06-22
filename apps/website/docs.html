@@ -5,15 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content" />
     <meta name="description" content="canvas-rich 文档官网：安装、快速开始、API、部署与架构说明。" />
     <title>canvas-rich 文档 · Docs</title>
-    <link rel="stylesheet" href="./site.css" />
+    <link rel="stylesheet" href="./src/site.css" />
   </head>
   <body>
     <div class="site-shell">
       <header class="nav">
         <a class="logo" href="./"><span class="logo-mark"></span><span>canvas-rich Docs</span></a>
         <nav class="nav-links">
-          <a href="./">官网</a><a href="./demo.html">Demo</a
-          ><a href="https://github.com/go-xworks/canvas-rich">GitHub</a>
+          <a href="./">官网</a><a href="./demo/">Demo</a><a href="https://github.com/go-xworks/canvas-rich">GitHub</a>
         </nav>
       </header>
       <main class="section">
@@ -30,11 +29,14 @@
           <div class="docs-content">
             <section id="install" class="doc-card">
               <h3>安装与本地运行</h3>
-              <pre><code>npm install
-npm run dev
-npm run build
-npm test</code></pre>
-              <p>仓库包含核心库与示例站两层：<code>src/</code> 输出可发布库，<code>examples/</code> 是 Vite 静态站。</p>
+              <pre><code>pnpm install
+pnpm dev
+pnpm build
+pnpm test</code></pre>
+              <p>
+                仓库采用 pnpm workspace：<code>packages/canvas-rich</code> 输出可发布库，<code>apps/website</code> 与
+                <code>apps/demo</code> 分别承载官网文档和演示站。
+              </p>
             </section>
             <section id="usage" class="doc-card">
               <h3>基础用法</h3>
@@ -69,11 +71,11 @@ const editor = createEditor(document.getElementById('app')!, {
             </section>
             <section id="deploy" class="doc-card">
               <h3>GitHub Pages 部署</h3>
-              <pre><code>npm run build:demo
-# 将 dist-demo 发布到 gh-pages 分支或 GitHub Pages artifact</code></pre>
+              <pre><code>pnpm build:pages
+# 将 dist-pages 发布到 gh-pages 分支或 GitHub Pages artifact</code></pre>
               <p>
                 当前站点是多页面 Vite 应用：<code>/</code> 为官网，<code>/docs.html</code> 为文档官网，<code
-                  >/demo.html</code
+                  >/demo/</code
                 >
                 为完整编辑器 Demo。
               </p>

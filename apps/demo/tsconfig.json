@@ -1,0 +1,12 @@
+{
+  "extends": "../../packages/canvas-rich/tsconfig.json",
+  "compilerOptions": {
+    "types": ["vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "canvas-rich": ["../../packages/canvas-rich/src/index.ts"],
+      "canvas-rich/style.css": ["../../packages/canvas-rich/src/styles/lib.css"]
+    }
+  },
+  "include": ["main.ts", "*.html", "../../packages/canvas-rich/src/vite-env.d.ts"]
+}

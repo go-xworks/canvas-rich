@@ -1,81 +1,28 @@
 {
-  "name": "canvas-rich",
-  "version": "0.1.0",
-  "description": "GPU 自绘的 canvas 富文本编辑内核：字形 → 图集 → GPU 贴图四边形，不依赖 DOM 排版。A GPU-rendered rich text editor engine on HTML canvas (WebGL2/WebGPU).",
+  "name": "canvas-rich-workspace",
+  "private": true,
   "type": "module",
-  "sideEffects": [
-    "**/*.css"
-  ],
-  "main": "./dist/index.js",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    },
-    "./style.css": "./dist/style.css"
-  },
-  "files": [
-    "dist"
-  ],
-  "license": "MIT",
-  "author": "go-xworks",
-  "homepage": "https://github.com/go-xworks/canvas-rich#readme",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/go-xworks/canvas-rich.git"
-  },
-  "bugs": {
-    "url": "https://github.com/go-xworks/canvas-rich/issues"
-  },
-  "keywords": [
-    "rich-text-editor",
-    "canvas",
-    "webgl",
-    "webgpu",
-    "gpu",
-    "text-rendering",
-    "glyph-atlas",
-    "harfbuzz",
-    "bidi",
-    "typescript",
-    "editor",
-    "wysiwyg"
-  ],
-  "engines": {
-    "node": ">=20"
-  },
+  "packageManager": "pnpm@10.28.1",
   "scripts": {
-    "dev": "vite",
-    "build": "tsdown",
-    "build:demo": "vite build",
-    "preview": "vite preview",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.examples.json",
-    "lint": "oxlint",
-    "format": "oxfmt --write src examples build",
-    "format:check": "oxfmt --check src examples build",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "dev": "pnpm --filter @canvas-rich/website dev",
+    "dev:demo": "pnpm --filter @canvas-rich/demo dev",
+    "build": "pnpm --filter canvas-rich build",
+    "build:pages": "pnpm --filter @canvas-rich/website build && pnpm --filter @canvas-rich/demo build",
+    "build:demo": "pnpm run build:pages",
+    "preview": "pnpm --filter @canvas-rich/website preview",
+    "preview:demo": "pnpm --filter @canvas-rich/demo preview",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "oxlint .",
+    "format": "oxfmt --write packages apps",
+    "format:check": "oxfmt --check packages apps",
+    "test": "pnpm --filter canvas-rich test",
+    "test:watch": "pnpm --filter canvas-rich test:watch"
   },
   "devDependencies": {
-    "@tailwindcss/node": "^4.3.1",
-    "@tailwindcss/oxide": "^4.3.1",
-    "@webgpu/types": "^0.1.70",
-    "lightningcss": "^1.32.0",
     "oxfmt": "^0.54.0",
-    "oxlint": "^1.69.0",
-    "tsdown": "^0.22.2",
-    "typescript": "^5.6.3",
-    "unrun": "^0.3.1",
-    "vite": "^6.0.7",
-    "vitest": "^4.1.8"
+    "oxlint": "^1.69.0"
   },
-  "dependencies": {
-    "@tailwindcss/vite": "^4.3.0",
-    "bidi-js": "^1.0.3",
-    "harfbuzzjs": "^1.2.1",
-    "katex": "^0.17.0",
-    "tailwindcss": "^4.3.0"
+  "engines": {
+    "node": ">=20"
   }
 }

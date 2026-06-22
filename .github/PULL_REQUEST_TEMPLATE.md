@@ -22,9 +22,9 @@
 
 ## Verification（验证）
 
-- [ ] `npm run typecheck` passes with zero errors（零错误）
-- [ ] `npm test` all pass（全部通过）
-- [ ] `npm run build` succeeds（成功）
+- [ ] `pnpm typecheck` passes with zero errors（零错误）
+- [ ] `pnpm test` all pass（全部通过）
+- [ ] `pnpm build` succeeds（成功）
 - [ ] Added / updated unit tests（新增 / 更新了单元测试）
 - [ ] If there is any behavioral / visual change, verified in the browser (screenshots welcome)（如有行为/视觉变化，已在浏览器实测，可附截图）
 

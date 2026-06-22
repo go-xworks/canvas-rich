@@ -1,0 +1,76 @@
+{
+  "name": "canvas-rich",
+  "version": "0.1.0",
+  "description": "GPU 自绘的 canvas 富文本编辑内核：字形 → 图集 → GPU 贴图四边形，不依赖 DOM 排版。A GPU-rendered rich text editor engine on HTML canvas (WebGL2/WebGPU).",
+  "keywords": [
+    "bidi",
+    "canvas",
+    "editor",
+    "glyph-atlas",
+    "gpu",
+    "harfbuzz",
+    "rich-text-editor",
+    "text-rendering",
+    "typescript",
+    "webgl",
+    "webgpu",
+    "wysiwyg"
+  ],
+  "homepage": "https://github.com/go-xworks/canvas-rich#readme",
+  "bugs": {
+    "url": "https://github.com/go-xworks/canvas-rich/issues"
+  },
+  "license": "MIT",
+  "author": "go-xworks",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/go-xworks/canvas-rich.git"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./style.css": "./dist/style.css"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "lint": "oxlint .",
+    "format": "oxfmt --write src build",
+    "format:check": "oxfmt --check src build",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "bidi-js": "^1.0.3",
+    "harfbuzzjs": "^1.2.1",
+    "katex": "^0.17.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/node": "^4.3.1",
+    "@tailwindcss/oxide": "^4.3.1",
+    "@webgpu/types": "^0.1.70",
+    "lightningcss": "^1.32.0",
+    "oxfmt": "^0.54.0",
+    "oxlint": "^1.69.0",
+    "tailwindcss": "^4.3.0",
+    "tsdown": "^0.22.2",
+    "typescript": "^5.6.3",
+    "unrun": "^0.3.1",
+    "vitest": "^4.1.8"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

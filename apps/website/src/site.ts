@@ -1,6 +1,6 @@
-import '../src/styles/lib.css';
+import 'canvas-rich/style.css';
 import 'katex/dist/katex.min.css';
-import { createEditor } from '../src';
+import { createEditor } from 'canvas-rich';
 
 const demo = document.getElementById('site-editor');
 if (demo) {
