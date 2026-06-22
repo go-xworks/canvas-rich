@@ -5,13 +5,16 @@
 > A GPU-rendered **canvas rich text editor engine** on HTML `<canvas>`.
 
 [![CI](https://github.com/go-xworks/canvas-rich/actions/workflows/ci.yml/badge.svg)](https://github.com/go-xworks/canvas-rich/actions/workflows/ci.yml)
-[![Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://go-xworks.github.io/canvas-rich/)
+[![Website](https://img.shields.io/badge/website-live-brightgreen)](https://go-xworks.github.io/canvas-rich/)
+[![Docs](https://img.shields.io/badge/docs-online-6f42c1)](https://go-xworks.github.io/canvas-rich/docs.html)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)](tsconfig.json)
 
 canvas-rich renders the entire editor with TypeScript + `<canvas>` + WebGL2/WebGPU: glyphs are rasterized through an atlas into GPU-textured quads, with no reliance on DOM layout or browser text controls. On top of that it builds its own document tree, position model, style resolution, and block layout.
 
-**🔗 Live demo: https://go-xworks.github.io/canvas-rich/**
+**🔗 Website: https://go-xworks.github.io/canvas-rich/**  
+**📚 Docs: https://go-xworks.github.io/canvas-rich/docs.html**  
+**🧪 Live demo: https://go-xworks.github.io/canvas-rich/demo/**
 
 ## Features
 
@@ -28,13 +31,15 @@ canvas-rich renders the entire editor with TypeScript + `<canvas>` + WebGL2/WebG
 
 ## Quick start
 
-> Requires Node ≥ 20. The repository has two layers: `src/` is the core library, `examples/` is a sample site that consumes the library.
+> Requires Node ≥ 20 and pnpm. The repository is a pnpm workspace: `packages/canvas-rich` is the publishable library, `apps/website` is the GitHub Pages website/docs app, and `apps/demo` is the full editor demo app.
 
 ```bash
-npm install
-npm run dev        # start the sample site at http://localhost:5173
-npm run build      # build the library: dist/index.js + dist/style.css + dist/index.d.ts
-npm test           # unit tests
+pnpm install
+pnpm dev          # start the website/docs app
+pnpm dev:demo     # start the full editor demo app
+pnpm build        # build the library: dist/index.js + dist/style.css + dist/index.d.ts
+pnpm build:pages  # build website + demo into dist-pages/
+pnpm test         # unit tests
 ```
 
 ## Using as a library

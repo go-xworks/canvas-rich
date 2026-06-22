@@ -17,9 +17,9 @@
 @import 'tailwindcss/theme.css' layer(theme);
 @import 'tailwindcss/utilities.css' layer(utilities);
 
-/* 显式声明内容来源：tailwind v4 默认从 CSS/项目根自动扫描，但示例 dev 的 Vite root 指向 examples/，
+/* 显式声明内容来源：tailwind v4 默认从 CSS/项目根自动扫描，但应用 dev 的 Vite root 指向 apps packages，
    自动扫描够不到 ../src 的 ui 层 utility class。用 @source 锚定库源码（相对本文件 = src/styles/），
-   保证 dev（root=examples）与库构建（root=仓库根）两种 root 下都扫到 src/ui 等的 utility，生成对应 css。 */
+   保证应用 dev 与库构建两种场景下都扫到 src/ui 等的 utility，生成对应 css。 */
 @source '../**/*.{ts,tsx,html}';
 
 @import './shell.css';

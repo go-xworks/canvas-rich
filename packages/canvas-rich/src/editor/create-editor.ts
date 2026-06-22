@@ -25,7 +25,7 @@
  */
 // 库样式（外壳 + chrome 的 tailwind utility）作为独立产物 dist/style.css 单独发布（@tailwindcss/cli 编译，
 // 见 package.json build），消费者 `import 'canvas-rich/style.css'`。此处不 import CSS——保持 JS bundle 由
-// tsdown 纯打 JS（tsdown 不跑 tailwind）；示例侧由 examples/main.ts import 同一入口，经 Vite 插件供 dev 样式。
+// tsdown 纯打 JS（tsdown 不跑 tailwind）；演示应用由 apps/demo/main.ts import 同一入口，经 Vite 插件供 dev 样式。
 import { GlyphAtlas } from '../text/glyph-atlas';
 import { createRenderer } from '../render/create-renderer';
 import type { Renderer } from '../render/renderer';

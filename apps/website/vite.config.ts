@@ -1,0 +1,32 @@
+import { defineConfig } from 'vite';
+import { resolve } from 'node:path';
+import tailwindcss from '@tailwindcss/vite';
+import { fileURLToPath } from 'node:url';
+
+const libraryRoot = fileURLToPath(new URL('../../packages/canvas-rich/', import.meta.url));
+
+export default defineConfig({
+  base: process.env.SITE_BASE_PATH ?? './',
+  plugins: [tailwindcss()],
+  publicDir: fileURLToPath(new URL('../../packages/canvas-rich/public', import.meta.url)),
+  resolve: {
+    alias: {
+      'canvas-rich/style.css': fileURLToPath(new URL('../../packages/canvas-rich/src/styles/lib.css', import.meta.url)),
+      'canvas-rich': fileURLToPath(new URL('../../packages/canvas-rich/src/index.ts', import.meta.url)),
+    },
+  },
+  build: {
+    outDir: fileURLToPath(new URL('../../dist-pages', import.meta.url)),
+    emptyOutDir: true,
+    target: 'es2022',
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        docs: resolve(__dirname, 'docs.html'),
+      },
+    },
+  },
+  esbuild: { target: 'es2022' },
+  optimizeDeps: { exclude: ['harfbuzzjs'], esbuildOptions: { target: 'es2022' } },
+  server: { fs: { allow: [libraryRoot] } },
+});
