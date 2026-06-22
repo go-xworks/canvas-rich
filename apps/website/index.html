@@ -14,7 +14,8 @@
     <div class="site-shell">
       <header class="nav">
         <a class="logo" href="./" aria-label="canvas-rich 首页"
-          ><span class="logo-mark">C</span><span>canvas-rich</span></a
+          ><span class="logo-mark" aria-hidden="true"><span></span><span></span><span></span></span
+          ><span>canvas-rich</span></a
         >
         <nav class="nav-links" aria-label="主导航">
           <a href="#features">特性</a><a href="#resources">资源</a><a href="./docs.html">文档</a
@@ -23,11 +24,6 @@
       </header>
       <main>
         <section class="hero">
-          <div class="hero-art left-art" aria-hidden="true">
-            <span class="ribbon ribbon-green"></span><span class="ribbon ribbon-gold"></span
-            ><span class="ribbon ribbon-blue"></span><span class="ribbon ribbon-red"></span
-            ><span class="ribbon ribbon-small ribbon-mint"></span>
-          </div>
           <div class="hero-copy">
             <p class="eyebrow">GPU Canvas Rich Text Engine</p>
             <h1>canvas-rich</h1>
@@ -39,22 +35,42 @@
               <a class="button primary" href="./docs.html">开始使用</a><a class="button" href="./demo/">在线 Demo</a>
             </div>
           </div>
-          <div class="hero-art right-art" aria-hidden="true">
-            <span class="ribbon ribbon-gold"></span><span class="ribbon ribbon-green"></span
-            ><span class="ribbon ribbon-red"></span><span class="ribbon ribbon-small ribbon-blue"></span
-            ><span class="ribbon ribbon-small ribbon-mint"></span>
+          <div class="engine-panel" aria-label="canvas-rich 编辑器能力预览">
+            <div class="engine-toolbar"><span>Document</span><span>Layout</span><span>Render</span></div>
+            <div class="engine-canvas">
+              <div class="page-sheet">
+                <div class="line title-line"></div>
+                <div class="line w-72"></div>
+                <div class="line w-88"></div>
+                <div class="selection-band"><span></span><span></span></div>
+                <div class="table-block">
+                  <span></span><span></span><span></span><span></span><span></span><span></span>
+                </div>
+                <div class="line w-64"></div>
+                <div class="line w-80"></div>
+                <i class="caret"></i>
+              </div>
+              <div class="render-stack" aria-hidden="true">
+                <span>Glyph Atlas</span><span>Quad Mesh</span><span>WebGL2 / WebGPU</span>
+              </div>
+            </div>
+            <div class="engine-footer">
+              <span>viewport culling</span><span>incremental layout</span><span>typed document model</span>
+            </div>
           </div>
         </section>
         <section id="resources" class="section resource-section">
           <div class="resource-grid">
             <a class="resource-link" href="./docs.html">
-              <span>文档</span><strong>安装、API、部署和架构说明</strong>
+              <span>Docs</span><strong>安装、API、运行资产和部署说明</strong>
             </a>
             <a class="resource-link" href="./demo/"> <span>Demo</span><strong>完整编辑器体验和交互能力</strong> </a>
             <a class="resource-link" href="https://github.com/go-xworks/canvas-rich">
-              <span>GitHub</span><strong>源码、Issue、CI 和发布记录</strong>
+              <span>Source</span><strong>源码、测试、构建和 GitHub Pages 工作流</strong>
             </a>
-            <a class="resource-link" href="#features"> <span>能力</span><strong>渲染、排版、模型和扩展点</strong> </a>
+            <a class="resource-link" href="#features">
+              <span>Engine</span><strong>渲染、排版、文档模型和编辑外壳</strong>
+            </a>
           </div>
         </section>
         <section class="section preview-section">
@@ -74,32 +90,32 @@
           <div class="grid">
             <article class="card">
               <span class="card-index">01</span>
-              <h3>GPU 文本渲染</h3>
+              <h3>Renderer</h3>
               <p>字形进入多页 atlas，通过 WebGL2/WebGPU 批量绘制，静态帧零额外重排。</p>
             </article>
             <article class="card">
               <span class="card-index">02</span>
-              <h3>分页与 Web 视图</h3>
+              <h3>Layout</h3>
               <p>支持连续滚动和类 Word A4 分页，缩放、目录和打印导出在同一模型上工作。</p>
             </article>
             <article class="card">
               <span class="card-index">03</span>
-              <h3>复杂文字排版</h3>
+              <h3>Typography</h3>
               <p>内置 BiDi、HarfBuzz 整形接口、字体回退、嵌套列表和表格布局。</p>
             </article>
             <article class="card">
               <span class="card-index">04</span>
-              <h3>可扩展模型</h3>
+              <h3>Document Model</h3>
               <p>块行为、导出器、工具栏贡献集中注册，适合沉淀业务级文档组件。</p>
             </article>
             <article class="card">
               <span class="card-index">05</span>
-              <h3>完整编辑体验</h3>
+              <h3>Editor Shell</h3>
               <p>跨块选择、拖拽移动、撤销合并、IME 预览、查找替换和触摸手势。</p>
             </article>
             <article class="card">
               <span class="card-index">06</span>
-              <h3>静态部署友好</h3>
+              <h3>Static Delivery</h3>
               <p>官网、文档和 Demo 均由 Vite 构建为静态资源，可直接部署到 GitHub Pages。</p>
             </article>
           </div>
